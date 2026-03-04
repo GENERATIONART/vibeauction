@@ -1,0 +1,682 @@
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useVibeStore } from './app/state/vibe-store';
+import { auctionItems } from './lib/auction-items.js';
+
+const normalize = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const customStyles = {
+  body: {
+    backgroundColor: '#0D0D0D',
+    color: '#FFFFFF',
+    fontFamily: "'Inter', sans-serif",
+    WebkitFontSmoothing: 'antialiased',
+    overflowX: 'hidden',
+  },
+  header: {
+    background: '#000000',
+    height: '60px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 24px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    borderBottom: '2px solid #C8FF00',
+  },
+  logo: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '24px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    color: '#C8FF00',
+    textDecoration: 'none',
+  },
+  navLinks: {
+    display: 'flex',
+    gap: '24px',
+  },
+  navItem: {
+    fontWeight: 700,
+    fontSize: '14px',
+    color: '#FFFFFF',
+    textDecoration: 'none',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
+  userBalance: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    background: '#C8FF00',
+    color: '#000000',
+    padding: '4px 12px',
+    borderRadius: '99px',
+    fontWeight: 700,
+    fontSize: '13px',
+  },
+  tickerWrap: {
+    background: '#C8FF00',
+    color: '#000000',
+    padding: '8px 0',
+    overflow: 'hidden',
+    marginBottom: '24px',
+    borderBottom: '2px solid #000000',
+  },
+  tickerItem: {
+    fontWeight: 800,
+    fontSize: '14px',
+    textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+  },
+  hero: {
+    position: 'relative',
+    padding: '40px 24px 80px',
+    maxWidth: '1400px',
+    margin: '0 auto',
+  },
+  heroTitle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '82px',
+    lineHeight: 0.9,
+    textTransform: 'uppercase',
+    marginBottom: '16px',
+    maxWidth: '800px',
+    color: '#FFFFFF',
+  },
+  highlightTag: {
+    display: 'inline-block',
+    background: '#C8FF00',
+    color: '#000000',
+    padding: '4px 12px',
+    fontFamily: "'Inter', sans-serif",
+    fontWeight: 800,
+    fontSize: '20px',
+    transform: 'rotate(-2deg)',
+    marginLeft: '10px',
+    verticalAlign: 'middle',
+    boxShadow: '4px 4px 0px rgba(200, 255, 0, 0.2)',
+  },
+  layoutGrid: {
+    display: 'grid',
+    gridTemplateColumns: '240px 1fr',
+    gap: '32px',
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '0 24px 32px',
+  },
+  filters: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
+  },
+  filterGroupTitle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '24px',
+    textTransform: 'uppercase',
+    marginBottom: '8px',
+    color: '#C8FF00',
+  },
+  filterList: {
+    listStyle: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  auctionGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '24px',
+  },
+  card: {
+    background: '#FFFFFF',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    border: '2px solid #C8FF00',
+    boxShadow: '6px 6px 0px rgba(200, 255, 0, 0.3)',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    position: 'relative',
+    cursor: 'pointer',
+  },
+  cardImageArea: {
+    height: '160px',
+    background: '#F0F0F0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    borderBottom: '2px solid #000000',
+  },
+  patternDots: {
+    backgroundImage: 'radial-gradient(#000000 1px, transparent 1px)',
+    backgroundSize: '10px 10px',
+    opacity: 0.1,
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  cardEmoji: {
+    fontSize: '64px',
+    zIndex: 1,
+    filter: 'drop-shadow(3px 3px 0px rgba(0,0,0,0.1))',
+  },
+  liveBadge: {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    background: '#000000',
+    color: '#C8FF00',
+    fontWeight: 800,
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    padding: '4px 8px',
+    border: '1px solid #C8FF00',
+    transform: 'rotate(2deg)',
+    zIndex: 2,
+  },
+  cardContent: {
+    padding: '16px',
+    flexGrow: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    color: '#000000',
+  },
+  cardTitle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '22px',
+    lineHeight: 1.1,
+    marginBottom: '8px',
+    textTransform: 'uppercase',
+  },
+  cardMeta: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: 'auto',
+    borderTop: '1px solid #DDDDDD',
+    paddingTop: '8px',
+  },
+  bidInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  bidLabel: {
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    fontWeight: 700,
+    color: '#888888',
+    letterSpacing: '0.5px',
+  },
+  bidAmount: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '20px',
+    color: '#000000',
+  },
+  timer: {
+    fontFamily: "'Inter', sans-serif",
+    fontVariantNumeric: 'tabular-nums',
+    fontWeight: 700,
+    fontSize: '14px',
+    color: '#666666',
+  },
+  cardActions: {
+    padding: '8px 16px 16px',
+  },
+  btnBid: {
+    width: '100%',
+    background: '#000000',
+    color: '#C8FF00',
+    border: 'none',
+    padding: '12px',
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '18px',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+};
+
+const categories = [
+  { label: 'All Vibes', count: 241 },
+  { label: 'Feelings', count: 42 },
+  { label: 'Permissions', count: 18 },
+  { label: 'Moments', count: 86 },
+  { label: 'Powers', count: 12 },
+  { label: 'Excuses', count: 33 },
+];
+
+const sortOptions = ['Ending Soon', 'Most Absurd', 'Highest Aura', 'Newest'];
+
+const tickerItems = [
+  'User @GhostWriter bid 500 Aura on "Monday Optimism"',
+  'NEW LISTING: "The smell of old books" starting at 100 Aura',
+  'User @VibeCheck won "Unearned Confidence" for 4,200 Aura',
+  'User @GhostWriter bid 500 Aura on "Monday Optimism"',
+  'NEW LISTING: "The smell of old books" starting at 100 Aura',
+  'User @VibeCheck won "Unearned Confidence" for 4,200 Aura',
+];
+
+const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile }) => {
+  const [hovered, setHovered] = useState(false);
+  const [btnHovered, setBtnHovered] = useState(false);
+
+  return (
+    <article
+      style={{
+        ...customStyles.card,
+        transform: hovered && !isMobile ? 'translate(-2px, -2px)' : 'none',
+        boxShadow: hovered && !isMobile ? '8px 8px 0px #C8FF00' : '6px 6px 0px rgba(200, 255, 0, 0.3)',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onOpenAuction(item)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpenAuction(item);
+        }
+      }}
+    >
+      {item.badge && <div style={customStyles.liveBadge}>{item.badge}</div>}
+      <div style={{ ...customStyles.cardImageArea, height: isMobile ? '140px' : '160px' }}>
+        <div style={customStyles.patternDots}></div>
+        <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : '64px' }}>{item.emoji}</div>
+      </div>
+      <div style={{ ...customStyles.cardContent, padding: isMobile ? '14px' : '16px' }}>
+        <h2 style={{ ...customStyles.cardTitle, fontSize: isMobile ? '20px' : '22px' }}>{item.title}</h2>
+        <div style={customStyles.cardMeta}>
+          <div style={customStyles.bidInfo}>
+            <span style={customStyles.bidLabel}>Current Bid</span>
+            <span style={customStyles.bidAmount}>{bidDisplay}</span>
+          </div>
+          <span style={{ ...customStyles.timer, fontSize: isMobile ? '13px' : '14px' }}>{item.timer}</span>
+        </div>
+      </div>
+      <div style={{ ...customStyles.cardActions, padding: isMobile ? '8px 14px 14px' : '8px 16px 16px' }}>
+        <button
+          style={{
+            ...customStyles.btnBid,
+            fontSize: isMobile ? '16px' : '18px',
+            padding: isMobile ? '11px' : '12px',
+            background: btnHovered ? '#C8FF00' : '#000000',
+            color: btnHovered ? '#000000' : '#C8FF00',
+          }}
+          onMouseEnter={() => setBtnHovered(true)}
+          onMouseLeave={() => setBtnHovered(false)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenAuction(item);
+          }}
+          type="button"
+        >
+          Open Auction
+        </button>
+      </div>
+    </article>
+  );
+};
+
+const App = () => {
+  const [activeCategory, setActiveCategory] = useState('All Vibes');
+  const [activeSort, setActiveSort] = useState('');
+  const [navHover, setNavHover] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(1200);
+
+  const { balance, activeBids } = useVibeStore();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const navItems = [
+    { label: 'Browse Vibes', href: '/' },
+    { label: 'Vibes', href: '/vibes' },
+    { label: 'Sell a Feeling', href: '/mint' },
+    { label: 'Leaderboard', href: '/leaderboard' },
+    { label: 'Vibe Vault', href: '/vault' },
+    { label: 'Top Up', href: '/top-up' },
+  ];
+
+  const isMobile = viewportWidth <= 768;
+  const isTablet = viewportWidth <= 1024;
+  const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
+
+  useEffect(() => {
+    const updateViewportWidth = () => setViewportWidth(window.innerWidth);
+    updateViewportWidth();
+    window.addEventListener('resize', updateViewportWidth);
+
+    const style = document.createElement('style');
+    style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background-color: #0D0D0D; overflow-x: hidden; }
+      @keyframes scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .ticker-anim {
+        display: flex;
+        gap: 32px;
+        animation: scroll 20s linear infinite;
+        white-space: nowrap;
+      }
+      .va-scroll-row::-webkit-scrollbar { height: 6px; }
+      .va-scroll-row::-webkit-scrollbar-track { background: transparent; }
+      .va-scroll-row::-webkit-scrollbar-thumb { background: rgba(200, 255, 0, 0.5); border-radius: 99px; }
+      @media (max-width: 768px) {
+        .ticker-anim { gap: 20px; animation-duration: 28s; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      window.removeEventListener('resize', updateViewportWidth);
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile && mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  }, [isMobile, mobileMenuOpen]);
+
+  const bidLookup = useMemo(() => {
+    const lookup = {};
+    activeBids.forEach((entry) => {
+      const key = normalize(entry.id || entry.name);
+      if (key) lookup[key] = entry.amount;
+    });
+    return lookup;
+  }, [activeBids]);
+
+  const filteredItems =
+    activeCategory === 'All Vibes'
+      ? auctionItems
+      : auctionItems.filter((item) => item.category === activeCategory);
+
+  const getBidDisplay = (item) => {
+    const key = normalize(item.slug || item.title);
+    const live = bidLookup[key];
+    if (Number.isFinite(live)) return live.toLocaleString();
+    const fallback = Number(item.bid);
+    return Number.isFinite(fallback) ? fallback.toLocaleString() : '0';
+  };
+
+  const filterOptionStyle = (isActive) => ({
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: isMobile ? '14px' : '15px',
+    padding: isTablet ? '8px 12px' : '6px 10px',
+    borderRadius: isTablet ? '999px' : '4px',
+    transition: 'all 0.2s',
+    display: isTablet ? 'inline-flex' : 'flex',
+    alignItems: 'center',
+    justifyContent: isTablet ? 'flex-start' : 'space-between',
+    gap: '6px',
+    whiteSpace: 'nowrap',
+    color: isActive ? '#000000' : isTablet ? '#FFFFFF' : '#999999',
+    background: isActive ? '#C8FF00' : isTablet ? '#1A1A1A' : 'transparent',
+    border: isTablet ? (isActive ? '2px solid #C8FF00' : '1px solid #333333') : 'none',
+    transform: isActive ? 'rotate(-1deg)' : 'none',
+  });
+
+  const handleOpenAuction = (item) => {
+    if (!item) return;
+    router.push(`/auction/${item.slug}`);
+  };
+
+  return (
+    <div style={customStyles.body}>
+      <header
+        style={{
+          ...customStyles.header,
+          height: isMobile ? '64px' : '60px',
+          padding: isMobile ? '0 14px' : '0 24px',
+        }}
+      >
+        <span style={{ ...customStyles.logo, fontSize: isMobile ? '20px' : '24px' }}>Vibe Auction</span>
+        {!isMobile && (
+          <nav style={customStyles.navLinks}>
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  style={{
+                    ...customStyles.navItem,
+                    color: isActive || navHover === item.label ? '#C8FF00' : '#FFFFFF',
+                  }}
+                  onMouseEnter={() => setNavHover(item.label)}
+                  onMouseLeave={() => setNavHover('')}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            style={{
+              ...customStyles.userBalance,
+              padding: isMobile ? '4px 10px' : '4px 12px',
+              fontSize: isMobile ? '12px' : '13px',
+            }}
+          >
+            <span>{balanceDisplay}</span> AURA
+          </div>
+          {isMobile && (
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '6px',
+                border: '2px solid #C8FF00',
+                background: '#0D0D0D',
+                color: '#C8FF00',
+                fontSize: '20px',
+                lineHeight: 1,
+                cursor: 'pointer',
+              }}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? '✕' : '☰'}
+            </button>
+          )}
+        </div>
+      </header>
+
+      {isMobile && mobileMenuOpen && (
+        <nav
+          style={{
+            background: '#000000',
+            borderBottom: '2px solid #C8FF00',
+            padding: '10px 14px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                style={{
+                  textAlign: 'left',
+                  width: '100%',
+                  border: isActive ? '2px solid #C8FF00' : '1px solid #2A2A2A',
+                  background: isActive ? '#1A1A1A' : '#121212',
+                  color: isActive ? '#C8FF00' : '#FFFFFF',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                  textDecoration: 'none',
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
+
+      <div style={{ ...customStyles.tickerWrap, marginBottom: isMobile ? '10px' : '14px' }}>
+        <div className="ticker-anim" style={{ paddingLeft: isMobile ? '14px' : 0 }}>
+          {tickerItems.map((text, index) => (
+            <div key={index} style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : '14px' }}>
+              {text}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <section
+        style={{
+          ...customStyles.hero,
+          padding: isMobile ? '18px 16px 18px' : isTablet ? '20px 20px 26px' : '24px 24px 34px',
+        }}
+      >
+        <h1
+          style={{
+            ...customStyles.heroTitle,
+            fontSize: isMobile ? '44px' : isTablet ? '56px' : viewportWidth <= 1440 ? '70px' : customStyles.heroTitle.fontSize,
+            maxWidth: isMobile ? '100%' : customStyles.heroTitle.maxWidth,
+          }}
+        >
+          Browse <br />
+          Auction{' '}
+          <span
+            style={{
+              ...customStyles.highlightTag,
+              fontSize: isMobile ? '14px' : customStyles.highlightTag.fontSize,
+              marginLeft: isMobile ? 0 : customStyles.highlightTag.marginLeft,
+              marginTop: isMobile ? '8px' : 0,
+              display: isMobile ? 'inline-flex' : customStyles.highlightTag.display,
+              padding: isMobile ? '3px 10px' : customStyles.highlightTag.padding,
+            }}
+          >
+            VIBES
+          </span>
+        </h1>
+      </section>
+
+      <div
+        style={{
+          ...customStyles.layoutGrid,
+          gridTemplateColumns: isTablet ? '1fr' : customStyles.layoutGrid.gridTemplateColumns,
+          gap: isMobile ? '16px' : isTablet ? '22px' : customStyles.layoutGrid.gap,
+          marginTop: isMobile ? 0 : isTablet ? '-8px' : '-16px',
+          padding: isMobile ? '0 16px 24px' : isTablet ? '0 20px 28px' : customStyles.layoutGrid.padding,
+        }}
+      >
+        <aside style={{ ...customStyles.filters, gap: isMobile ? '16px' : customStyles.filters.gap }}>
+          <div>
+            <h3 style={{ ...customStyles.filterGroupTitle, fontSize: isMobile ? '22px' : customStyles.filterGroupTitle.fontSize }}>
+              Category
+            </h3>
+            <ul
+              className={isTablet ? 'va-scroll-row' : undefined}
+              style={{
+                ...customStyles.filterList,
+                flexDirection: isTablet ? 'row' : customStyles.filterList.flexDirection,
+                overflowX: isTablet ? 'auto' : 'visible',
+                gap: isTablet ? '8px' : customStyles.filterList.gap,
+                paddingBottom: isTablet ? '4px' : 0,
+              }}
+            >
+              {categories.map((category) => {
+                const isActive = activeCategory === category.label;
+                return (
+                  <li
+                    key={category.label}
+                    onClick={() => setActiveCategory(category.label)}
+                    style={filterOptionStyle(isActive)}
+                  >
+                    {category.label} <span>{category.count}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          <div style={{ marginTop: isTablet ? 0 : '32px' }}>
+            <h3 style={{ ...customStyles.filterGroupTitle, fontSize: isMobile ? '22px' : customStyles.filterGroupTitle.fontSize }}>
+              Sort By
+            </h3>
+            <ul
+              className={isTablet ? 'va-scroll-row' : undefined}
+              style={{
+                ...customStyles.filterList,
+                flexDirection: isTablet ? 'row' : customStyles.filterList.flexDirection,
+                overflowX: isTablet ? 'auto' : 'visible',
+                gap: isTablet ? '8px' : customStyles.filterList.gap,
+                paddingBottom: isTablet ? '4px' : 0,
+              }}
+            >
+              {sortOptions.map((option) => {
+                const isActive = activeSort === option;
+                return (
+                  <li
+                    key={option}
+                    onClick={() => setActiveSort(isActive ? '' : option)}
+                    style={filterOptionStyle(isActive)}
+                  >
+                    {option}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </aside>
+
+        <main
+          style={{
+            ...customStyles.auctionGrid,
+            gridTemplateColumns: isMobile
+              ? '1fr'
+              : isTablet
+                ? 'repeat(2, minmax(0, 1fr))'
+                : customStyles.auctionGrid.gridTemplateColumns,
+            gap: isMobile ? '14px' : isTablet ? '16px' : customStyles.auctionGrid.gap,
+          }}
+        >
+          {filteredItems.map((item) => (
+            <AuctionCard
+              key={item.id}
+              item={item}
+              bidDisplay={getBidDisplay(item)}
+              onOpenAuction={handleOpenAuction}
+              isMobile={isMobile}
+            />
+          ))}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default App;
