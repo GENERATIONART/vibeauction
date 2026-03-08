@@ -19,6 +19,7 @@ const customStyles = {
     fontFamily: "'Inter', sans-serif",
     WebkitFontSmoothing: 'antialiased',
     overflowX: 'hidden',
+    minHeight: '100dvh',
   },
   header: {
     background: '#000000',
@@ -79,7 +80,7 @@ const customStyles = {
   },
   hero: {
     position: 'relative',
-    padding: '40px 24px 80px',
+    padding: '40px 24px 40px',
     maxWidth: '1400px',
     margin: '0 auto',
   },
@@ -127,6 +128,8 @@ const customStyles = {
   },
   filterList: {
     listStyle: 'none',
+    padding: '0',
+    margin: '0',
     display: 'flex',
     flexDirection: 'column',
     gap: '4px',
@@ -545,7 +548,7 @@ const App = () => {
       )}
 
       <div style={{ ...customStyles.tickerWrap, marginBottom: isMobile ? '10px' : '14px' }}>
-        <div className="ticker-anim" style={{ paddingLeft: isMobile ? '14px' : 0 }}>
+        <div className="ticker-anim">
           {tickerItems.map((text, index) => (
             <div key={index} style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : '14px' }}>
               {text}
@@ -557,7 +560,7 @@ const App = () => {
       <section
         style={{
           ...customStyles.hero,
-          padding: isMobile ? '18px 16px 18px' : isTablet ? '20px 20px 26px' : '24px 24px 34px',
+          padding: isMobile ? '20px 16px 16px' : isTablet ? '24px 20px 24px' : '32px 24px 32px',
         }}
       >
         <h1
@@ -589,15 +592,17 @@ const App = () => {
           ...customStyles.layoutGrid,
           gridTemplateColumns: isTablet ? '1fr' : customStyles.layoutGrid.gridTemplateColumns,
           gap: isMobile ? '16px' : isTablet ? '22px' : customStyles.layoutGrid.gap,
-          marginTop: isMobile ? 0 : isTablet ? '-8px' : '-16px',
+          marginTop: 0,
           padding: isMobile ? '0 16px 24px' : isTablet ? '0 20px 28px' : customStyles.layoutGrid.padding,
         }}
       >
-        <aside style={{ ...customStyles.filters, gap: isMobile ? '16px' : customStyles.filters.gap }}>
+        <aside style={{ ...customStyles.filters, gap: isMobile ? '10px' : customStyles.filters.gap }}>
           <div>
-            <h3 style={{ ...customStyles.filterGroupTitle, fontSize: isMobile ? '22px' : customStyles.filterGroupTitle.fontSize }}>
-              Category
-            </h3>
+            {!isMobile && (
+              <h3 style={{ ...customStyles.filterGroupTitle, fontSize: isTablet ? '20px' : customStyles.filterGroupTitle.fontSize }}>
+                Category
+              </h3>
+            )}
             <ul
               className={isTablet ? 'va-scroll-row' : undefined}
               style={{
@@ -624,9 +629,11 @@ const App = () => {
           </div>
 
           <div style={{ marginTop: isTablet ? 0 : '32px' }}>
-            <h3 style={{ ...customStyles.filterGroupTitle, fontSize: isMobile ? '22px' : customStyles.filterGroupTitle.fontSize }}>
-              Sort By
-            </h3>
+            {!isMobile && (
+              <h3 style={{ ...customStyles.filterGroupTitle, fontSize: isTablet ? '20px' : customStyles.filterGroupTitle.fontSize }}>
+                Sort By
+              </h3>
+            )}
             <ul
               className={isTablet ? 'va-scroll-row' : undefined}
               style={{
