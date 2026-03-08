@@ -40,6 +40,9 @@ const customStyles = {
     letterSpacing: '0.5px',
     color: '#C8FF00',
     textDecoration: 'none',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   navLinks: {
     display: 'flex',
@@ -108,7 +111,7 @@ const customStyles = {
   },
   layoutGrid: {
     display: 'grid',
-    gridTemplateColumns: '240px 1fr',
+    gridTemplateColumns: 'minmax(220px, 240px) minmax(0, 1fr)',
     gap: '32px',
     maxWidth: '1400px',
     margin: '0 auto',
@@ -136,7 +139,7 @@ const customStyles = {
   },
   auctionGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))',
     gap: '24px',
   },
   card: {
@@ -150,6 +153,8 @@ const customStyles = {
     transition: 'transform 0.2s, box-shadow 0.2s',
     position: 'relative',
     cursor: 'pointer',
+    width: '100%',
+    minWidth: 0,
   },
   cardImageArea: {
     height: '160px',
@@ -200,11 +205,13 @@ const customStyles = {
     lineHeight: 1.1,
     marginBottom: '8px',
     textTransform: 'uppercase',
+    overflowWrap: 'anywhere',
   },
   cardMeta: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+    gap: '8px',
     marginTop: 'auto',
     borderTop: '1px solid #DDDDDD',
     paddingTop: '8px',
@@ -270,7 +277,7 @@ const tickerItems = [
   'User @VibeCheck won "Unearned Confidence" for 4,200 Aura',
 ];
 
-const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile }) => {
+const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile }) => {
   const [hovered, setHovered] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
 
@@ -299,16 +306,37 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile }) => {
         <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : '64px' }}>{item.emoji}</div>
       </div>
       <div style={{ ...customStyles.cardContent, padding: isMobile ? '14px' : '16px' }}>
-        <h2 style={{ ...customStyles.cardTitle, fontSize: isMobile ? '20px' : '22px' }}>{item.title}</h2>
-        <div style={customStyles.cardMeta}>
+        <h2 style={{ ...customStyles.cardTitle, fontSize: isSmallMobile ? '18px' : isMobile ? '20px' : '22px' }}>
+          {item.title}
+        </h2>
+        <div
+          style={{
+            ...customStyles.cardMeta,
+            flexDirection: isSmallMobile ? 'column' : 'row',
+            alignItems: isSmallMobile ? 'flex-start' : customStyles.cardMeta.alignItems,
+          }}
+        >
           <div style={customStyles.bidInfo}>
             <span style={customStyles.bidLabel}>Current Bid</span>
             <span style={customStyles.bidAmount}>{bidDisplay}</span>
           </div>
-          <span style={{ ...customStyles.timer, fontSize: isMobile ? '13px' : '14px' }}>{item.timer}</span>
+          <span
+            style={{
+              ...customStyles.timer,
+              fontSize: isMobile ? '13px' : '14px',
+              alignSelf: isSmallMobile ? 'flex-start' : 'auto',
+            }}
+          >
+            {item.timer}
+          </span>
         </div>
       </div>
-      <div style={{ ...customStyles.cardActions, padding: isMobile ? '8px 14px 14px' : '8px 16px 16px' }}>
+      <div
+        style={{
+          ...customStyles.cardActions,
+          padding: isSmallMobile ? '8px 12px 12px' : isMobile ? '8px 14px 14px' : '8px 16px 16px',
+        }}
+      >
         <button
           style={{
             ...customStyles.btnBid,
@@ -337,7 +365,7 @@ const App = () => {
   const [activeSort, setActiveSort] = useState('');
   const [navHover, setNavHover] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [viewportWidth, setViewportWidth] = useState(1200);
+  const [viewportWidth, setViewportWidth] = useState(0);
 
   const { balance, activeBids } = useVibeStore();
   const pathname = usePathname();
@@ -354,6 +382,9 @@ const App = () => {
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
+  const isSmallMobile = viewportWidth <= 420;
+  const sidePadding = isSmallMobile ? 12 : isMobile ? 16 : isTablet ? 20 : 24;
+  const headerHeight = isMobile ? 64 : 60;
   const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
 
   useEffect(() => {
@@ -376,11 +407,18 @@ const App = () => {
         animation: scroll 20s linear infinite;
         white-space: nowrap;
       }
+      .va-scroll-row {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(200, 255, 0, 0.5) transparent;
+      }
       .va-scroll-row::-webkit-scrollbar { height: 6px; }
       .va-scroll-row::-webkit-scrollbar-track { background: transparent; }
       .va-scroll-row::-webkit-scrollbar-thumb { background: rgba(200, 255, 0, 0.5); border-radius: 99px; }
       @media (max-width: 768px) {
         .ticker-anim { gap: 20px; animation-duration: 28s; }
+      }
+      @media (max-width: 420px) {
+        .ticker-anim { gap: 14px; animation-duration: 34s; }
       }
     `;
     document.head.appendChild(style);
@@ -422,8 +460,8 @@ const App = () => {
   const filterOptionStyle = (isActive) => ({
     cursor: 'pointer',
     fontWeight: 600,
-    fontSize: isMobile ? '14px' : '15px',
-    padding: isTablet ? '8px 12px' : '6px 10px',
+    fontSize: isSmallMobile ? '13px' : isMobile ? '14px' : '15px',
+    padding: isTablet ? (isSmallMobile ? '7px 10px' : '8px 12px') : '6px 10px',
     borderRadius: isTablet ? '999px' : '4px',
     transition: 'all 0.2s',
     display: isTablet ? 'inline-flex' : 'flex',
@@ -435,6 +473,9 @@ const App = () => {
     background: isActive ? '#C8FF00' : isTablet ? '#1A1A1A' : 'transparent',
     border: isTablet ? (isActive ? '2px solid #C8FF00' : '1px solid #333333') : 'none',
     transform: isActive ? 'rotate(-1deg)' : 'none',
+    flex: isTablet ? '0 0 auto' : '1 1 auto',
+    maxWidth: '100%',
+    scrollSnapAlign: isTablet ? 'start' : 'none',
   });
 
   const handleOpenAuction = (item) => {
@@ -444,16 +485,28 @@ const App = () => {
 
   return (
     <div style={customStyles.body}>
+      <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: hidden; max-width: 100%; }
+      `}</style>
       <header
         style={{
           ...customStyles.header,
-          height: isMobile ? '64px' : '60px',
-          padding: isMobile ? '0 14px' : '0 24px',
+          height: headerHeight,
+          padding: `0 ${sidePadding}px`,
         }}
       >
-        <span style={{ ...customStyles.logo, fontSize: isMobile ? '20px' : '24px' }}>Vibe Auction</span>
+        <span
+          style={{
+            ...customStyles.logo,
+            fontSize: isSmallMobile ? '17px' : isMobile ? '20px' : '24px',
+            maxWidth: isMobile ? '45%' : 'none',
+          }}
+        >
+          Vibe Auction
+        </span>
         {!isMobile && (
-          <nav style={customStyles.navLinks}>
+          <nav className="va-desktop-nav" style={customStyles.navLinks}>
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -474,32 +527,38 @@ const App = () => {
           </nav>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isSmallMobile ? '6px' : '8px', minWidth: 0 }}>
           <div
             style={{
               ...customStyles.userBalance,
-              padding: isMobile ? '4px 10px' : '4px 12px',
-              fontSize: isMobile ? '12px' : '13px',
+              padding: isSmallMobile ? '4px 8px' : isMobile ? '4px 10px' : '4px 12px',
+              fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '13px',
+              minWidth: 0,
+              whiteSpace: 'nowrap',
+              fontVariantNumeric: 'tabular-nums',
             }}
           >
-            <span>{balanceDisplay}</span> AURA
+            <span>{balanceDisplay}</span>
+            {!isSmallMobile && <span>AURA</span>}
           </div>
           {isMobile && (
             <button
               type="button"
+              className="va-hamburger"
               onClick={() => setMobileMenuOpen((open) => !open)}
               style={{
-                width: '38px',
-                height: '38px',
+                width: isSmallMobile ? '34px' : '38px',
+                height: isSmallMobile ? '34px' : '38px',
                 borderRadius: '6px',
                 border: '2px solid #C8FF00',
                 background: '#0D0D0D',
                 color: '#C8FF00',
-                fontSize: '20px',
+                fontSize: isSmallMobile ? '18px' : '20px',
                 lineHeight: 1,
                 cursor: 'pointer',
               }}
               aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? '✕' : '☰'}
             </button>
@@ -512,7 +571,7 @@ const App = () => {
           style={{
             background: '#000000',
             borderBottom: '2px solid #C8FF00',
-            padding: '10px 14px 14px',
+            padding: `10px ${sidePadding}px 14px`,
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
@@ -533,7 +592,7 @@ const App = () => {
                   padding: '10px 12px',
                   borderRadius: '6px',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: isSmallMobile ? '12px' : '13px',
                   textTransform: 'uppercase',
                   letterSpacing: '0.3px',
                   textDecoration: 'none',
@@ -550,7 +609,10 @@ const App = () => {
       <div style={{ ...customStyles.tickerWrap, marginBottom: isMobile ? '10px' : '14px' }}>
         <div className="ticker-anim">
           {tickerItems.map((text, index) => (
-            <div key={index} style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : '14px' }}>
+            <div
+              key={index}
+              style={{ ...customStyles.tickerItem, fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '14px' }}
+            >
               {text}
             </div>
           ))}
@@ -560,26 +622,42 @@ const App = () => {
       <section
         style={{
           ...customStyles.hero,
-          padding: isMobile ? '20px 16px 16px' : isTablet ? '24px 20px 24px' : '32px 24px 32px',
+          padding: isMobile ? `20px ${sidePadding}px 16px` : isTablet ? `24px ${sidePadding}px 24px` : '32px 24px 32px',
         }}
       >
         <h1
+          className="va-hero-title"
           style={{
             ...customStyles.heroTitle,
-            fontSize: isMobile ? '44px' : isTablet ? '56px' : viewportWidth <= 1440 ? '70px' : customStyles.heroTitle.fontSize,
+            fontSize: isSmallMobile
+              ? 'clamp(36px, 11vw, 42px)'
+              : isMobile
+                ? 'clamp(42px, 10vw, 50px)'
+                : isTablet
+                  ? 'clamp(52px, 8vw, 62px)'
+                  : viewportWidth <= 1440
+                    ? '70px'
+                    : customStyles.heroTitle.fontSize,
+            lineHeight: isSmallMobile ? 0.95 : customStyles.heroTitle.lineHeight,
             maxWidth: isMobile ? '100%' : customStyles.heroTitle.maxWidth,
           }}
         >
-          Browse <br />
-          Auction{' '}
+          {isSmallMobile ? (
+            <>Browse Auction </>
+          ) : (
+            <>
+              Browse <br />
+              Auction{' '}
+            </>
+          )}
           <span
             style={{
               ...customStyles.highlightTag,
-              fontSize: isMobile ? '14px' : customStyles.highlightTag.fontSize,
+              fontSize: isSmallMobile ? '12px' : isMobile ? '14px' : customStyles.highlightTag.fontSize,
               marginLeft: isMobile ? 0 : customStyles.highlightTag.marginLeft,
               marginTop: isMobile ? '8px' : 0,
               display: isMobile ? 'inline-flex' : customStyles.highlightTag.display,
-              padding: isMobile ? '3px 10px' : customStyles.highlightTag.padding,
+              padding: isSmallMobile ? '3px 8px' : isMobile ? '3px 10px' : customStyles.highlightTag.padding,
             }}
           >
             VIBES
@@ -588,15 +666,16 @@ const App = () => {
       </section>
 
       <div
+        className="va-layout-grid"
         style={{
           ...customStyles.layoutGrid,
           gridTemplateColumns: isTablet ? '1fr' : customStyles.layoutGrid.gridTemplateColumns,
           gap: isMobile ? '16px' : isTablet ? '22px' : customStyles.layoutGrid.gap,
           marginTop: 0,
-          padding: isMobile ? '0 16px 24px' : isTablet ? '0 20px 28px' : customStyles.layoutGrid.padding,
+          padding: isMobile ? `0 ${sidePadding}px 24px` : isTablet ? `0 ${sidePadding}px 28px` : customStyles.layoutGrid.padding,
         }}
       >
-        <aside style={{ ...customStyles.filters, gap: isMobile ? '10px' : customStyles.filters.gap }}>
+        <aside style={{ ...customStyles.filters, gap: isMobile ? '10px' : customStyles.filters.gap, minWidth: 0 }}>
           <div>
             {!isMobile && (
               <h3 style={{ ...customStyles.filterGroupTitle, fontSize: isTablet ? '20px' : customStyles.filterGroupTitle.fontSize }}>
@@ -604,13 +683,15 @@ const App = () => {
               </h3>
             )}
             <ul
-              className={isTablet ? 'va-scroll-row' : undefined}
+              className={`va-filter-list${isTablet ? ' va-scroll-row' : ''}`}
               style={{
                 ...customStyles.filterList,
                 flexDirection: isTablet ? 'row' : customStyles.filterList.flexDirection,
                 overflowX: isTablet ? 'auto' : 'visible',
                 gap: isTablet ? '8px' : customStyles.filterList.gap,
                 paddingBottom: isTablet ? '4px' : 0,
+                scrollSnapType: isTablet ? 'x proximity' : 'none',
+                WebkitOverflowScrolling: 'touch',
               }}
             >
               {categories.map((category) => {
@@ -635,13 +716,15 @@ const App = () => {
               </h3>
             )}
             <ul
-              className={isTablet ? 'va-scroll-row' : undefined}
+              className={`va-filter-list${isTablet ? ' va-scroll-row' : ''}`}
               style={{
                 ...customStyles.filterList,
                 flexDirection: isTablet ? 'row' : customStyles.filterList.flexDirection,
                 overflowX: isTablet ? 'auto' : 'visible',
                 gap: isTablet ? '8px' : customStyles.filterList.gap,
                 paddingBottom: isTablet ? '4px' : 0,
+                scrollSnapType: isTablet ? 'x proximity' : 'none',
+                WebkitOverflowScrolling: 'touch',
               }}
             >
               {sortOptions.map((option) => {
@@ -661,6 +744,7 @@ const App = () => {
         </aside>
 
         <main
+          className="va-auction-grid"
           style={{
             ...customStyles.auctionGrid,
             gridTemplateColumns: isMobile
@@ -669,6 +753,8 @@ const App = () => {
                 ? 'repeat(2, minmax(0, 1fr))'
                 : customStyles.auctionGrid.gridTemplateColumns,
             gap: isMobile ? '14px' : isTablet ? '16px' : customStyles.auctionGrid.gap,
+            width: '100%',
+            minWidth: 0,
           }}
         >
           {filteredItems.map((item) => (
@@ -678,6 +764,7 @@ const App = () => {
               bidDisplay={getBidDisplay(item)}
               onOpenAuction={handleOpenAuction}
               isMobile={isMobile}
+              isSmallMobile={isSmallMobile}
             />
           ))}
         </main>
