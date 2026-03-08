@@ -809,8 +809,14 @@ export default function MintPage() {
             </span>
           </h1>
 
-          <form style={customStyles.formGrid} onSubmit={handleSubmit}>
-            <div style={customStyles.inputGroupFullWidth}>
+          <form
+            style={{
+              ...customStyles.formGrid,
+              gridTemplateColumns: isMobile ? '1fr' : customStyles.formGrid.gridTemplateColumns,
+            }}
+            onSubmit={handleSubmit}
+          >
+            <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
               <label style={customStyles.label}>{isConfession ? 'Confession Title' : 'Vibe Name'}</label>
               <input
                 type="text"
@@ -823,7 +829,7 @@ export default function MintPage() {
               />
             </div>
 
-            <div style={customStyles.inputGroupFullWidth}>
+            <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
               <label style={customStyles.label}>
                 Cover Image{' '}
                 <span style={{ fontSize: '12px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 700, textTransform: 'none' }}>
@@ -956,7 +962,7 @@ export default function MintPage() {
               </>
             )}
 
-            <div style={customStyles.inputGroupFullWidth}>
+            <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
               <label style={customStyles.label}>{isConfession ? 'Confession' : 'Manifesto (Optional)'}</label>
               <textarea
                 style={{ ...getInputStyle('details'), height: '130px', resize: 'none' }}
@@ -970,7 +976,7 @@ export default function MintPage() {
               <span style={customStyles.helperText}>{280 - formData.details.length} characters left</span>
             </div>
 
-            <div style={customStyles.inputGroupFullWidth}>
+            <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
               <button
                 type="submit"
                 style={{
