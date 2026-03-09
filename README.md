@@ -20,4 +20,14 @@ Migrations are in `supabase/migrations/`
 
 ## Deployment
 
-TBD
+### Vercel Deployment Troubleshooting
+
+- Ensure Node.js version is set to 18.x
+- Add `vercel.json` for custom configuration
+- Set environment variables in Vercel project settings
+- Verify build scripts in `package.json`
+
+Potential build issues:
+- Check Vercel build logs
+- Confirm all dependencies are installed
+- Verify environment variable configurations
