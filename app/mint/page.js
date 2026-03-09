@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
 
 const categoryOptions = [
@@ -425,6 +425,7 @@ const truncate = (value, max) => {
 
 export default function MintPage() {
   const pathname = usePathname();
+  const router = useRouter();
   const { balance, confessions, mintedVibes, mintConfession, mintVibe } = useVibeStore();
 
   const [viewportWidth, setViewportWidth] = useState(1200);
@@ -645,6 +646,12 @@ export default function MintPage() {
 
       setSubmitted(true);
       setSuccess(`Vibe listed in ${formData.category}.`);
+
+      if (minted.slug) {
+        setTimeout(() => router.push(`/auction/${minted.slug}`), 1200);
+        return;
+      }
+
       setTimeout(() => setSubmitted(false), 1800);
 
       setFormData((previous) => ({

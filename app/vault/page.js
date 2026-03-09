@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
+import { useAuth } from '../state/auth-store';
 
 const customStyles = {
   page: {
@@ -675,6 +676,8 @@ const WalletLogTab = ({ isMobile, walletLog, balance }) => {
 
 export default function VaultPage() {
   const { balance, vaultItems, activeBids, walletLog } = useVibeStore();
+  const { user } = useAuth();
+  const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
   const [activeTab, setActiveTab] = useState('trophies');
   const [navHover, setNavHover] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -898,7 +901,9 @@ export default function VaultPage() {
                 fontSize: isMobile ? '34px' : (isTablet ? '46px' : customStyles.profileH1.fontSize),
               }}
             >
-              @GhostWriter
+              <Link href={`/profile/${username}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                @{username}
+              </Link>
             </h1>
             <div style={{ ...customStyles.profileTag, fontSize: isMobile ? '12px' : customStyles.profileTag.fontSize }}>
               Vibe Master Lvl. 42

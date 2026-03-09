@@ -167,6 +167,33 @@
       "createdAt": 1772650270426
     }
   ],
-  "mintedVibes": [],
+  "mintedVibes": [
+    {
+      "id": "mint-a-large-floppy-dildo-flying-through-the-air-feelings-1773080507490",
+      "slug": "a-large-floppy-dildo-flying-through-the-air-feelings-1773080507490",
+      "name": "A large floppy dildo Flying through the air",
+      "category": "Feelings",
+      "emoji": "💸",
+      "manifesto": "Feels good when it smacks you in the face.",
+      "duration": "24 Hours",
+      "startingPrice": 100,
+      "isAnonymous": false,
+      "author": null,
+      "createdAt": 1773080507490
+    },
+    {
+      "id": "mint-flying-dildo-moments-1773080288814",
+      "slug": "flying-dildo-moments-1773080288814",
+      "name": "Flying Dildo",
+      "category": "Moments",
+      "emoji": "✨",
+      "manifesto": "Flying Dildos are pretty much the most amazing thing in the world especially when it smacks you in the face or it hits you when you ahve your moth already open",
+      "duration": "24 Hours",
+      "startingPrice": 100,
+      "isAnonymous": false,
+      "author": null,
+      "createdAt": 1773080288814
+    }
+  ],
   "processedStripeSessions": {}
 }

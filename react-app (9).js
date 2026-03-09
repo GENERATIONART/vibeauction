@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
+import { useAuth } from './app/state/auth-store';
 import { auctionItems } from './lib/auction-items.js';
 
 const normalize = (value) =>
@@ -368,6 +369,8 @@ const App = () => {
   const [viewportWidth, setViewportWidth] = useState(0);
 
   const { balance, activeBids } = useVibeStore();
+  const { user, signOut } = useAuth();
+  const userHandle = user?.user_metadata?.username || user?.email?.split('@')[0] || null;
   const pathname = usePathname();
   const router = useRouter();
 
@@ -528,6 +531,69 @@ const App = () => {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: isSmallMobile ? '6px' : '8px', minWidth: 0 }}>
+          {!isMobile && user && (
+            <>
+              <Link
+                href={`/profile/${userHandle}`}
+                style={{
+                  ...customStyles.navItem,
+                  color: '#C8FF00',
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                @{userHandle}
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #444',
+                  color: '#AAAAAA',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Sign Out
+              </button>
+            </>
+          )}
+          {!isMobile && !user && (
+            <>
+              <Link
+                href="/login"
+                style={{
+                  ...customStyles.navItem,
+                  color: pathname === '/login' ? '#C8FF00' : '#FFFFFF',
+                  fontSize: '13px',
+                }}
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                style={{
+                  background: '#C8FF00',
+                  color: '#000000',
+                  padding: '5px 12px',
+                  borderRadius: '4px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
           <div
             style={{
               ...customStyles.userBalance,
@@ -602,6 +668,94 @@ const App = () => {
               </Link>
             );
           })}
+          {!user && (
+            <>
+              <Link
+                href="/login"
+                style={{
+                  textAlign: 'left',
+                  width: '100%',
+                  border: pathname === '/login' ? '2px solid #C8FF00' : '1px solid #2A2A2A',
+                  background: pathname === '/login' ? '#1A1A1A' : '#121212',
+                  color: pathname === '/login' ? '#C8FF00' : '#FFFFFF',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: isSmallMobile ? '12px' : '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                  textDecoration: 'none',
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                style={{
+                  textAlign: 'left',
+                  width: '100%',
+                  border: '2px solid #C8FF00',
+                  background: '#C8FF00',
+                  color: '#000000',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: isSmallMobile ? '12px' : '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                  textDecoration: 'none',
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
+          {user && (
+            <>
+              <Link
+                href={`/profile/${userHandle}`}
+                style={{
+                  textAlign: 'left',
+                  width: '100%',
+                  border: '2px solid #C8FF00',
+                  background: '#1A1A1A',
+                  color: '#C8FF00',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: isSmallMobile ? '12px' : '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                  textDecoration: 'none',
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                @{userHandle}
+              </Link>
+              <button
+                type="button"
+                onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                style={{
+                  textAlign: 'left',
+                  width: '100%',
+                  border: '1px solid #444',
+                  background: '#121212',
+                  color: '#AAAAAA',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: isSmallMobile ? '12px' : '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                  cursor: 'pointer',
+                }}
+              >
+                Sign Out
+              </button>
+            </>
+          )}
         </nav>
       )}
 
