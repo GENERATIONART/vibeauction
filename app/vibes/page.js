@@ -307,13 +307,15 @@ const customStyles = {
 
 const TokenCard = ({ item, isMobile }) => {
   const [hovered, setHovered] = useState(false);
+  const hasAuctionPage = Boolean(item.slug);
 
-  return (
+  const inner = (
     <article
       style={{
         ...customStyles.card,
         transform: hovered && !isMobile ? 'translate(-2px, -2px)' : 'none',
         boxShadow: hovered && !isMobile ? '8px 8px 0px #C8FF00' : customStyles.card.boxShadow,
+        cursor: hasAuctionPage ? 'pointer' : 'default',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -346,12 +348,40 @@ const TokenCard = ({ item, isMobile }) => {
         </div>
       </div>
       <div style={customStyles.cardActionWrap}>
-        <button type="button" style={customStyles.cardActionBtn}>
-          View Metadata
-        </button>
+        <div
+          style={{
+            ...customStyles.cardActionBtn,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: hasAuctionPage
+              ? (hovered ? '#C8FF00' : '#000000')
+              : '#1A1A1A',
+            color: hasAuctionPage
+              ? (hovered ? '#000000' : '#C8FF00')
+              : '#444444',
+            transition: 'all 0.15s',
+            fontFamily: "'Anton', sans-serif",
+            fontSize: isMobile ? '14px' : '16px',
+            padding: '11px',
+            textTransform: 'uppercase',
+          }}
+        >
+          {hasAuctionPage ? 'View Auction →' : 'Off Auction'}
+        </div>
       </div>
     </article>
   );
+
+  if (hasAuctionPage) {
+    return (
+      <Link href={`/auction/${item.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return inner;
 };
 
 export default function VibesPage() {
@@ -409,7 +439,7 @@ export default function VibesPage() {
       emoji: item.emoji || '✨',
       category: item.category || 'Vault',
       source: 'Vault',
-      owner: '@GhostWriter',
+      owner: 'Unknown',
       description: `Won on ${item.wonDate || 'unknown date'}. Currently kept off auction.`,
       valueLabel: `${formatAura(item.price)} AURA`,
       createdAt: Number.isFinite(item.createdAt) ? item.createdAt : 0,
@@ -421,6 +451,7 @@ export default function VibesPage() {
       const isConfession = normalize(item.category) === 'confessions';
       return {
         id: `minted-${item.id || normalize(item.name)}`,
+        slug: item.slug || null,
         name: item.name || 'Untitled Vibe',
         emoji: item.emoji || (isConfession ? '🕵️' : '✨'),
         category: item.category || 'Minted',

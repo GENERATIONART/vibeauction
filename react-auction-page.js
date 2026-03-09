@@ -60,16 +60,7 @@ const splitTitle = (title) => {
   return [words.slice(0, midpoint).join(' '), words.slice(midpoint).join(' ')];
 };
 
-const makeInitialBidHistory = (startingBid) => {
-  const base = Math.max(100, safeBid(startingBid, 100));
-  const decrement = Math.max(25, Math.round(base * 0.05));
-  return [
-    { id: 1, user: '@VibeCheck', time: '2 minutes ago', amount: base },
-    { id: 2, user: '@GhostWriter', time: '5 minutes ago', amount: Math.max(1, base - decrement) },
-    { id: 3, user: '@EarlyBird', time: '12 minutes ago', amount: Math.max(1, base - decrement * 2) },
-    { id: 4, user: '@NoFOMO', time: '1 hour ago', amount: Math.max(1, base - decrement * 3) },
-  ];
-};
+const makeInitialBidHistory = () => [];
 
 const customStyles = {
   body: {
@@ -452,6 +443,11 @@ const BidHistory = ({ bids }) => (
       </span>
       <span style={{ fontSize: '11px', color: '#555555' }}>{bids.length} Total</span>
     </div>
+    {bids.length === 0 && (
+      <div style={{ padding: '24px 16px', textAlign: 'center', color: '#444', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
+        No bids yet — be the first
+      </div>
+    )}
     <ul style={customStyles.historyList}>
       {bids.map((bid, index) => (
         <li

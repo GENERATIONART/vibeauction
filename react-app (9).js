@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import { useAuth } from './app/state/auth-store';
-import { auctionItems } from './lib/auction-items.js';
 
 const normalize = (value) =>
   String(value || '')
@@ -258,24 +257,15 @@ const customStyles = {
   },
 };
 
-const categories = [
-  { label: 'All Vibes', count: 241 },
-  { label: 'Feelings', count: 42 },
-  { label: 'Permissions', count: 18 },
-  { label: 'Moments', count: 86 },
-  { label: 'Powers', count: 12 },
-  { label: 'Excuses', count: 33 },
-];
-
 const sortOptions = ['Ending Soon', 'Most Absurd', 'Highest Aura', 'Newest'];
 
-const tickerItems = [
-  'User @GhostWriter bid 500 Aura on "Monday Optimism"',
-  'NEW LISTING: "The smell of old books" starting at 100 Aura',
-  'User @VibeCheck won "Unearned Confidence" for 4,200 Aura',
-  'User @GhostWriter bid 500 Aura on "Monday Optimism"',
-  'NEW LISTING: "The smell of old books" starting at 100 Aura',
-  'User @VibeCheck won "Unearned Confidence" for 4,200 Aura',
+const staticTickerItems = [
+  '⚡ The world\'s first auction house for things that don\'t exist',
+  '💫 Mint your feelings — tokenize your vibes',
+  '🔥 Place bids in AURA and own what doesn\'t exist',
+  '✨ New vibes minted by the community every day',
+  '⚡ The world\'s first auction house for things that don\'t exist',
+  '💫 Mint your feelings — tokenize your vibes',
 ];
 
 const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile }) => {
@@ -368,7 +358,7 @@ const App = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
 
-  const { balance, activeBids } = useVibeStore();
+  const { balance, activeBids, mintedVibes } = useVibeStore();
   const { user, signOut } = useAuth();
   const userHandle = user?.user_metadata?.username || user?.email?.split('@')[0] || null;
   const pathname = usePathname();
@@ -447,10 +437,45 @@ const App = () => {
     return lookup;
   }, [activeBids]);
 
-  const filteredItems =
+  const liveVibes = useMemo(() =>
+    (Array.isArray(mintedVibes) ? mintedVibes : []).map((v) => ({
+      id: v.id || v.slug,
+      slug: v.slug || v.id,
+      emoji: v.emoji || '✨',
+      title: v.name || 'Untitled Vibe',
+      bid: v.startingPrice || 0,
+      timer: 'Live',
+      badge: 'Live',
+      category: v.category || 'Vibes',
+    })),
+    [mintedVibes]
+  );
+
+  const categories = useMemo(() => {
+    const catMap = {};
+    liveVibes.forEach((v) => {
+      catMap[v.category] = (catMap[v.category] || 0) + 1;
+    });
+    return [
+      { label: 'All Vibes', count: liveVibes.length },
+      ...Object.entries(catMap).map(([label, count]) => ({ label, count })),
+    ];
+  }, [liveVibes]);
+
+  const filteredItems = useMemo(() =>
     activeCategory === 'All Vibes'
-      ? auctionItems
-      : auctionItems.filter((item) => item.category === activeCategory);
+      ? liveVibes
+      : liveVibes.filter((item) => item.category === activeCategory),
+    [liveVibes, activeCategory]
+  );
+
+  const tickerItems = useMemo(() => {
+    if (liveVibes.length > 0) {
+      const items = liveVibes.map((v) => `NEW LISTING: "${v.title}" starting at ${Number(v.bid).toLocaleString()} AURA`);
+      return [...items, ...items];
+    }
+    return staticTickerItems;
+  }, [liveVibes]);
 
   const getBidDisplay = (item) => {
     const key = normalize(item.slug || item.title);
@@ -910,16 +935,37 @@ const App = () => {
             minWidth: 0,
           }}
         >
-          {filteredItems.map((item) => (
-            <AuctionCard
-              key={item.id}
-              item={item}
-              bidDisplay={getBidDisplay(item)}
-              onOpenAuction={handleOpenAuction}
-              isMobile={isMobile}
-              isSmallMobile={isSmallMobile}
-            />
-          ))}
+          {filteredItems.length === 0 ? (
+            <div style={{
+              gridColumn: '1 / -1',
+              border: '2px dashed #2A2A2A',
+              padding: isMobile ? '40px 20px' : '64px 32px',
+              textAlign: 'center',
+              color: '#555',
+            }}>
+              <div style={{ fontSize: isMobile ? '48px' : '64px', marginBottom: '16px' }}>⚡</div>
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '24px' : '32px', textTransform: 'uppercase', color: '#444', marginBottom: '8px' }}>
+                No Vibes Listed Yet
+              </div>
+              <div style={{ fontSize: '14px', color: '#555', marginBottom: '24px' }}>
+                Be the first to mint and auction a vibe.
+              </div>
+              <Link href="/mint" style={{ background: '#C8FF00', color: '#000', padding: '12px 24px', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', textDecoration: 'none' }}>
+                Sell a Feeling →
+              </Link>
+            </div>
+          ) : (
+            filteredItems.map((item) => (
+              <AuctionCard
+                key={item.id}
+                item={item}
+                bidDisplay={getBidDisplay(item)}
+                onOpenAuction={handleOpenAuction}
+                isMobile={isMobile}
+                isSmallMobile={isSmallMobile}
+              />
+            ))
+          )}
         </main>
       </div>
     </div>

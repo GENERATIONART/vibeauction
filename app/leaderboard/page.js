@@ -358,68 +358,33 @@ const ContestedItem = ({ name, bids, isMobile }) => (
   </div>
 );
 
-const Podium = ({ isMobile }) => {
-  const placeWidth = isMobile ? '100%' : customStyles.podiumPlace.width;
-
-  return (
-    <section
-      style={{
-        ...customStyles.podiumSection,
-        flexDirection: isMobile ? 'column' : 'row',
-        alignItems: isMobile ? 'stretch' : customStyles.podiumSection.alignItems,
-        height: isMobile ? 'auto' : customStyles.podiumSection.height,
-        gap: isMobile ? '18px' : customStyles.podiumSection.gap,
-        marginBottom: isMobile ? '36px' : customStyles.podiumSection.marginBottom,
-      }}
-    >
-      <div style={{ ...customStyles.podiumPlace, width: placeWidth, animation: 'float 4s ease-in-out 0.5s infinite' }}>
-        <div style={{ ...customStyles.avatarCircle, width: isMobile ? '96px' : '120px', height: isMobile ? '96px' : '120px', fontSize: isMobile ? '40px' : '48px' }}>🎭</div>
-        <div style={customStyles.podiumName}>@VibeCheck</div>
-        <div style={customStyles.userBadges}>
-          <span style={customStyles.badge}>Mood Mogul</span>
-        </div>
-        <div style={{ ...customStyles.podiumBlock, height: isMobile ? '120px' : '160px' }}>
-          <span style={{ ...customStyles.rankNumber, fontSize: isMobile ? '52px' : customStyles.rankNumber.fontSize }}>2</span>
-          <span style={{ ...customStyles.podiumAura, fontSize: isMobile ? '20px' : customStyles.podiumAura.fontSize }}>42,800 AURA</span>
-        </div>
+const Podium = ({ isMobile }) => (
+  <section
+    style={{
+      ...customStyles.podiumSection,
+      height: isMobile ? 'auto' : customStyles.podiumSection.height,
+      marginBottom: isMobile ? '36px' : customStyles.podiumSection.marginBottom,
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <div style={{
+      border: '2px dashed #2A2A2A',
+      padding: isMobile ? '40px 20px' : '60px 40px',
+      textAlign: 'center',
+      color: '#555',
+      width: '100%',
+    }}>
+      <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '48px' : '72px', color: '#1A1A1A', marginBottom: '16px' }}>🏆</div>
+      <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '22px' : '28px', textTransform: 'uppercase', color: '#333', marginBottom: '8px' }}>
+        No Top Bidders Yet
       </div>
-
-      <div style={{ ...customStyles.podiumPlace, width: placeWidth, animation: 'float 4s ease-in-out infinite', zIndex: 2 }}>
-        <div
-          style={{
-            ...customStyles.avatarCircleFirst,
-            width: isMobile ? '112px' : customStyles.avatarCircleFirst.width,
-            height: isMobile ? '112px' : customStyles.avatarCircleFirst.height,
-            fontSize: isMobile ? '50px' : customStyles.avatarCircleFirst.fontSize,
-          }}
-        >
-          👑
-        </div>
-        <div style={{ ...customStyles.podiumName, fontSize: isMobile ? '20px' : '22px' }}>@AuraKing</div>
-        <div style={customStyles.userBadges}>
-          <span style={customStyles.badge}>Vibe Hoarder</span>
-          <span style={customStyles.badgeLegendary}>Legendary</span>
-        </div>
-        <div style={{ ...customStyles.podiumBlock, height: isMobile ? '150px' : '220px' }}>
-          <span style={{ ...customStyles.rankNumber, fontSize: isMobile ? '72px' : '92px' }}>1</span>
-          <span style={{ ...customStyles.podiumAura, fontSize: isMobile ? '24px' : '32px' }}>89,250 AURA</span>
-        </div>
+      <div style={{ fontSize: '14px', color: '#444' }}>
+        Start bidding to claim your spot on the podium.
       </div>
-
-      <div style={{ ...customStyles.podiumPlace, width: placeWidth, animation: 'float 4s ease-in-out 1s infinite' }}>
-        <div style={{ ...customStyles.avatarCircle, width: isMobile ? '96px' : '120px', height: isMobile ? '96px' : '120px', fontSize: isMobile ? '40px' : '48px' }}>🛸</div>
-        <div style={customStyles.podiumName}>@GhostWriter</div>
-        <div style={customStyles.userBadges}>
-          <span style={customStyles.badge}>Quiet Collector</span>
-        </div>
-        <div style={{ ...customStyles.podiumBlock, height: isMobile ? '100px' : '120px' }}>
-          <span style={{ ...customStyles.rankNumber, fontSize: isMobile ? '52px' : customStyles.rankNumber.fontSize }}>3</span>
-          <span style={{ ...customStyles.podiumAura, fontSize: isMobile ? '20px' : customStyles.podiumAura.fontSize }}>31,400 AURA</span>
-        </div>
-      </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);
 
 export default function LeaderboardPage() {
   const { balance } = useVibeStore();
@@ -441,19 +406,8 @@ export default function LeaderboardPage() {
     { label: 'Top Up', href: '/top-up' },
   ];
 
-  const leaderRows = [
-    { rank: 4, username: '@SerotoninSeeker', badgeLabel: 'Vibe Hoarder', score: '28,500' },
-    { rank: 5, username: '@MetaPhysical', badgeLabel: 'Mood Mogul', score: '24,200' },
-    { rank: 6, username: '@FeelingRich', badgeLabel: 'Early Adopter', score: '19,800' },
-    { rank: 7, username: '@NoBadVibes', badgeLabel: 'Vibe Hoarder', score: '15,400' },
-  ];
-
-  const contestedItems = [
-    { name: 'Fart went wrong<br>public recovery arc', bids: 142 },
-    { name: 'Accidental pasta moan<br>in public', bids: 98 },
-    { name: '\"That\'s what she said\"<br>in a work call', bids: 84 },
-    { name: 'Gym \"harder\" moment<br>instant regret', bids: 76 },
-  ];
+  const leaderRows = [];
+  const contestedItems = [];
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -627,14 +581,11 @@ export default function LeaderboardPage() {
 
       <div style={{ ...customStyles.tickerWrap, padding: isMobile ? '6px 0' : customStyles.tickerWrap.padding }}>
         <div style={{ ...customStyles.ticker, gap: isMobile ? '18px' : customStyles.ticker.gap }}>
-          <div style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : customStyles.tickerItem.fontSize }}>
-            User @AuraHunter is now a <span style={{ textDecoration: 'underline' }}>Mood Mogul</span>
-          </div>
-          <div style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : customStyles.tickerItem.fontSize }}>Weekly reset: 48h remaining to claim top spot</div>
-          <div style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : customStyles.tickerItem.fontSize }}>Record broken: "Eternal Sunday" sold for 12,500 Aura</div>
-          <div style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : customStyles.tickerItem.fontSize }}>
-            User @AuraHunter is now a <span style={{ textDecoration: 'underline' }}>Mood Mogul</span>
-          </div>
+          {['⚡ Bid AURA to climb the leaderboard', '🏆 Top bidders win legendary status', '💫 Collect rare vibes — build your reputation', '⚡ Bid AURA to climb the leaderboard', '🏆 Top bidders win legendary status', '💫 Collect rare vibes — build your reputation'].map((text, i) => (
+            <div key={i} style={{ ...customStyles.tickerItem, fontSize: isMobile ? '12px' : customStyles.tickerItem.fontSize }}>
+              {text}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -692,13 +643,19 @@ export default function LeaderboardPage() {
               Top Aura Spenders
               <span style={customStyles.sectionTitleLine} />
             </h2>
-            <table style={customStyles.leaderTable}>
-              <tbody>
-                {leaderRows.map((row) => (
-                  <LeaderRow key={row.rank} {...row} isMobile={isMobile} />
-                ))}
-              </tbody>
-            </table>
+            {leaderRows.length === 0 ? (
+              <div style={{ border: '2px dashed #2A2A2A', padding: '32px', textAlign: 'center', color: '#444', fontWeight: 700, textTransform: 'uppercase', fontSize: '13px' }}>
+                No bidders ranked yet
+              </div>
+            ) : (
+              <table style={customStyles.leaderTable}>
+                <tbody>
+                  {leaderRows.map((row) => (
+                    <LeaderRow key={row.rank} {...row} isMobile={isMobile} />
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           <div>
@@ -706,11 +663,17 @@ export default function LeaderboardPage() {
               Most Contested
               <span style={customStyles.sectionTitleLine} />
             </h2>
-            <div style={customStyles.contestedList}>
-              {contestedItems.map((item, idx) => (
-                <ContestedItem key={idx} name={item.name} bids={item.bids} isMobile={isMobile} />
-              ))}
-            </div>
+            {contestedItems.length === 0 ? (
+              <div style={{ border: '2px dashed #2A2A2A', padding: '32px', textAlign: 'center', color: '#444', fontWeight: 700, textTransform: 'uppercase', fontSize: '13px' }}>
+                No contested vibes yet
+              </div>
+            ) : (
+              <div style={customStyles.contestedList}>
+                {contestedItems.map((item, idx) => (
+                  <ContestedItem key={idx} name={item.name} bids={item.bids} isMobile={isMobile} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

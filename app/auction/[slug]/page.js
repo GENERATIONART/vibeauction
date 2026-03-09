@@ -11,6 +11,38 @@ export function generateStaticParams() {
 // Allow slugs beyond the static list (minted vibes)
 export const dynamicParams = true;
 
+export async function generateMetadata({ params }) {
+  const slug = params?.slug;
+  const staticVibe = getAuctionItemBySlug(slug);
+  const vibe = staticVibe ?? (await getMintedVibeBySlug(slug));
+
+  if (!vibe) {
+    return { title: 'Auction Not Found' };
+  }
+
+  const title = staticVibe ? staticVibe.title : vibe.name;
+  const emoji = staticVibe ? staticVibe.emoji : (vibe.emoji || '✨');
+  const bid = staticVibe ? staticVibe.bid : vibe.startingPrice;
+  const description = `${emoji} Bid now on "${title}" — current bid ${Number(bid || 0).toLocaleString()} AURA. Live on Vibe Auction.`;
+  const ogImage = `/api/og/auction?slug=${encodeURIComponent(slug)}`;
+
+  return {
+    title: `${emoji} ${title}`,
+    description,
+    openGraph: {
+      title: `${emoji} ${title} — Live Auction`,
+      description,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${emoji} ${title} — Live Auction`,
+      description,
+      images: [ogImage],
+    },
+  };
+}
+
 export default async function Page({ params }) {
   const slug = params?.slug;
 

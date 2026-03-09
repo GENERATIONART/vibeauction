@@ -1,0 +1,16 @@
+{
+  "name": "Vibe Auction",
+  "short_name": "VibeAuction",
+  "description": "The world's first auction house for things that don't exist.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0D0D",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

@@ -317,11 +317,7 @@ const STARS = (score) => {
   return '★'.repeat(full) + '☆'.repeat(5 - full);
 };
 
-const MOCK_REVIEWS = [
-  { id: 1, rater: '@VibeCheck', stars: 5, text: 'Absolute legend. Delivered the vibe exactly as described. 10/10 would bid against again.' },
-  { id: 2, rater: '@MoodRing99', stars: 4, text: 'Solid seller. The Monday Optimism was a bit stale but still usable.' },
-  { id: 3, rater: '@DeepFeels', stars: 5, text: 'The Unearned Confidence vibe changed my life. No notes.' },
-];
+const MOCK_REVIEWS = [];
 
 export default function ProfilePage() {
   const { username } = useParams();
@@ -729,17 +725,21 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr 1fr', gap: '12px' }}>
-              {MOCK_REVIEWS.map((review) => (
-                <div key={review.id} style={S.reviewCard}>
-                  <div style={S.reviewMeta}>
-                    <span style={S.reviewHandle}>{review.rater}</span>
-                    <span style={S.reviewStars}>{'★'.repeat(review.stars)}{'☆'.repeat(5 - review.stars)}</span>
+            {MOCK_REVIEWS.length === 0 ? (
+              <div style={S.emptyState}>No reviews yet</div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr 1fr', gap: '12px' }}>
+                {MOCK_REVIEWS.map((review) => (
+                  <div key={review.id} style={S.reviewCard}>
+                    <div style={S.reviewMeta}>
+                      <span style={S.reviewHandle}>{review.rater}</span>
+                      <span style={S.reviewStars}>{'★'.repeat(review.stars)}{'☆'.repeat(5 - review.stars)}</span>
+                    </div>
+                    <p style={S.reviewText}>{review.text}</p>
                   </div>
-                  <p style={S.reviewText}>{review.text}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

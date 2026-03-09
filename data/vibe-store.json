@@ -1,173 +1,23 @@
 {
-  "balance": 2450,
-  "activeBids": [
-    {
-      "id": "the-extra-fry-in-the-bag",
-      "emoji": "🧅",
-      "name": "The mystery onion ring hiding in your fries",
-      "amount": 470,
-      "status": "HIGHEST",
-      "updatedAt": 1772990467076
-    },
-    {
-      "id": "fresh-haircut-confidence",
-      "emoji": "✂️",
-      "name": "Haircut confidence before the itchy neck",
-      "amount": 850,
-      "status": "HIGHEST",
-      "updatedAt": 1772650275426
-    },
-    {
-      "id": "permission-to-leave-early",
-      "emoji": "🚽",
-      "name": "Permission to fake a bathroom emergency and bounce",
-      "amount": 1850,
-      "status": "HIGHEST",
-      "updatedAt": 1772652126862
-    }
-  ],
-  "vaultItems": [
-    {
-      "id": "other-side-of-pillow",
-      "rarity": "epic",
-      "emoji": "🧊",
-      "name": "Cold pillow side after night sweats",
-      "category": "Sensory",
-      "wonDate": "3 Oct",
-      "price": 1800
-    },
-    {
-      "id": "phone-charging-first-try",
-      "rarity": "common",
-      "emoji": "🔌",
-      "name": "USB plugged in first try while half asleep",
-      "category": "Common",
-      "wonDate": "8 Oct",
-      "price": 320
-    },
-    {
-      "id": "smell-of-rain",
-      "rarity": "rare",
-      "emoji": "🌧️",
-      "name": "Rain on hot asphalt and trash day",
-      "category": "Sensory",
-      "wonDate": "12 Oct",
-      "price": 800
-    },
-    {
-      "id": "downhill-no-hands",
-      "rarity": "common",
-      "emoji": "🚲",
-      "name": "Downhill sprint in Crocs",
-      "category": "Common",
-      "wonDate": "15 Oct",
-      "price": 450
-    },
-    {
-      "id": "perfect-egg-flip",
-      "rarity": "rare",
-      "emoji": "🍳",
-      "name": "Egg flip that did not become ceiling art",
-      "category": "Food",
-      "wonDate": "19 Oct",
-      "price": 1250
-    },
-    {
-      "id": "shower-figure-everything-out",
-      "rarity": "common",
-      "emoji": "🛁",
-      "name": "Shower epiphany while soap is in your mouth",
-      "category": "Sensory",
-      "wonDate": "21 Oct",
-      "price": 380
-    },
-    {
-      "id": "song-hits-different-2am",
-      "rarity": "rare",
-      "emoji": "🎵",
-      "name": "Song that slaps while scrubbing mystery fridge goo",
-      "category": "Rare",
-      "wonDate": "22 Oct",
-      "price": 975
-    },
-    {
-      "id": "window-seat-train",
-      "rarity": "common",
-      "emoji": "🪟",
-      "name": "Window seat beside a loud chip chewer",
-      "category": "Common",
-      "wonDate": "23 Oct",
-      "price": 290
-    },
-    {
-      "id": "fresh-haircut-confidence-win",
-      "rarity": "epic",
-      "emoji": "✂️",
-      "name": "Haircut confidence before the itchy neck",
-      "category": "Social",
-      "wonDate": "24 Oct",
-      "price": 1600
-    }
-  ],
-  "walletLog": [
-    {
-      "id": "tx-initial",
-      "label": "Initial Deposit",
-      "amount": 5000,
-      "createdAt": 1772650270426
-    },
-    {
-      "id": "tx-perfect-egg",
-      "label": "WON: \"Egg Flip That Did Not Become Ceiling Art\"",
-      "amount": -1250,
-      "createdAt": 1772650271426
-    },
-    {
-      "id": "tx-smell-rain",
-      "label": "WON: \"Rain on Hot Asphalt and Trash Day\"",
-      "amount": -800,
-      "createdAt": 1772650272426
-    },
-    {
-      "id": "tx-checkin",
-      "label": "Daily Vibe Check In",
-      "amount": 100,
-      "createdAt": 1772650273426
-    },
-    {
-      "id": "tx-sold-dread",
-      "label": "SOLD: \"Tuesday Dread\"",
-      "amount": 450,
-      "createdAt": 1772650274426
-    }
-  ],
-  "confessions": [
-    {
-      "id": "conf-midnight-snack",
-      "title": "Fridge Crime Scene",
-      "confession": "I sniffed milk, whispered \"probably fine,\" and poured it into coffee anyway.",
-      "isAnonymous": true,
-      "author": "Anonymous",
-      "createdAt": 1772650268426
-    },
-    {
-      "id": "conf-tab-hoarder",
-      "title": "Toilet Paper Gambler",
-      "confession": "I trusted the last square and had to penguin-walk to the closet.",
-      "isAnonymous": true,
-      "author": "Anonymous",
-      "createdAt": 1772650269426
-    },
-    {
-      "id": "conf-fart-betrayal",
-      "title": "Trusted A Fart",
-      "confession": "I gambled on a fart during a Zoom call and spent the next minute pretending my camera froze.",
-      "isAnonymous": true,
-      "author": "Anonymous",
-      "createdAt": 1772650270426
-    }
-  ],
+  "balance": 0,
+  "activeBids": [],
+  "vaultItems": [],
+  "walletLog": [],
+  "confessions": [],
   "mintedVibes": [
+    {
+      "id": "mint-crackhead-smoking-crack-in-an-alley-in-brooklyn-moments-1773084237177",
+      "slug": "crackhead-smoking-crack-in-an-alley-in-brooklyn-moments-1773084237177",
+      "name": "CRACKHEAD SMOKING CRACk IN AN ALLEY IN BROOKLYN",
+      "category": "Moments",
+      "emoji": "🍟",
+      "manifesto": "Crackheads are funny",
+      "duration": "24 Hours",
+      "startingPrice": 100,
+      "isAnonymous": false,
+      "author": null,
+      "createdAt": 1773084237177
+    },
     {
       "id": "mint-a-large-floppy-dildo-flying-through-the-air-feelings-1773080507490",
       "slug": "a-large-floppy-dildo-flying-through-the-air-feelings-1773080507490",
