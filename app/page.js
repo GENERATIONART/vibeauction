@@ -1,7 +1,7 @@
-import React from 'react';
-import { createClient } from '@supabase/supabase-js';
+const React = require('react');
+const { createClient } = require('@supabase/supabase-js');
 
-export default function Home() {
+function Home() {
   return (
     <main>
       <h1>Vibe Auction</h1>
@@ -10,9 +10,12 @@ export default function Home() {
   );
 }
 
-export async function generateMetadata() {
+function generateMetadata() {
   return {
     title: 'Vibe Auction',
     description: 'Auction platform for unique vibes',
   };
 }
+
+module.exports = Home;
+module.exports.generateMetadata = generateMetadata;

@@ -1,9 +1,11 @@
-import React from 'react';
+const React = require('react');
 
-export default function RootLayout({ children }) {
+function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>{children}</body>
     </html>
   );
 }
+
+module.exports = RootLayout;
