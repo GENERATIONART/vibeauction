@@ -16,13 +16,14 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.25",
+    "@types/node": "^18.19.1",
     "@types/react": "^18.2.64",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.1.0",
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
