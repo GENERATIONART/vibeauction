@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "description": "Vibe Auction Platform",
   "type": "module",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "echo 'Building project...' && mkdir -p dist && cp -r server.js supabase.js package.json dist/",
-    "prepare": "npm run build"
+    "build": "echo 'Vercel build step'",
+    "vercel-build": "echo 'Vercel build completed'"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
