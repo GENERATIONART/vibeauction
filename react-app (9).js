@@ -538,8 +538,7 @@ const App = () => {
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            <span>{balanceDisplay}</span>
-            {!isSmallMobile && <span>AURA</span>}
+            <span>{balanceDisplay} AURA</span>
           </div>
           {isMobile && (
             <button

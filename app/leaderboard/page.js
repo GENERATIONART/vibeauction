@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
 
 const customStyles = {
@@ -348,7 +349,11 @@ const LeaderRow = ({ rank, username, badgeLabel, score, isMobile }) => {
 
 const ContestedItem = ({ name, bids, isMobile }) => (
   <div style={{ ...customStyles.contestedItem, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center' }}>
-    <span style={{ ...customStyles.vibeName, fontSize: isMobile ? '16px' : customStyles.vibeName.fontSize }} dangerouslySetInnerHTML={{ __html: name }} />
+    <span style={{ ...customStyles.vibeName, fontSize: isMobile ? '16px' : customStyles.vibeName.fontSize }}>
+      {name.split('<br>').map((part, i, arr) => (
+        <React.Fragment key={i}>{part}{i < arr.length - 1 && <br />}</React.Fragment>
+      ))}
+    </span>
     <span style={customStyles.bidCount}>{bids} Bids</span>
   </div>
 );
@@ -418,6 +423,7 @@ const Podium = ({ isMobile }) => {
 
 export default function LeaderboardPage() {
   const { balance } = useVibeStore();
+  const pathname = usePathname();
   const [navHover, setNavHover] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(1200);
@@ -510,7 +516,7 @@ export default function LeaderboardPage() {
         {!isMobile && (
           <nav style={customStyles.navLinks}>
             {navItems.map((item) => {
-              const isActive = item.href === '/leaderboard';
+              const isActive = pathname === item.href;
               const itemStyle = isActive || navHover === item.label ? customStyles.navItemActive : customStyles.navItem;
 
               if (item.href.startsWith('/')) {
