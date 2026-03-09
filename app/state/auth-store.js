@@ -1,29 +1,47 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { getSupabaseClient } from '../../lib/supabase-client';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const loadProfile = useCallback(async (userId) => {
+    if (!userId) { setProfile(null); return; }
+    const sb = getSupabaseClient();
+    if (!sb) return;
+    const { data } = await sb
+      .from('profiles')
+      .select('aura_balance, username')
+      .eq('id', userId)
+      .single();
+    if (data) setProfile(data);
+  }, []);
 
   useEffect(() => {
     const sb = getSupabaseClient();
     if (!sb) { setLoading(false); return; }
 
     sb.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
+      const u = data.session?.user ?? null;
+      setUser(u);
       setLoading(false);
+      if (u) loadProfile(u.id);
     });
 
     const { data: listener } = sb.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) loadProfile(u.id);
+      else setProfile(null);
     });
 
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [loadProfile]);
 
   const signUp = async (email, password, username) => {
     const sb = getSupabaseClient();
@@ -53,7 +71,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, loadProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { createDefaultState } from '../../lib/default-store.js';
+import { useAuth } from './auth-store.js';
 
 const VibeStoreContext = createContext(null);
 
@@ -62,6 +63,7 @@ async function apiRequest(url, options = {}) {
 }
 
 export function VibeStoreProvider({ children }) {
+  const { profile } = useAuth();
   const [store, setStore] = useState(() => createDefaultState());
   const [isHydrating, setIsHydrating] = useState(true);
   const [error, setError] = useState('');
@@ -208,7 +210,7 @@ export function VibeStoreProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      balance: store.balance,
+      balance: profile !== null ? (profile.aura_balance ?? 0) : store.balance,
       activeBids: store.activeBids,
       vaultItems: store.vaultItems,
       walletLog: store.walletLog,
@@ -227,6 +229,7 @@ export function VibeStoreProvider({ children }) {
     }),
     [
       store,
+      profile,
       isHydrating,
       error,
       refreshState,
