@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "echo 'Building project...' && mkdir -p dist && cp -r server.js supabase.js package.json dist/",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
