@@ -372,58 +372,35 @@ export default function ProfilePage() {
       const sb = getSupabaseClient();
 
       if (sb) {
-        const { data: userData, error } = await sb
-          .from('users')
+        // Look up in profiles table (created on signup via trigger)
+        const { data: profileData, error } = await sb
+          .from('profiles')
           .select('*')
           .eq('username', username)
           .single();
 
-        if (error || !userData) {
+        if (error || !profileData) {
           setNotFound(true);
           setLoading(false);
           return;
         }
 
-        setProfile(userData);
+        setProfile(profileData);
 
-        const { data: auctionData } = await sb
-          .from('auctions')
-          .select('id, title, description, current_price, starting_price, end_time, status')
-          .eq('seller_id', userData.id)
-          .eq('status', 'active')
-          .order('end_time', { ascending: true })
-          .limit(6);
-
-        setListings(auctionData || []);
-
-        const { data: pastData } = await sb
-          .from('auctions')
-          .select('id, title, current_price, starting_price, end_time, status')
-          .eq('seller_id', userData.id)
-          .in('status', ['completed', 'cancelled'])
-          .order('end_time', { ascending: false })
+        // Fetch vibes listed by this user
+        const { data: vibeData } = await sb
+          .from('vibes')
+          .select('id, slug, name, emoji, starting_price, created_at, category')
+          .eq('author', username)
+          .order('created_at', { ascending: false })
           .limit(20);
 
-        setPastAuctions(pastData || []);
-
-        const { data: bidData } = await sb
-          .from('bids')
-          .select('amount, auctions(id, title, status)')
-          .eq('bidder_id', userData.id)
-          .order('created_at', { ascending: false })
-          .limit(8);
-
-        const won = (bidData || []).filter((b) => b.auctions?.status === 'completed');
-        setWonVibes(won);
+        const allVibes = vibeData || [];
+        setListings(allVibes.slice(0, 6));
+        setPastAuctions(allVibes.slice(6));
+        setWonVibes([]);
       } else {
-        // No Supabase — show mock profile matching the username
-        setProfile({
-          username,
-          display_name: username,
-          bio: 'Collector of rare emotional states and intangible sensations. Bidding since the beginning of vibes.',
-          reputation: 4.7,
-          created_at: '2024-01-15T00:00:00Z',
-        });
+        setProfile({ username, aura_balance: 200, created_at: new Date().toISOString() });
         setListings([]);
         setPastAuctions([]);
         setWonVibes([]);
@@ -435,8 +412,9 @@ export default function ProfilePage() {
     fetchProfile();
   }, [username]);
 
-  const repScore = profile?.reputation ?? 0;
+  const repScore = 0;
   const memberYear = profile?.created_at ? new Date(profile.created_at).getFullYear() : '—';
+  const auraBalance = profile?.aura_balance ?? 0;
   const avatarEmojis = ['🕶️', '👾', '🌀', '🔮', '🎭', '🦋', '⚡', '🌊'];
   const avatarEmoji = avatarEmojis[(username?.charCodeAt(0) ?? 0) % avatarEmojis.length];
 
@@ -519,9 +497,9 @@ export default function ProfilePage() {
                 <h1 style={{ ...S.handle, fontSize: isMobile ? '28px' : isTablet ? '40px' : '52px' }}>
                   @{profile?.username ?? username}
                 </h1>
-                {profile?.bio && (
+                {auraBalance > 0 && !loading && (
                   <p style={{ ...S.bio, fontSize: isMobile ? '12px' : '14px', display: isMobile ? 'none' : 'block' }}>
-                    {profile.bio}
+                    {auraBalance.toLocaleString()} AURA in wallet
                   </p>
                 )}
                 {repScore > 0 && (
@@ -542,9 +520,9 @@ export default function ProfilePage() {
         flexWrap: isMobile ? 'wrap' : 'nowrap',
       }}>
         {[
-          { label: 'Vibes Won', value: loading ? '—' : wonVibes.length || '0' },
-          { label: 'Vibes Created', value: loading ? '—' : (listings.length + pastAuctions.length) || '0' },
-          { label: 'Reputation', value: loading ? '—' : repScore > 0 ? repScore.toFixed(1) : 'New' },
+          { label: 'Vibes Listed', value: loading ? '—' : (listings.length + pastAuctions.length) || '0' },
+          { label: 'Aura Balance', value: loading ? '—' : auraBalance.toLocaleString() },
+          { label: 'Reputation', value: 'New' },
           { label: 'Member Since', value: loading ? '—' : memberYear },
         ].map((stat, i, arr) => (
           <div
@@ -564,9 +542,9 @@ export default function ProfilePage() {
       </div>
 
       {/* Bio on mobile (hidden in hero) */}
-      {isMobile && profile?.bio && (
+      {isMobile && !loading && auraBalance > 0 && (
         <div style={{ padding: '16px', background: '#111', borderBottom: '1px solid #1A1A1A', fontSize: '13px', color: '#AAAAAA', lineHeight: 1.6 }}>
-          {profile.bio}
+          {auraBalance.toLocaleString()} AURA in wallet
         </div>
       )}
 
@@ -590,30 +568,20 @@ export default function ProfilePage() {
             ) : listings.length === 0 ? (
               <div style={S.emptyState}>No active listings right now</div>
             ) : (
-              listings.map((listing) => {
-                const price = listing.current_price ?? listing.starting_price;
-                const endTime = listing.end_time ? new Date(listing.end_time) : null;
-                const hoursLeft = endTime ? Math.max(0, Math.round((endTime - Date.now()) / 3600000)) : null;
-                return (
-                  <Link
-                    key={listing.id}
-                    href={`/auction/${listing.id}`}
-                    style={{
-                      ...S.listingRow,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <span style={S.listingEmoji}>🌀</span>
-                    <span style={S.listingName}>{listing.title}</span>
-                    <div style={S.listingMeta}>
-                      <div style={S.listingBid}>{Number(price).toLocaleString()} AURA</div>
-                      {hoursLeft !== null && (
-                        <div style={S.listingTimer}>{hoursLeft}h left</div>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })
+              listings.map((listing) => (
+                <Link
+                  key={listing.id}
+                  href={`/auction/${listing.slug || listing.id}`}
+                  style={{ ...S.listingRow, textDecoration: 'none' }}
+                >
+                  <span style={S.listingEmoji}>{listing.emoji || '✨'}</span>
+                  <span style={S.listingName}>{listing.name}</span>
+                  <div style={S.listingMeta}>
+                    <div style={S.listingBid}>{Number(listing.starting_price).toLocaleString()} AURA</div>
+                    <div style={S.listingTimer}>{listing.category}</div>
+                  </div>
+                </Link>
+              ))
             )}
           </div>
         </section>
@@ -661,13 +629,12 @@ export default function ProfilePage() {
               <div style={S.emptyState}>No past auctions yet</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr 1fr', gap: 0 }}>
-                {pastAuctions.map((auction, i) => {
-                  const finalPrice = auction.current_price ?? auction.starting_price;
-                  const soldDate = auction.end_time ? new Date(auction.end_time).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
-                  const isCompleted = auction.status === 'completed';
+                {pastAuctions.map((vibe, i) => {
+                  const listedDate = vibe.created_at ? new Date(vibe.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
                   return (
-                    <div
-                      key={auction.id}
+                    <Link
+                      key={vibe.id}
+                      href={`/auction/${vibe.slug || vibe.id}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -675,28 +642,30 @@ export default function ProfilePage() {
                         padding: '12px 16px',
                         borderBottom: '1px solid #1A1A1A',
                         borderRight: !isTablet && (i + 1) % 3 !== 0 ? '1px solid #1A1A1A' : 'none',
+                        textDecoration: 'none',
+                        color: 'inherit',
                       }}
                     >
                       <span style={{ fontSize: '24px', flexShrink: 0, width: '32px', textAlign: 'center' }}>
-                        {isCompleted ? '✅' : '❌'}
+                        {vibe.emoji || '✨'}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', textTransform: 'uppercase', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {auction.title}
+                          {vibe.name}
                         </div>
                         <div style={{ fontSize: '11px', color: '#555', fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>
-                          {soldDate}
+                          {listedDate}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '14px', color: isCompleted ? '#C8FF00' : '#555' }}>
-                          {isCompleted ? `${Number(finalPrice).toLocaleString()} AURA` : 'Cancelled'}
+                        <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '14px', color: '#C8FF00' }}>
+                          {Number(vibe.starting_price).toLocaleString()} AURA
                         </div>
-                        <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: isCompleted ? '#3a5a00' : '#3a2000', background: isCompleted ? 'rgba(200,255,0,0.1)' : 'rgba(255,100,0,0.1)', padding: '1px 6px', borderRadius: '99px', marginTop: '2px' }}>
-                          {isCompleted ? 'Sold' : 'Cancelled'}
+                        <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: '#3a5a00', background: 'rgba(200,255,0,0.1)', padding: '1px 6px', borderRadius: '99px', marginTop: '2px' }}>
+                          Listed
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
