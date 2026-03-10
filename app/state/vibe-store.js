@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { createDefaultState } from '../../lib/default-store.js';
 import { useAuth } from './auth-store.js';
+import { getSupabaseClient } from '../../lib/supabase-client.js';
 
 const VibeStoreContext = createContext(null);
 
@@ -43,7 +44,7 @@ async function apiRequest(url, options = {}) {
   const hasBody = options.body !== undefined;
   const response = await fetch(url, {
     method,
-    headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
+    headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) },
     body: hasBody ? JSON.stringify(options.body) : undefined,
   });
 
@@ -62,15 +63,43 @@ async function apiRequest(url, options = {}) {
   return payload;
 }
 
+const mapVaultRow = (row) => ({
+  id: row.id,
+  name: row.name,
+  emoji: row.emoji || '✨',
+  category: row.category || 'Vibes',
+  rarity: row.rarity || 'common',
+  price: row.price || 0,
+  wonDate: row.won_date,
+  imageUrl: row.image_url ?? null,
+});
+
 export function VibeStoreProvider({ children }) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [store, setStore] = useState(() => createDefaultState());
   const [isHydrating, setIsHydrating] = useState(true);
   const [error, setError] = useState('');
+  const [supabaseVaultItems, setSupabaseVaultItems] = useState(null);
 
   const applyState = useCallback((nextState) => {
     setStore(sanitizeState(nextState));
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setSupabaseVaultItems(null);
+      return;
+    }
+    const sb = getSupabaseClient();
+    if (!sb) return;
+    sb.from('vault_items')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setSupabaseVaultItems(data.map(mapVaultRow));
+      });
+  }, [user]);
 
   const refreshState = useCallback(async () => {
     const data = await apiRequest('/api/state');
@@ -129,11 +158,25 @@ export function VibeStoreProvider({ children }) {
   const settleAuction = useCallback(
     async (item) => {
       try {
+        const sb = getSupabaseClient();
+        const sessionData = sb ? (await sb.auth.getSession()) : null;
+        const token = sessionData?.data?.session?.access_token ?? null;
         const data = await apiRequest('/api/state/settle-auction', {
           method: 'POST',
           body: { item },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
         applyState(data.state);
+        // Refresh vault from Supabase after settle
+        if (user && sb) {
+          sb.from('vault_items')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .then(({ data: rows }) => {
+              if (rows) setSupabaseVaultItems(rows.map(mapVaultRow));
+            });
+        }
         setError('');
         return Boolean(data.settled);
       } catch (settleError) {
@@ -141,7 +184,7 @@ export function VibeStoreProvider({ children }) {
         return false;
       }
     },
-    [applyState],
+    [applyState, user],
   );
 
   const mintConfession = useCallback(
@@ -212,7 +255,7 @@ export function VibeStoreProvider({ children }) {
     () => ({
       balance: profile !== null ? (profile.aura_balance ?? 0) : store.balance,
       activeBids: store.activeBids,
-      vaultItems: store.vaultItems,
+      vaultItems: supabaseVaultItems !== null ? supabaseVaultItems : store.vaultItems,
       walletLog: store.walletLog,
       confessions: store.confessions,
       mintedVibes: store.mintedVibes,
@@ -230,6 +273,7 @@ export function VibeStoreProvider({ children }) {
     [
       store,
       profile,
+      supabaseVaultItems,
       isHydrating,
       error,
       refreshState,

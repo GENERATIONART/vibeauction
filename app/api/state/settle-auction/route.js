@@ -4,7 +4,8 @@ import { settleAuctionInStore } from '../../../../lib/server/state-db.js';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const result = await settleAuctionInStore(body?.item);
+    const authToken = request.headers.get('authorization')?.replace('Bearer ', '') ?? null;
+    const result = await settleAuctionInStore(body?.item, authToken);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
