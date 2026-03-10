@@ -64,6 +64,7 @@ export default async function Page({ params }) {
     emoji: minted.emoji,
     title: minted.name,
     bid: minted.startingPrice,
+    buyNowPrice: minted.buyNowPrice ?? null,
     timer: minted.duration,
     badge: 'New',
     category: minted.category,

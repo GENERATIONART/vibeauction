@@ -1,11 +1,1 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/vibes/page": "app/vibes/page.js",
-  "/leaderboard/page": "app/leaderboard/page.js",
-  "/vault/page": "app/vault/page.js",
-  "/mint/page": "app/mint/page.js",
-  "/api/state/route": "app/api/state/route.js",
-  "/api/og/auction/route": "app/api/og/auction/route.js",
-  "/top-up/page": "app/top-up/page.js"
-}
+{}

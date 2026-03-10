@@ -436,6 +436,7 @@ export default function MintPage() {
     category: 'Feelings',
     emoji: defaultEmojiByCategory.Feelings,
     startingPrice: '100',
+    buyItNow: '',
     duration: '24 Hours',
     details: '',
     anonymous: true,
@@ -629,11 +630,13 @@ export default function MintPage() {
         return;
       }
 
+      const buyNowNumeric = Number(String(formData.buyItNow || '').replace(/,/g, '').trim());
       const minted = await mintVibe({
         name: cleanedName,
         category: formData.category,
         emoji: formData.emoji,
         startingPrice: numericPrice,
+        buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
         duration: formData.duration,
         manifesto: cleanedDetails,
         hasImage: Boolean(uploadedImage),
@@ -659,6 +662,7 @@ export default function MintPage() {
         itemName: '',
         details: '',
         startingPrice: '100',
+        buyItNow: '',
         duration: '24 Hours',
       }));
     } finally {
@@ -913,6 +917,25 @@ export default function MintPage() {
                     value={formData.startingPrice}
                     onChange={(event) => setFormData((previous) => ({ ...previous, startingPrice: event.target.value }))}
                     onFocus={() => setFocusedField('startingPrice')}
+                    onBlur={() => setFocusedField('')}
+                  />
+                </div>
+
+                <div style={customStyles.inputGroup}>
+                  <label style={customStyles.label}>
+                    Buy It Now{' '}
+                    <span style={{ fontSize: '12px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 700, textTransform: 'none' }}>
+                      — optional
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    style={getInputStyle('buyItNow')}
+                    placeholder="e.g. 500"
+                    value={formData.buyItNow}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, buyItNow: event.target.value }))}
+                    onFocus={() => setFocusedField('buyItNow')}
                     onBlur={() => setFocusedField('')}
                   />
                 </div>

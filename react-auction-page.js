@@ -499,9 +499,10 @@ const Timer = ({ hours, mins, secs }) => (
 
 const App = ({ vibe }) => {
   const pathname = usePathname();
-  const { balance, activeBids, placeBid } = useVibeStore();
+  const { balance, activeBids, placeBid, settleAuction } = useVibeStore();
   const selectedVibe = vibe || getAuctionItemBySlug(defaultAuctionSlug);
   const baseBid = safeBid(selectedVibe?.bid, 100);
+  const buyNowPrice = selectedVibe?.buyNowPrice ?? null;
   const categoryTag = getCategoryTag(selectedVibe?.category);
   const [titleLineOne, titleLineTwo] = splitTitle(selectedVibe?.title);
 
@@ -514,6 +515,8 @@ const App = ({ vibe }) => {
   const [bidPressed, setBidPressed] = useState(false);
   const [placingBid, setPlacingBid] = useState(false);
   const [showBidSuccess, setShowBidSuccess] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
+  const [showBuySuccess, setShowBuySuccess] = useState(false);
   const [increment, setIncrement] = useState(0);
   const [timer, setTimer] = useState(() => parseTimer(selectedVibe?.timer));
   const [error, setError] = useState('');
@@ -630,6 +633,30 @@ const App = ({ vibe }) => {
     setError('');
     setShowBidSuccess(true);
     setTimeout(() => setShowBidSuccess(false), 1800);
+  };
+
+  const onBuyNow = async () => {
+    if (buyingNow || !buyNowPrice) return;
+    if (balance < buyNowPrice) {
+      setError(`Insufficient balance. Need ${buyNowPrice.toLocaleString()} AURA.`);
+      return;
+    }
+    setBuyingNow(true);
+    setError('');
+    const settled = await settleAuction({
+      id: selectedVibe?.slug || defaultAuctionSlug,
+      name: selectedVibe?.title || 'Unknown Vibe',
+      emoji: selectedVibe?.emoji || '✨',
+      category: selectedVibe?.category || 'Vibes',
+      price: buyNowPrice,
+      rarity: 'rare',
+    });
+    setBuyingNow(false);
+    if (!settled) {
+      setError('Purchase failed. Try again.');
+      return;
+    }
+    setShowBuySuccess(true);
   };
 
   const displayBid = currentBid + increment;
@@ -874,6 +901,57 @@ const App = ({ vibe }) => {
               <WatchButton isWatching={isWatching} onClick={() => setIsWatching((watching) => !watching)} />
             </div>
           </div>
+
+          {buyNowPrice && (
+            <div
+              style={{
+                background: '#111111',
+                border: '2px solid #FF0055',
+                borderRadius: '8px',
+                padding: isMobile ? '18px 16px' : '24px',
+              }}
+            >
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: '#888888', marginBottom: '6px' }}>
+                Skip the Auction
+              </div>
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '32px' : '40px', color: '#FF0055', lineHeight: 1, marginBottom: '16px' }}>
+                {buyNowPrice.toLocaleString()} AURA
+              </div>
+
+              {showBuySuccess ? (
+                <div style={{ background: '#FF0055', color: '#FFFFFF', padding: '14px', fontWeight: 800, fontSize: '14px', textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>
+                  ✓ It's yours! Check your Vault.
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onBuyNow}
+                  disabled={buyingNow}
+                  style={{
+                    width: '100%',
+                    background: buyingNow ? '#880033' : '#FF0055',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    padding: isMobile ? '14px' : '16px',
+                    fontFamily: "'Anton', sans-serif",
+                    fontSize: isMobile ? '18px' : '20px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    cursor: buyingNow ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {buyingNow ? 'Processing...' : 'Buy It Now'}
+                </button>
+              )}
+
+              {!showBuySuccess && (
+                <div style={{ fontSize: '11px', color: '#555555', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>
+                  Instant purchase · No auction wait
+                </div>
+              )}
+            </div>
+          )}
 
           <BidHistory bids={bids} />
         </aside>
