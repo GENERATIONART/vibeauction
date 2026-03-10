@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
+import { useAuth } from './app/state/auth-store';
 import {
   defaultAuctionSlug,
   getAuctionItemBySlug,
@@ -500,9 +501,16 @@ const Timer = ({ hours, mins, secs }) => (
 const App = ({ vibe }) => {
   const pathname = usePathname();
   const { balance, activeBids, placeBid, settleAuction } = useVibeStore();
+  const { profile } = useAuth();
   const selectedVibe = vibe || getAuctionItemBySlug(defaultAuctionSlug);
   const baseBid = safeBid(selectedVibe?.bid, 100);
   const buyNowPrice = selectedVibe?.buyNowPrice ?? null;
+
+  const isOwnVibe = Boolean(
+    profile?.username &&
+      selectedVibe?.author &&
+      profile.username.toLowerCase() === selectedVibe.author.replace(/^@/, '').toLowerCase(),
+  );
   const categoryTag = getCategoryTag(selectedVibe?.category);
   const [titleLineOne, titleLineTwo] = splitTitle(selectedVibe?.title);
 
@@ -886,35 +894,53 @@ const App = ({ vibe }) => {
               </div>
             )}
 
-            <div style={customStyles.bidControls}>
-              <div style={customStyles.incrementRow}>
-                <IncrementButton label="+50" onClick={() => addIncrement(50)} />
-                <IncrementButton label="+100" onClick={() => addIncrement(100)} />
-                <IncrementButton label="+500" onClick={() => addIncrement(500)} />
-              </div>
-
-              <button
-                onClick={onPlaceBid}
+            {isOwnVibe ? (
+              <div
                 style={{
-                  ...customStyles.btnPrimaryBid,
-                  transform: bidPressed ? 'translateY(2px)' : 'none',
-                  boxShadow: bidPressed ? '0 2px 0 #88AA00' : '0 4px 0 #88AA00',
-                  fontSize: isMobile ? '20px' : customStyles.btnPrimaryBid.fontSize,
-                  padding: isMobile ? '15px' : customStyles.btnPrimaryBid.padding,
-                  opacity: placingBid ? 0.7 : 1,
-                  cursor: placingBid ? 'not-allowed' : customStyles.btnPrimaryBid.cursor,
+                  background: '#1A1A0A',
+                  border: '2px solid #555500',
+                  padding: '16px',
+                  textAlign: 'center',
+                  color: '#AAAA00',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
                 }}
-                type="button"
-                disabled={placingBid}
               >
-                {placingBid ? 'Placing Bid...' : 'Place Bid Now'}
-              </button>
+                This is your listing — you can't bid on your own vibe
+              </div>
+            ) : (
+              <div style={customStyles.bidControls}>
+                <div style={customStyles.incrementRow}>
+                  <IncrementButton label="+50" onClick={() => addIncrement(50)} />
+                  <IncrementButton label="+100" onClick={() => addIncrement(100)} />
+                  <IncrementButton label="+500" onClick={() => addIncrement(500)} />
+                </div>
 
-              <WatchButton isWatching={isWatching} onClick={() => setIsWatching((watching) => !watching)} />
-            </div>
+                <button
+                  onClick={onPlaceBid}
+                  style={{
+                    ...customStyles.btnPrimaryBid,
+                    transform: bidPressed ? 'translateY(2px)' : 'none',
+                    boxShadow: bidPressed ? '0 2px 0 #88AA00' : '0 4px 0 #88AA00',
+                    fontSize: isMobile ? '20px' : customStyles.btnPrimaryBid.fontSize,
+                    padding: isMobile ? '15px' : customStyles.btnPrimaryBid.padding,
+                    opacity: placingBid ? 0.7 : 1,
+                    cursor: placingBid ? 'not-allowed' : customStyles.btnPrimaryBid.cursor,
+                  }}
+                  type="button"
+                  disabled={placingBid}
+                >
+                  {placingBid ? 'Placing Bid...' : 'Place Bid Now'}
+                </button>
+
+                <WatchButton isWatching={isWatching} onClick={() => setIsWatching((watching) => !watching)} />
+              </div>
+            )}
           </div>
 
-          {buyNowPrice && (
+          {buyNowPrice && !isOwnVibe && (
             <div
               style={{
                 background: '#111111',
