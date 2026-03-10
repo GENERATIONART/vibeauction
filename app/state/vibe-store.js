@@ -72,6 +72,7 @@ const mapVaultRow = (row) => ({
   price: row.price || 0,
   wonDate: row.won_date,
   imageUrl: row.image_url ?? null,
+  originalAuthor: row.original_author ?? null,
 });
 
 export function VibeStoreProvider({ children }) {

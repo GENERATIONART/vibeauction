@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
+import { useAuth } from '../state/auth-store';
 
 const PERIODS = [
   { key: 'week', label: 'This Week' },
@@ -86,7 +87,7 @@ const customStyles = {
     animation: 'scroll 20s linear infinite',
   },
   tickerItem: { fontWeight: 800, fontSize: '14px', textTransform: 'uppercase' },
-  container: { maxWidth: '1400px', margin: '0 auto', padding: '40px 24px' },
+  container: { maxWidth: '1400px', margin: '0 auto', padding: '64px 24px' },
   pageTitle: {
     fontFamily: "'Anton', sans-serif",
     fontSize: '82px',
@@ -385,10 +386,12 @@ const PodiumPlace = ({ rank, entry, isMobile }) => {
 
 export default function LeaderboardPage() {
   const { balance } = useVibeStore();
+  const { user, profile: authProfile, signOut } = useAuth();
   const pathname = usePathname();
   const [navHover, setNavHover] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(1200);
+  const userHandle = authProfile?.username || user?.email?.split('@')[0] || 'you';
   const [period, setPeriod] = useState('all');
   const [topSpenders, setTopSpenders] = useState([]);
   const [topVibes, setTopVibes] = useState([]);
@@ -396,6 +399,9 @@ export default function LeaderboardPage() {
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
+  const isSmallMobile = viewportWidth <= 420;
+  const sidePadding = isSmallMobile ? 12 : isMobile ? 16 : isTablet ? 20 : 24;
+  const headerHeight = isMobile ? 64 : 60;
   const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
 
   const navItems = [
@@ -457,11 +463,21 @@ export default function LeaderboardPage() {
       <header
         style={{
           ...customStyles.header,
-          height: isMobile ? '64px' : undefined,
-          padding: isMobile ? '0 14px' : undefined,
+          height: headerHeight,
+          padding: `0 ${sidePadding}px`,
         }}
       >
-        <Link href="/" style={{ ...customStyles.logo, fontSize: isMobile ? '20px' : undefined }}>
+        <Link
+          href="/"
+          style={{
+            ...customStyles.logo,
+            fontSize: isSmallMobile ? '17px' : isMobile ? '20px' : '24px',
+            maxWidth: isMobile ? '45%' : 'none',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           Vibe Auction
         </Link>
 
@@ -473,7 +489,10 @@ export default function LeaderboardPage() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  style={isActive || navHover === item.label ? customStyles.navItemActive : customStyles.navItem}
+                  style={{
+                    ...customStyles.navItem,
+                    color: isActive || navHover === item.label ? '#C8FF00' : '#FFFFFF',
+                  }}
                   onMouseEnter={() => setNavHover(item.label)}
                   onMouseLeave={() => setNavHover('')}
                 >
@@ -484,12 +503,36 @@ export default function LeaderboardPage() {
           </nav>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isSmallMobile ? '6px' : '8px', minWidth: 0 }}>
+          {!isMobile && user && (
+            <>
+              <Link href={`/profile/${userHandle}`} style={{ ...customStyles.navItem, color: '#C8FF00', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                @{userHandle}
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                style={{ background: 'transparent', border: '1px solid #444', color: '#AAAAAA', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                Sign Out
+              </button>
+            </>
+          )}
+          {!isMobile && !user && (
+            <>
+              <Link href="/login" style={{ ...customStyles.navItem, color: '#FFFFFF', fontSize: '13px', whiteSpace: 'nowrap' }}>Login</Link>
+              <Link href="/signup" style={{ background: '#C8FF00', color: '#000000', padding: '5px 12px', borderRadius: '4px', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Sign Up
+              </Link>
+            </>
+          )}
           <div
             style={{
               ...customStyles.userBalance,
-              padding: isMobile ? '4px 10px' : undefined,
-              fontSize: isMobile ? '12px' : undefined,
+              padding: isSmallMobile ? '4px 8px' : isMobile ? '4px 10px' : '4px 12px',
+              fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '13px',
+              minWidth: 0,
+              whiteSpace: 'nowrap',
             }}
           >
             <span>{balanceDisplay}</span> AURA
@@ -576,7 +619,7 @@ export default function LeaderboardPage() {
       <div
         style={{
           ...customStyles.container,
-          padding: isMobile ? '24px 16px 30px' : isTablet ? '28px 20px 36px' : undefined,
+          ...(isMobile ? { padding: '40px 16px 30px' } : isTablet ? { padding: '48px 20px 36px' } : {}),
         }}
       >
         <div style={{ position: 'relative', marginBottom: isMobile ? '28px' : '48px' }}>
@@ -597,7 +640,16 @@ export default function LeaderboardPage() {
           <h1
             style={{
               ...customStyles.pageTitle,
-              fontSize: isMobile ? '46px' : isTablet ? '64px' : undefined,
+              fontSize: isSmallMobile
+                ? 'clamp(36px, 11vw, 42px)'
+                : isMobile
+                  ? 'clamp(42px, 10vw, 50px)'
+                  : isTablet
+                    ? 'clamp(52px, 8vw, 62px)'
+                    : viewportWidth <= 1440
+                      ? '70px'
+                      : '82px',
+              lineHeight: isSmallMobile ? 0.95 : 0.9,
             }}
           >
             The Aura <br />
@@ -605,10 +657,9 @@ export default function LeaderboardPage() {
             <span
               style={{
                 ...customStyles.highlightTag,
-                fontSize: isMobile ? '14px' : undefined,
-                marginLeft: isMobile ? 0 : undefined,
-                display: isMobile ? 'inline-flex' : undefined,
-                marginTop: isMobile ? '8px' : 0,
+                fontSize: isMobile ? '18px' : isTablet ? '22px' : '26px',
+                padding: isMobile ? '3px 10px' : '4px 14px',
+                marginLeft: isMobile ? '6px' : '10px',
               }}
             >
               Fame

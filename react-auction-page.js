@@ -662,6 +662,7 @@ const App = ({ vibe }) => {
       price: buyNowPrice,
       rarity: 'rare',
       imageUrl: selectedVibe?.imageUrl ?? null,
+      author: selectedVibe?.author ?? null,
     });
     setBuyingNow(false);
     if (!settled) {
@@ -841,6 +842,35 @@ const App = ({ vibe }) => {
               <p style={{ ...customStyles.vibeDescription, fontSize: isMobile ? '15px' : customStyles.vibeDescription.fontSize }}>
                 {selectedVibe?.description || 'This vibe is live and currently accepting bids.'}
               </p>
+
+              {(selectedVibe?.author || selectedVibe?.listedBy) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2A2A2A' }}>
+                  {selectedVibe?.listedBy && (
+                    <div style={{ fontSize: '13px', color: '#888888', fontWeight: 600 }}>
+                      <span style={{ color: '#555555', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px', marginRight: '6px' }}>Listed by</span>
+                      <span style={{ color: '#C8FF00' }}>
+                        {String(selectedVibe.listedBy).startsWith('@') ? selectedVibe.listedBy : `@${selectedVibe.listedBy}`}
+                      </span>
+                    </div>
+                  )}
+                  {selectedVibe?.author && selectedVibe.author !== selectedVibe.listedBy && (
+                    <div style={{ fontSize: '13px', color: '#888888', fontWeight: 600 }}>
+                      <span style={{ color: '#555555', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px', marginRight: '6px' }}>Original vibe by</span>
+                      <span style={{ color: '#AAAAAA' }}>
+                        {String(selectedVibe.author).startsWith('@') ? selectedVibe.author : `@${selectedVibe.author}`}
+                      </span>
+                    </div>
+                  )}
+                  {selectedVibe?.author && !selectedVibe?.listedBy && (
+                    <div style={{ fontSize: '13px', color: '#888888', fontWeight: 600 }}>
+                      <span style={{ color: '#555555', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px', marginRight: '6px' }}>Vibe by</span>
+                      <span style={{ color: '#C8FF00' }}>
+                        {String(selectedVibe.author).startsWith('@') ? selectedVibe.author : `@${selectedVibe.author}`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
