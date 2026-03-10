@@ -65,6 +65,7 @@ export default async function Page({ params }) {
     title: minted.name,
     bid: minted.startingPrice,
     buyNowPrice: minted.buyNowPrice ?? null,
+    imageUrl: minted.imageUrl ?? null,
     timer: minted.duration,
     badge: 'New',
     category: minted.category,
