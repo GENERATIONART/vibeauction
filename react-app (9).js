@@ -704,6 +704,17 @@ const App = () => {
           })}
           {!user && (
             <>
+              <div style={{
+                fontFamily: "'Anton', sans-serif",
+                fontSize: isSmallMobile ? '18px' : '20px',
+                textTransform: 'uppercase',
+                color: '#C8FF00',
+                padding: '10px 12px',
+                borderBottom: '1px solid #2A2A2A',
+                marginBottom: '8px'
+              }}>
+                Authentication
+              </div>
               <Link
                 href="/login"
                 style={{
@@ -719,6 +730,7 @@ const App = () => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.3px',
                   textDecoration: 'none',
+                  marginBottom: '8px'
                 }}
                 onClick={() => setMobileMenuOpen(false)}
               >
