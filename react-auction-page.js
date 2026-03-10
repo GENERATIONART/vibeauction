@@ -517,6 +517,7 @@ const App = ({ vibe }) => {
   const [showBidSuccess, setShowBidSuccess] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
   const [showBuySuccess, setShowBuySuccess] = useState(false);
+  const [showBuyConfirm, setShowBuyConfirm] = useState(false);
   const [increment, setIncrement] = useState(0);
   const [timer, setTimer] = useState(() => parseTimer(selectedVibe?.timer));
   const [error, setError] = useState('');
@@ -639,8 +640,10 @@ const App = ({ vibe }) => {
     if (buyingNow || !buyNowPrice) return;
     if (balance < buyNowPrice) {
       setError(`Insufficient balance. Need ${buyNowPrice.toLocaleString()} AURA.`);
+      setShowBuyConfirm(false);
       return;
     }
+    setShowBuyConfirm(false);
     setBuyingNow(true);
     setError('');
     const settled = await settleAuction({
@@ -931,14 +934,67 @@ const App = ({ vibe }) => {
                 <div style={{ background: '#FF0055', color: '#FFFFFF', padding: '14px', fontWeight: 800, fontSize: '14px', textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>
                   ✓ It's yours! Check your Vault.
                 </div>
+              ) : showBuyConfirm ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ background: '#1A0A10', border: '1px solid #FF0055', padding: '14px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#FF8888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                      Confirm Purchase
+                    </div>
+                    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '20px' : '24px', color: '#FFFFFF', lineHeight: 1.1, marginBottom: '4px' }}>
+                      {selectedVibe?.title}
+                    </div>
+                    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '28px' : '34px', color: '#FF0055' }}>
+                      {buyNowPrice.toLocaleString()} AURA
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#555', marginTop: '6px', fontWeight: 700 }}>
+                      Balance after: {(balance - buyNowPrice).toLocaleString()} AURA
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={onBuyNow}
+                      disabled={buyingNow}
+                      style={{
+                        flex: 1,
+                        background: buyingNow ? '#880033' : '#FF0055',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        padding: '13px',
+                        fontFamily: "'Anton', sans-serif",
+                        fontSize: isMobile ? '16px' : '18px',
+                        textTransform: 'uppercase',
+                        cursor: buyingNow ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {buyingNow ? 'Processing...' : 'Confirm'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowBuyConfirm(false)}
+                      style={{
+                        flex: 1,
+                        background: 'transparent',
+                        color: '#888888',
+                        border: '2px solid #333333',
+                        padding: '13px',
+                        fontFamily: "'Anton', sans-serif",
+                        fontSize: isMobile ? '16px' : '18px',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <button
                   type="button"
-                  onClick={onBuyNow}
-                  disabled={buyingNow}
+                  onClick={() => setShowBuyConfirm(true)}
                   style={{
                     width: '100%',
-                    background: buyingNow ? '#880033' : '#FF0055',
+                    background: '#FF0055',
                     color: '#FFFFFF',
                     border: 'none',
                     padding: isMobile ? '14px' : '16px',
@@ -946,15 +1002,15 @@ const App = ({ vibe }) => {
                     fontSize: isMobile ? '18px' : '20px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    cursor: buyingNow ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     transition: 'background 0.15s',
                   }}
                 >
-                  {buyingNow ? 'Processing...' : 'Buy It Now'}
+                  Buy It Now
                 </button>
               )}
 
-              {!showBuySuccess && (
+              {!showBuySuccess && !showBuyConfirm && (
                 <div style={{ fontSize: '11px', color: '#555555', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>
                   Instant purchase · No auction wait
                 </div>
