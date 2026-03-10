@@ -4,7 +4,8 @@ import { placeBidInStore } from '../../../../lib/server/state-db.js';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const result = await placeBidInStore(body?.bid);
+    const authToken = request.headers.get('authorization')?.replace('Bearer ', '') ?? null;
+    const result = await placeBidInStore(body?.bid, authToken);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

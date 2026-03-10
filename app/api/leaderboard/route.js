@@ -21,21 +21,21 @@ export async function GET(request) {
   else if (period === 'month') cutoff = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
   else if (period === 'year') cutoff = new Date(now - 365 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Fetch vault items for spend aggregation
-  let vaultQuery = sb.from('vault_items').select('user_id, price, created_at');
-  if (cutoff) vaultQuery = vaultQuery.gte('created_at', cutoff);
-  const { data: vaultItems } = await vaultQuery;
+  // Fetch bids for leaderboard aggregation
+  let bidsQuery = sb.from('vibe_bids').select('user_id, amount, vibe_id, created_at');
+  if (cutoff) bidsQuery = bidsQuery.gte('created_at', cutoff);
+  const { data: bidRows } = await bidsQuery;
 
   // Fetch all profiles for username lookup
   const { data: profiles } = await sb.from('profiles').select('id, username');
 
-  // Aggregate total spent per user
+  // Aggregate total bid amount per user
   const spendMap = {};
-  for (const item of vaultItems || []) {
-    if (!item.user_id) continue;
-    if (!spendMap[item.user_id]) spendMap[item.user_id] = { total: 0, count: 0 };
-    spendMap[item.user_id].total += Number(item.price) || 0;
-    spendMap[item.user_id].count += 1;
+  for (const row of bidRows || []) {
+    if (!row.user_id) continue;
+    if (!spendMap[row.user_id]) spendMap[row.user_id] = { total: 0, count: 0 };
+    spendMap[row.user_id].total += Number(row.amount) || 0;
+    spendMap[row.user_id].count += 1;
   }
 
   const profileMap = {};

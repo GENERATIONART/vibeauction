@@ -140,9 +140,13 @@ export function VibeStoreProvider({ children }) {
   const placeBid = useCallback(
     async (bid) => {
       try {
+        const sb = getSupabaseClient();
+        const sessionData = sb ? (await sb.auth.getSession()) : null;
+        const token = sessionData?.data?.session?.access_token ?? null;
         const data = await apiRequest('/api/state/place-bid', {
           method: 'POST',
           body: { bid },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
         applyState(data.state);
         setError('');

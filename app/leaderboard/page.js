@@ -330,7 +330,7 @@ const LeaderRow = ({ rank, username, vibesWon, totalSpent, isMobile }) => {
           <div style={customStyles.userBadges}>
             <span style={customStyles.badge}>{badgeLabel}</span>
             <span style={{ ...customStyles.badge, borderColor: '#555', color: '#888' }}>
-              {vibesWon} vibe{vibesWon !== 1 ? 's' : ''} won
+              {vibesWon} bid{vibesWon !== 1 ? 's' : ''} placed
             </span>
           </div>
         </div>
