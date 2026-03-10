@@ -294,7 +294,15 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile 
       {item.badge && <div style={customStyles.liveBadge}>{item.badge}</div>}
       <div style={{ ...customStyles.cardImageArea, height: isMobile ? '140px' : '160px' }}>
         <div style={customStyles.patternDots}></div>
-        <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : '64px' }}>{item.emoji}</div>
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.title}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+          />
+        ) : (
+          <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : '64px' }}>{item.emoji}</div>
+        )}
       </div>
       <div style={{ ...customStyles.cardContent, padding: isMobile ? '14px' : '16px' }}>
         <h2 style={{ ...customStyles.cardTitle, fontSize: isSmallMobile ? '18px' : isMobile ? '20px' : '22px' }}>
@@ -447,6 +455,7 @@ const App = () => {
       timer: 'Live',
       badge: 'Live',
       category: v.category || 'Vibes',
+      imageUrl: v.imageUrl ?? null,
     })),
     [mintedVibes]
   );

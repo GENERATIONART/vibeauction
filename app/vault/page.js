@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
 
@@ -485,26 +485,87 @@ const formatSigned = (value) => {
   return `${numeric >= 0 ? '+' : '-'}${Math.abs(numeric).toLocaleString()}`;
 };
 
-const TrophyCard = ({ trophy, isMobile }) => {
+const durationOptions = ['12 Hours', '24 Hours', '3 Days', '7 Days'];
+
+const TrophyCard = ({ trophy, isMobile, mintVibe }) => {
+  const router = useRouter();
   const [hovered, setHovered] = useState(false);
+  const [relisting, setRelisting] = useState(false);
+  const [relistPrice, setRelistPrice] = useState('');
+  const [relistBuyNow, setRelistBuyNow] = useState('');
+  const [relistDuration, setRelistDuration] = useState('24 Hours');
+  const [submitting, setSubmitting] = useState(false);
+  const [relistError, setRelistError] = useState('');
+  const priceInputRef = useRef(null);
+
   const rarity = String(trophy.rarity || 'common').toLowerCase();
   const rarityStyle = rarityStyleMap[rarity] || customStyles.rarityCommon;
   const rarityLabel = rarity.charAt(0).toUpperCase() + rarity.slice(1);
   const categoryLabel = trophy.category || 'Misc';
   const wonDateLabel = trophy.wonDate || 'Unknown';
 
+  const inputStyle = {
+    width: '100%',
+    background: '#111111',
+    border: '1px solid #444444',
+    color: '#FFFFFF',
+    padding: '8px 10px',
+    fontSize: '14px',
+    fontFamily: "'Inter', sans-serif",
+    outline: 'none',
+    boxSizing: 'border-box',
+  };
+
+  const handleRelist = async (e) => {
+    e.preventDefault();
+    const numericPrice = Number(String(relistPrice).replace(/,/g, '').trim());
+    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+      setRelistError('Enter a starting price greater than 0.');
+      return;
+    }
+    const buyNowNumeric = Number(String(relistBuyNow || '').replace(/,/g, '').trim());
+    setSubmitting(true);
+    setRelistError('');
+    const minted = await mintVibe({
+      name: trophy.name,
+      category: trophy.category || 'Vibes',
+      emoji: trophy.emoji || '✨',
+      startingPrice: numericPrice,
+      buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
+      duration: relistDuration,
+    });
+    setSubmitting(false);
+    if (!minted) {
+      setRelistError('Listing failed. Try again.');
+      return;
+    }
+    if (minted.slug) {
+      router.push(`/auction/${minted.slug}`);
+    } else {
+      setRelisting(false);
+    }
+  };
+
   return (
     <div
-      style={hovered && !isMobile ? customStyles.trophyCardHovered : customStyles.trophyCardBase}
+      style={hovered && !isMobile && !relisting ? customStyles.trophyCardHovered : customStyles.trophyCardBase}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <span style={rarityStyle}>{rarityLabel}</span>
       <div style={{ ...customStyles.trophyImageArea, height: isMobile ? '140px' : customStyles.trophyImageArea.height }}>
         <div style={customStyles.trophyPatternDots}></div>
-        <span style={{ ...customStyles.trophyEmoji, fontSize: isMobile ? '52px' : customStyles.trophyEmoji.fontSize }}>
-          {trophy.emoji || '✨'}
-        </span>
+        {trophy.imageUrl ? (
+          <img
+            src={trophy.imageUrl}
+            alt={trophy.name}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+          />
+        ) : (
+          <span style={{ ...customStyles.trophyEmoji, fontSize: isMobile ? '52px' : customStyles.trophyEmoji.fontSize }}>
+            {trophy.emoji || '✨'}
+          </span>
+        )}
       </div>
       <div style={{ ...customStyles.trophyContent, padding: isMobile ? '14px' : customStyles.trophyContent.padding }}>
         <span style={{ ...customStyles.trophyName, fontSize: isMobile ? '20px' : customStyles.trophyName.fontSize }}>
@@ -518,12 +579,106 @@ const TrophyCard = ({ trophy, isMobile }) => {
           <span style={{ ...customStyles.trophySubMeta, marginTop: 0 }}>{categoryLabel}</span>
         </div>
         <span style={customStyles.trophySubMeta}>Won {wonDateLabel}</span>
+
+        {!relisting ? (
+          <button
+            type="button"
+            onClick={() => { setRelisting(true); setTimeout(() => priceInputRef.current?.focus(), 50); }}
+            style={{
+              marginTop: '12px',
+              width: '100%',
+              background: '#000000',
+              color: '#C8FF00',
+              border: '2px solid #C8FF00',
+              padding: '10px',
+              fontFamily: "'Anton', sans-serif",
+              fontSize: '15px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Relist for Sale
+          </button>
+        ) : (
+          <form onSubmit={handleRelist} style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#888888', letterSpacing: '0.5px' }}>
+              Relist Settings
+            </div>
+            <input
+              ref={priceInputRef}
+              type="number"
+              min="1"
+              placeholder="Starting price (AURA)"
+              value={relistPrice}
+              onChange={(e) => setRelistPrice(e.target.value)}
+              style={inputStyle}
+              required
+            />
+            <input
+              type="number"
+              min="1"
+              placeholder="Buy It Now (optional)"
+              value={relistBuyNow}
+              onChange={(e) => setRelistBuyNow(e.target.value)}
+              style={inputStyle}
+            />
+            <select
+              value={relistDuration}
+              onChange={(e) => setRelistDuration(e.target.value)}
+              style={{ ...inputStyle, cursor: 'pointer' }}
+            >
+              {durationOptions.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            {relistError && (
+              <div style={{ fontSize: '12px', color: '#FF6B6B', fontWeight: 700 }}>{relistError}</div>
+            )}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{
+                  flex: 1,
+                  background: submitting ? '#88AA00' : '#C8FF00',
+                  color: '#000000',
+                  border: 'none',
+                  padding: '10px',
+                  fontFamily: "'Anton', sans-serif",
+                  fontSize: '14px',
+                  textTransform: 'uppercase',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {submitting ? 'Listing...' : 'List It'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setRelisting(false); setRelistError(''); }}
+                style={{
+                  background: 'transparent',
+                  color: '#666666',
+                  border: '1px solid #333333',
+                  padding: '10px 12px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
 };
 
-const VibeVaultTab = ({ isMobile, vaultItems }) => {
+const VibeVaultTab = ({ isMobile, vaultItems, mintVibe }) => {
   const [activeFilter, setActiveFilter] = useState('All Vibes');
 
   const filterCategories = useMemo(() => {
@@ -578,7 +733,7 @@ const VibeVaultTab = ({ isMobile, vaultItems }) => {
           }}
         >
           {filteredTrophies.map((trophy) => (
-            <TrophyCard key={trophy.id || trophy.name} trophy={trophy} isMobile={isMobile} />
+            <TrophyCard key={trophy.id || trophy.name} trophy={trophy} isMobile={isMobile} mintVibe={mintVibe} />
           ))}
         </div>
       )}
@@ -675,7 +830,7 @@ const WalletLogTab = ({ isMobile, walletLog, balance }) => {
 };
 
 export default function VaultPage() {
-  const { balance, vaultItems, activeBids, walletLog } = useVibeStore();
+  const { balance, vaultItems, activeBids, walletLog, mintVibe } = useVibeStore();
   const { user } = useAuth();
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
   const [activeTab, setActiveTab] = useState('trophies');
@@ -943,7 +1098,7 @@ export default function VaultPage() {
           ))}
         </nav>
 
-        {activeTab === 'trophies' && <VibeVaultTab isMobile={isMobile} vaultItems={vaultItems} />}
+        {activeTab === 'trophies' && <VibeVaultTab isMobile={isMobile} vaultItems={vaultItems} mintVibe={mintVibe} />}
         {activeTab === 'bids' && <ActiveBidsTab isMobile={isMobile} activeBids={activeBids} />}
         {activeTab === 'wallet' && <WalletLogTab isMobile={isMobile} walletLog={walletLog} balance={balance} />}
       </div>

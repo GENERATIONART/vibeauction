@@ -650,6 +650,7 @@ const App = ({ vibe }) => {
       category: selectedVibe?.category || 'Vibes',
       price: buyNowPrice,
       rarity: 'rare',
+      imageUrl: selectedVibe?.imageUrl ?? null,
     });
     setBuyingNow(false);
     if (!settled) {
@@ -792,9 +793,17 @@ const App = ({ vibe }) => {
           <div style={customStyles.vibeHeroCard}>
             <div style={{ ...customStyles.heroVisual, height: isMobile ? '290px' : customStyles.heroVisual.height }}>
               <div style={customStyles.patternDots} />
-              <div style={{ ...customStyles.heroEmoji, fontSize: isMobile ? '118px' : customStyles.heroEmoji.fontSize }}>
-                {selectedVibe?.emoji || '✨'}
-              </div>
+              {selectedVibe?.imageUrl ? (
+                <img
+                  src={selectedVibe.imageUrl}
+                  alt={selectedVibe.title || 'Vibe'}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+                />
+              ) : (
+                <div style={{ ...customStyles.heroEmoji, fontSize: isMobile ? '118px' : customStyles.heroEmoji.fontSize }}>
+                  {selectedVibe?.emoji || '✨'}
+                </div>
+              )}
             </div>
 
             <div style={{ ...customStyles.heroInfo, padding: isMobile ? '18px 16px' : customStyles.heroInfo.padding }}>

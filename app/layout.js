@@ -42,8 +42,11 @@ export const metadata = {
     title: SITE_NAME,
   },
   formatDetection: { telephone: false },
-  themeColor: '#000000',
   manifest: '/manifest.json',
+};
+
+export const viewport = {
+  themeColor: '#000000',
 };
 
 export default function RootLayout({ children }) {
