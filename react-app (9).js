@@ -655,8 +655,37 @@ const App = () => {
         : parseCountdownToMs(v.duration),
       absurdityScore: String(v.name || '').length + String(v.manifesto || '').length,
     }));
-    if (minted.length > 0) {
-      return minted;
+
+    const byKey = new Map();
+    minted.forEach((item) => {
+      const key = normalize(item.slug || item.title);
+      if (!key) return;
+      byKey.set(key, item);
+    });
+
+    // Ensure any vibe with live bid activity appears in feed and can bubble to the top-left.
+    activeBids.forEach((entry) => {
+      const key = normalize(entry.id || entry.name);
+      if (!key || byKey.has(key)) return;
+      const updatedAtMs = toTimestampMs(entry.updatedAt || entry.createdAt);
+      byKey.set(key, {
+        id: entry.id || key,
+        slug: entry.id || key,
+        title: entry.name || 'Untitled Vibe',
+        bid: safeNumber(entry.amount, 0),
+        timer: 'Live',
+        badge: 'Live',
+        category: 'Vibes',
+        imageUrl: null,
+        createdAtMs: updatedAtMs,
+        endingSoonMs: Number.MAX_SAFE_INTEGER,
+        absurdityScore: String(entry.name || '').length,
+      });
+    });
+
+    const merged = Array.from(byKey.values());
+    if (merged.length > 0) {
+      return merged;
     }
     return auctionItems.map((item) => ({
       id: String(item.id),
@@ -671,7 +700,7 @@ const App = () => {
       endingSoonMs: parseCountdownToMs(item.timer),
       absurdityScore: String(item.title || '').length + String(item.description || '').length,
     }));
-  }, [mintedVibes]);
+  }, [mintedVibes, activeBids]);
 
   const categories = useMemo(() => {
     const catMap = {};
@@ -714,8 +743,6 @@ const App = () => {
       items.sort((a, b) => {
         const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
-        const liveBidDiff = resolveLiveBid(b) - resolveLiveBid(a);
-        if (liveBidDiff !== 0) return liveBidDiff;
         return (b.createdAtMs || 0) - (a.createdAtMs || 0);
       });
       return items;

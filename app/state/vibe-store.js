@@ -366,7 +366,7 @@ export function VibeStoreProvider({ children }) {
           body: { bid },
           ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
-        const merged = await hydrateStateWithClientVibes(data.state);
+        const merged = await hydrateStateWithClientVibes(data.state, { force: true });
         applyState(merged);
         setError('');
         return {
