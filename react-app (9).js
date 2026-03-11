@@ -291,6 +291,11 @@ const staticTickerItems = [
 const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile }) => {
   const [hovered, setHovered] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [item.imageUrl]);
 
   return (
     <article
@@ -314,11 +319,13 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile 
       {item.badge && <div style={customStyles.liveBadge}>{item.badge}</div>}
       <div style={{ ...customStyles.cardImageArea, height: isMobile ? '140px' : '160px' }}>
         <div style={customStyles.patternDots}></div>
-        {item.imageUrl ? (
+        {item.imageUrl && !imageFailed ? (
           <img
             src={item.imageUrl}
             alt={item.title}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+            loading="lazy"
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : '64px' }}>{item.emoji}</div>

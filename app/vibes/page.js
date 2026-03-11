@@ -320,7 +320,12 @@ const customStyles = {
 
 const TokenCard = ({ item, isMobile }) => {
   const [hovered, setHovered] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
   const hasAuctionPage = Boolean(item.slug);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [item.imageUrl]);
 
   const inner = (
     <article
@@ -336,9 +341,19 @@ const TokenCard = ({ item, isMobile }) => {
       <div style={customStyles.sourceBadge}>{item.source}</div>
       <div style={{ ...customStyles.cardImageArea, height: isMobile ? '142px' : customStyles.cardImageArea.height }}>
         <div style={customStyles.patternDots}></div>
-        <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : customStyles.cardEmoji.fontSize }}>
-          {item.emoji}
-        </div>
+        {item.imageUrl && !imageFailed ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+            loading="lazy"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : customStyles.cardEmoji.fontSize }}>
+            {item.emoji}
+          </div>
+        )}
       </div>
       <div style={customStyles.cardContent}>
         <h3 style={{ ...customStyles.cardTitle, fontSize: isMobile ? '20px' : customStyles.cardTitle.fontSize }}>
@@ -476,6 +491,7 @@ export default function VibesPage() {
         owner: 'Unknown',
         description: `Won on ${item.wonDate || 'unknown date'}. Currently kept off auction.`,
         valueLabel: `${formatAura(item.price)} AURA`,
+        imageUrl: item.imageUrl ?? null,
         createdAt: createdAtMs,
         dateLabel: item.wonDate ? `Won ${item.wonDate}` : 'Owned',
         signature: normalize(`${item.name}-${item.category}`),
@@ -495,6 +511,7 @@ export default function VibesPage() {
         owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',
         description: item.manifesto || (isConfession ? 'Anonymous confession minted and archived.' : 'Direct mint stored as a collectible vibe.'),
         valueLabel: isConfession ? 'Soulbound' : `${formatAura(item.startingPrice)} AURA`,
+        imageUrl: item.imageUrl ?? null,
         createdAt: createdAtMs,
         dateLabel: createdAtMs > 0 ? formatDate(createdAtMs) : 'Recently minted',
         signature: normalize(`${item.name}-${item.manifesto}-${item.category}`),
@@ -515,6 +532,7 @@ export default function VibesPage() {
           owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',
           description: item.confession || 'No confession text.',
           valueLabel: 'Soulbound',
+          imageUrl: null,
           createdAt: createdAtMs,
           dateLabel: createdAtMs > 0 ? formatDate(createdAtMs) : 'Recently minted',
           signature: normalize(`${item.title}-${item.confession}-confessions`),
