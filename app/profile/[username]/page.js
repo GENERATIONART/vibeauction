@@ -362,6 +362,10 @@ export default function ProfilePage() {
     async function fetchProfile() {
       setLoading(true);
       setNotFound(false);
+      setProfile(null);
+      setListings([]);
+      setPastAuctions([]);
+      setWonVibes([]);
       const sb = getSupabaseClient();
 
       if (sb) {

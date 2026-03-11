@@ -327,10 +327,18 @@ function WonPageInner() {
         setActionError('Sign in to claim this win.');
       } else if (settled?.reason === 'not_highest_bidder') {
         setActionError('This claim does not match the highest bid.');
+      } else if (settled?.reason === 'auction_not_ended') {
+        setActionError('The auction is still live. Claim after it ends.');
+      } else if (settled?.reason === 'no_winning_bid') {
+        setActionError('No winning bid is recorded for this vibe.');
       } else if (settled?.reason === 'insufficient_balance') {
         setActionError('Not enough AURA to complete this claim.');
       } else if (settled?.reason === 'already_owned') {
         setActionError('This vibe has already been claimed.');
+      } else if (settled?.reason === 'invalid_settlement_amount') {
+        setActionError('Claim amount is invalid. Return to auction and retry.');
+      } else if (settled?.reason === 'balance_update_failed') {
+        setActionError('Claim could not be finalized. Please retry in a moment.');
       } else {
         setActionError('Could not move this vibe to vault. Please try again.');
       }

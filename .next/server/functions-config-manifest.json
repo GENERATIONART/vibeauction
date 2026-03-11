@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/auction/bids":{},"/api/og/auction":{},"/api/leaderboard":{},"/api/state/mint-vibe":{"maxDuration":30},"/api/og/profile":{},"/api/state":{},"/api/og":{},"/auction/[slug]":{},"/":{}}}
+{"version":1,"functions":{"/api/auction/bids":{},"/api/og":{},"/api/og/auction":{},"/api/og/profile":{},"/api/leaderboard":{},"/api/state":{},"/api/state/mint-vibe":{"maxDuration":30},"/auction/[slug]":{},"/":{}}}

@@ -180,9 +180,11 @@ export function VibeStoreProvider({ children }) {
           body: { item },
           ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
-        applyState(data.state);
-        // Refresh vault from Supabase after settle
-        if (user && sb) {
+        if (data?.state) {
+          applyState(data.state);
+        }
+        // Refresh vault from Supabase after a successful settle.
+        if (data?.settled && user && sb) {
           sb.from('vault_items')
             .select('*')
             .eq('user_id', user.id)
@@ -192,8 +194,10 @@ export function VibeStoreProvider({ children }) {
             });
         }
         setError('');
-        // Refresh AURA balance after deduction
-        refreshProfile();
+        // Refresh AURA balance after a successful deduction.
+        if (data?.settled) {
+          refreshProfile();
+        }
         return {
           settled: Boolean(data.settled),
           reason: data.reason || null,

@@ -763,6 +763,12 @@ const App = ({ vibe }) => {
         await loadBidHistory();
       } else if (bidResult?.reason === 'auth_required') {
         setError('Sign in to place bids.');
+      } else if (bidResult?.reason === 'insufficient_balance') {
+        setError('Not enough AURA balance for this bid.');
+      } else if (bidResult?.reason === 'self_bid_blocked') {
+        setError('You cannot bid on your own listing.');
+      } else if (bidResult?.reason === 'vibe_not_found') {
+        setError('This vibe is no longer available.');
       } else {
         setError('Failed to place bid. Try again.');
       }
@@ -825,6 +831,14 @@ const App = ({ vibe }) => {
         setError('Insufficient balance for this purchase.');
       } else if (settled?.reason === 'already_owned') {
         setError('This vibe is no longer available.');
+      } else if (settled?.reason === 'buy_now_unavailable') {
+        setError('Buy Now is no longer available for this vibe.');
+      } else if (settled?.reason === 'auction_not_ended') {
+        setError('This auction has not ended yet.');
+      } else if (settled?.reason === 'invalid_settlement_amount') {
+        setError('Purchase amount is invalid. Please refresh and try again.');
+      } else if (settled?.reason === 'balance_update_failed') {
+        setError('Purchase could not be finalized. Please try again.');
       } else {
         setError('Purchase failed. Try again.');
       }

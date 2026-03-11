@@ -416,13 +416,16 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/leaderboard?period=${period}`)
-      .then((r) => r.json())
+    fetch(`/api/leaderboard?period=${period}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Request failed (${r.status})`))))
       .then((data) => {
         setTopSpenders(data.topSpenders || []);
         setTopVibes(data.topVibes || []);
       })
-      .catch(() => {})
+      .catch(() => {
+        setTopSpenders([]);
+        setTopVibes([]);
+      })
       .finally(() => setLoading(false));
   }, [period]);
 

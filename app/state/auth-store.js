@@ -9,35 +9,60 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const profileRequestRef = useRef(0);
 
   const loadProfile = useCallback(async (userId) => {
-    if (!userId) { setProfile(null); return; }
+    if (!userId) {
+      profileRequestRef.current += 1;
+      setProfile(null);
+      return;
+    }
+
+    const requestId = profileRequestRef.current + 1;
+    profileRequestRef.current = requestId;
     const sb = getSupabaseClient();
-    if (!sb) return;
-    const { data } = await sb
-      .from('profiles')
-      .select('aura_balance, username')
-      .eq('id', userId)
-      .single();
-    if (data) setProfile(data);
+    if (!sb) { setProfile(null); return; }
+    try {
+      const { data, error } = await sb
+        .from('profiles')
+        .select('aura_balance, username')
+        .eq('id', userId)
+        .single();
+      if (requestId !== profileRequestRef.current) return;
+      if (error || !data) {
+        setProfile(null);
+        return;
+      }
+      setProfile(data);
+    } catch {
+      if (requestId !== profileRequestRef.current) return;
+      setProfile(null);
+    }
   }, []);
 
   useEffect(() => {
     const sb = getSupabaseClient();
-    if (!sb) { setLoading(false); return; }
+    if (!sb) { setProfile(null); setLoading(false); return; }
 
     sb.auth.getSession().then(({ data }) => {
       const u = data.session?.user ?? null;
       setUser(u);
       setLoading(false);
       if (u) loadProfile(u.id);
+      else {
+        profileRequestRef.current += 1;
+        setProfile(null);
+      }
     });
 
     const { data: listener } = sb.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
       if (u) loadProfile(u.id);
-      else setProfile(null);
+      else {
+        profileRequestRef.current += 1;
+        setProfile(null);
+      }
     });
 
     return () => listener.subscription.unsubscribe();
@@ -68,8 +93,10 @@ export function AuthProvider({ children }) {
     if (!sb) return;
     const { error } = await sb.auth.signOut();
     if (error) throw error;
+    profileRequestRef.current += 1;
+    setUser(null);
+    setProfile(null);
   };
-
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
 
