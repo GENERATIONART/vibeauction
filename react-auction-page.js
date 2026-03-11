@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import { useAuth } from './app/state/auth-store';
 import NavBar from './app/components/NavBar';
+import { getSupabaseClient } from './lib/supabase-client.js';
 import {
   defaultAuctionSlug,
   getAuctionItemBySlug,
@@ -104,10 +105,52 @@ const getTimerFromVibe = (vibe) => {
   return parseTimer(vibe?.timer);
 };
 
-const formatPredictionClock = (timestamp) => {
-  const value = new Date(timestamp || '').getTime();
-  if (!Number.isFinite(value)) return 'Unknown';
-  return new Date(value).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+const getVibeMarketId = (vibe) => {
+  const identity = vibe?.slug || vibe?.id || vibe?.title || defaultAuctionSlug;
+  return normalize(`vibe-market-${identity}`);
+};
+
+const getVibeMarketCloseIso = (vibe) => {
+  const endMs = new Date(vibe?.endTime || '').getTime();
+  if (Number.isFinite(endMs) && endMs > Date.now() + 60 * 1000) {
+    return new Date(endMs).toISOString();
+  }
+
+  const fallback = getTimerFromVibe(vibe);
+  const fallbackSeconds =
+    safeBid(fallback?.hours, 0) * 3600 + safeBid(fallback?.mins, 0) * 60 + safeBid(fallback?.secs, 0);
+  const closeMs = Date.now() + Math.max(Math.round(fallbackSeconds), 20 * 60) * 1000;
+  return new Date(closeMs).toISOString();
+};
+
+const roundToStep = (value, step = 50) => {
+  const numeric = safeBid(value, step);
+  return Math.max(step, Math.round(numeric / step) * step);
+};
+
+async function marketApiRequest(path, { method = 'GET', body } = {}, token = null) {
+  const response = await fetch(path, {
+    method,
+    headers: {
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    cache: method === 'GET' ? 'no-store' : undefined,
+  });
+
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error || `Request failed (${response.status})`);
+  }
+
+  return payload;
 };
 
 const customStyles = {
@@ -445,6 +488,27 @@ const customStyles = {
     gap: '8px',
     marginBottom: '10px',
   },
+  predictionProbabilityWrap: {
+    margin: '10px 0 12px',
+  },
+  predictionProbabilityBar: {
+    width: '100%',
+    height: '10px',
+    borderRadius: '999px',
+    overflow: 'hidden',
+    background: '#262626',
+    border: '1px solid #3A3A3A',
+  },
+  predictionProbabilityYes: {
+    height: '100%',
+    background: '#53FF8A',
+  },
+  predictionStatGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: '8px',
+    marginBottom: '8px',
+  },
   predictionInputWrap: {
     display: 'flex',
     flexDirection: 'column',
@@ -484,6 +548,30 @@ const customStyles = {
     letterSpacing: '0.5px',
     cursor: 'pointer',
     marginTop: '2px',
+  },
+  predictionTradeButtons: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+    marginTop: '8px',
+  },
+  predictionYesButton: {
+    border: 'none',
+    background: '#1A7F45',
+    color: '#FFFFFF',
+    borderRadius: '8px',
+    padding: '10px 12px',
+    fontWeight: 800,
+    cursor: 'pointer',
+  },
+  predictionNoButton: {
+    border: 'none',
+    background: '#8B1A3A',
+    color: '#FFFFFF',
+    borderRadius: '8px',
+    padding: '10px 12px',
+    fontWeight: 800,
+    cursor: 'pointer',
   },
   predictionStats: {
     marginTop: '10px',
@@ -673,7 +761,7 @@ const Timer = ({ hours, mins, secs }) => (
 );
 
 const App = ({ vibe }) => {
-  const { balance, activeBids, placeBid, settleAuction, refreshState, loadPrediction, submitPrediction } = useVibeStore();
+  const { balance, activeBids, placeBid, settleAuction, refreshState } = useVibeStore();
   const { profile, user } = useAuth();
   const router = useRouter();
   const selectedVibe = vibe || getAuctionItemBySlug(defaultAuctionSlug);
@@ -712,11 +800,12 @@ const App = ({ vibe }) => {
   const [error, setError] = useState('');
   const [bids, setBids] = useState(() => makeInitialBidHistory(baseBid));
   const [topBid, setTopBid] = useState(null);
-  const [predictionPriceInput, setPredictionPriceInput] = useState(String(baseBid));
-  const [predictionMinutesInput, setPredictionMinutesInput] = useState('30');
+  const [predictionStakeInput, setPredictionStakeInput] = useState('');
+  const [predictionOpeningInput, setPredictionOpeningInput] = useState('');
   const [predictionSaving, setPredictionSaving] = useState(false);
-  const [predictionData, setPredictionData] = useState(null);
-  const [predictionStats, setPredictionStats] = useState({ totalPredictions: 0 });
+  const [vibeMarket, setVibeMarket] = useState(null);
+  const [predictionLoading, setPredictionLoading] = useState(true);
+  const [predictionCreating, setPredictionCreating] = useState(false);
   const [predictionError, setPredictionError] = useState('');
   const [predictionSuccess, setPredictionSuccess] = useState('');
 
@@ -739,10 +828,11 @@ const App = ({ vibe }) => {
     setTopBid(null);
     setError('');
     setShowBidSuccess(false);
-    setPredictionPriceInput(String(baseBid));
-    setPredictionMinutesInput('30');
-    setPredictionData(null);
-    setPredictionStats({ totalPredictions: 0 });
+    setPredictionStakeInput('');
+    setPredictionOpeningInput('');
+    setVibeMarket(null);
+    setPredictionLoading(true);
+    setPredictionCreating(false);
     setPredictionError('');
     setPredictionSuccess('');
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
@@ -769,13 +859,36 @@ const App = ({ vibe }) => {
     }
   }, [selectedVibe?.slug]);
 
-  const loadPredictionState = useCallback(async () => {
-    const vibeId = selectedVibe?.slug;
-    if (!vibeId) return;
-    const payload = await loadPrediction(vibeId);
-    setPredictionData(payload?.prediction || null);
-    setPredictionStats(payload?.stats || { totalPredictions: 0 });
-  }, [selectedVibe?.slug, loadPrediction]);
+  const vibeMarketId = getVibeMarketId(selectedVibe);
+
+  const getAuthToken = useCallback(async () => {
+    const sb = getSupabaseClient();
+    const sessionData = sb ? await sb.auth.getSession() : null;
+    return sessionData?.data?.session?.access_token ?? null;
+  }, []);
+
+  const loadVibeMarket = useCallback(async () => {
+    if (!vibeMarketId) {
+      setVibeMarket(null);
+      setPredictionLoading(false);
+      return;
+    }
+
+    try {
+      const token = await getAuthToken();
+      const payload = await marketApiRequest(
+        `/api/markets?marketId=${encodeURIComponent(vibeMarketId)}&state=all&limit=1`,
+        {},
+        token,
+      );
+      const market = Array.isArray(payload?.markets) ? payload.markets[0] || null : null;
+      setVibeMarket(market);
+    } catch {
+      // Keep existing market snapshot when refresh fails.
+    } finally {
+      setPredictionLoading(false);
+    }
+  }, [vibeMarketId, getAuthToken]);
 
   useEffect(() => {
     const syncAuctionData = async () => {
@@ -785,7 +898,7 @@ const App = ({ vibe }) => {
         // Ignore state refresh errors and keep current state.
       }
       await loadBidHistory();
-      await loadPredictionState();
+      await loadVibeMarket();
     };
 
     syncAuctionData();
@@ -816,7 +929,7 @@ const App = ({ vibe }) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [loadBidHistory, loadPredictionState, refreshState]);
+  }, [loadBidHistory, loadVibeMarket, refreshState]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -871,60 +984,231 @@ const App = ({ vibe }) => {
           (topBidUser && normalizeHandle(topBidUser) === normalizeHandle(viewerHandle)))),
   );
 
-  const onSubmitPrediction = async () => {
+  const onCreateVibeMarket = async () => {
     setPredictionError('');
     setPredictionSuccess('');
 
     if (!user) {
-      setPredictionError('Sign in to submit predictions.');
+      setPredictionError('Sign in to start a market for this vibe.');
       return;
     }
     if (auctionEnded) {
-      setPredictionError('Predictions are closed for ended auctions.');
+      setPredictionError('Auction ended. New markets cannot be started.');
+      return;
+    }
+    if (vibeMarket) {
+      setPredictionSuccess('This vibe market is already live.');
       return;
     }
 
-    const predictedPrice = Math.round(safeBid(predictionPriceInput, Number.NaN));
-    const predictedMinutes = Math.round(safeBid(predictionMinutesInput, Number.NaN));
-    if (!Number.isFinite(predictedPrice) || predictedPrice <= 0) {
-      setPredictionError('Enter a valid predicted final price.');
-      return;
-    }
-    if (!Number.isFinite(predictedMinutes) || predictedMinutes <= 0 || predictedMinutes > 10080) {
-      setPredictionError('Winner timing must be between 1 and 10,080 minutes.');
-      return;
-    }
+    const basis = buyNowPrice
+      ? Math.max(baseBid, roundToStep((baseBid + buyNowPrice) / 2))
+      : Math.max(baseBid, roundToStep(baseBid * 1.25));
+    const threshold = roundToStep(basis);
+    const closeIso = getVibeMarketCloseIso(selectedVibe);
 
-    const predictedWinnerTime = new Date(Date.now() + predictedMinutes * 60 * 1000).toISOString();
-    setPredictionSaving(true);
-    const result = await submitPrediction({
-      vibeId: selectedVibe?.slug || defaultAuctionSlug,
-      vibeName: selectedVibe?.title || 'Unknown Vibe',
-      predictedPrice,
-      predictedWinnerTime,
-    });
-    setPredictionSaving(false);
+    setPredictionCreating(true);
+    try {
+      const token = await getAuthToken();
+      const result = await marketApiRequest(
+        '/api/markets',
+        {
+          method: 'POST',
+          body: {
+            market: {
+              id: vibeMarketId,
+              type: 'price_target',
+              category: 'Vibe Auctions',
+              title: `Will "${selectedVibe?.title || 'this vibe'}" settle above ${threshold.toLocaleString()} AURA?`,
+              description:
+                `Dedicated market for ${selectedVibe?.title || 'this vibe'}. ` +
+                `Resolves YES if final winning bid is strictly above ${threshold.toLocaleString()} AURA.`,
+              yesLabel: `Above ${threshold.toLocaleString()}`,
+              noLabel: `${threshold.toLocaleString()} or lower`,
+              closesAt: closeIso,
+              resolvesAt: null,
+            },
+          },
+        },
+        token,
+      );
 
-    if (!result?.accepted) {
-      if (result?.reason === 'auth_required') {
-        setPredictionError('Sign in to submit predictions.');
-      } else if (result?.reason === 'vibe_not_found') {
-        setPredictionError('This vibe is no longer available.');
-      } else if (result?.reason === 'auction_ended') {
-        setPredictionError('This auction already ended. Predictions are closed.');
-      } else if (result?.reason === 'invalid_prediction_time') {
-        setPredictionError('Pick a winner timing in the near future.');
-      } else if (result?.reason === 'prediction_unavailable') {
-        setPredictionError('Prediction game is unavailable in this environment.');
-      } else {
-        setPredictionError('Could not save prediction. Try again.');
+      if (!result?.created && result?.reason !== 'market_exists') {
+        if (result?.reason === 'invalid_close_time') {
+          setPredictionError('Vibe market close time must be in the future.');
+        } else {
+          setPredictionError('Could not start vibe market.');
+        }
+        return;
       }
+
+      setPredictionSuccess(result?.reason === 'market_exists' ? 'Vibe market already exists.' : 'Vibe market started.');
+      await loadVibeMarket();
+    } catch (createError) {
+      setPredictionError(createError instanceof Error ? createError.message : 'Could not start vibe market.');
+    } finally {
+      setPredictionCreating(false);
+    }
+  };
+
+  const onTradeVibeMarket = async (side) => {
+    setPredictionError('');
+    setPredictionSuccess('');
+
+    if (!user) {
+      setPredictionError('Sign in to trade this market.');
+      return;
+    }
+    if (!vibeMarket?.id) {
+      setPredictionError('Start the vibe market before trading.');
       return;
     }
 
-    setPredictionData(result?.prediction || null);
-    setPredictionStats(result?.stats || { totalPredictions: 0 });
-    setPredictionSuccess('Prediction locked in. You can update it before the auction ends.');
+    const stake = Math.round(safeBid(predictionStakeInput, Number.NaN));
+    if (!Number.isFinite(stake) || stake < 1) {
+      setPredictionError('Trade stake must be at least 1 AURA.');
+      return;
+    }
+
+    const marketProbability = safeBid(vibeMarket?.probabilityYes, Number.NaN);
+    const openingProb = Math.round(safeBid(predictionOpeningInput, Number.NaN));
+    if (!Number.isFinite(marketProbability) && (!Number.isFinite(openingProb) || openingProb <= 0 || openingProb >= 100)) {
+      setPredictionError('Opening probability must be between 1% and 99%.');
+      return;
+    }
+
+    setPredictionSaving(true);
+    try {
+      const token = await getAuthToken();
+      const result = await marketApiRequest(
+        '/api/markets/trade',
+        {
+          method: 'POST',
+          body: {
+            trade: {
+              marketId: vibeMarket.id,
+              side,
+              stake,
+              ...(Number.isFinite(marketProbability) ? {} : { price: openingProb }),
+            },
+          },
+        },
+        token,
+      );
+
+      if (!result?.accepted) {
+        if (result?.reason === 'insufficient_balance') {
+          setPredictionError('Not enough AURA for this trade.');
+        } else if (result?.reason === 'price_required_for_first_trade') {
+          setPredictionError('Set opening probability (1-99%) for the first trade.');
+        } else if (result?.reason === 'market_closed') {
+          setPredictionError('This market is closed for new trades.');
+        } else {
+          setPredictionError('Trade failed. Try again.');
+        }
+        return;
+      }
+
+      setPredictionSuccess(`Trade executed: ${side.toUpperCase()} ${stake.toLocaleString()} AURA.`);
+      setPredictionStakeInput('');
+      setPredictionOpeningInput('');
+      await Promise.all([loadVibeMarket(), refreshState()]);
+    } catch (tradeError) {
+      setPredictionError(tradeError instanceof Error ? tradeError.message : 'Trade failed.');
+    } finally {
+      setPredictionSaving(false);
+    }
+  };
+
+  const onResolveVibeMarket = async (outcome) => {
+    setPredictionError('');
+    setPredictionSuccess('');
+
+    if (!user) {
+      setPredictionError('Sign in to resolve this market.');
+      return;
+    }
+    if (!vibeMarket?.id) return;
+
+    setPredictionSaving(true);
+    try {
+      const token = await getAuthToken();
+      const result = await marketApiRequest(
+        '/api/markets/resolve',
+        {
+          method: 'POST',
+          body: {
+            resolution: {
+              marketId: vibeMarket.id,
+              outcome,
+            },
+          },
+        },
+        token,
+      );
+
+      if (!result?.resolved) {
+        if (result?.reason === 'only_creator_can_resolve') {
+          setPredictionError('Only the market creator can resolve this market.');
+        } else if (result?.reason === 'market_still_open') {
+          setPredictionError('Market must be closed before resolution.');
+        } else {
+          setPredictionError('Resolution failed.');
+        }
+        return;
+      }
+
+      setPredictionSuccess(`Market resolved as ${outcome.toUpperCase()}.`);
+      await loadVibeMarket();
+    } catch (resolveError) {
+      setPredictionError(resolveError instanceof Error ? resolveError.message : 'Resolution failed.');
+    } finally {
+      setPredictionSaving(false);
+    }
+  };
+
+  const onClaimVibeMarket = async () => {
+    setPredictionError('');
+    setPredictionSuccess('');
+
+    if (!user) {
+      setPredictionError('Sign in to claim payouts.');
+      return;
+    }
+    if (!vibeMarket?.id) return;
+
+    setPredictionSaving(true);
+    try {
+      const token = await getAuthToken();
+      const result = await marketApiRequest(
+        '/api/markets/claim',
+        {
+          method: 'POST',
+          body: { claim: { marketId: vibeMarket.id } },
+        },
+        token,
+      );
+
+      if (!result?.claimed) {
+        if (result?.reason === 'already_claimed') {
+          setPredictionError('Payout already claimed.');
+        } else if (result?.reason === 'no_position') {
+          setPredictionError('No position found on this market.');
+        } else if (result?.reason === 'market_not_resolved') {
+          setPredictionError('Market is not resolved yet.');
+        } else {
+          setPredictionError('Claim failed.');
+        }
+        return;
+      }
+
+      setPredictionSuccess(`Payout claimed: ${safeBid(result?.amount, 0).toLocaleString()} AURA.`);
+      await Promise.all([loadVibeMarket(), refreshState()]);
+    } catch (claimError) {
+      setPredictionError(claimError instanceof Error ? claimError.message : 'Claim failed.');
+    } finally {
+      setPredictionSaving(false);
+    }
   };
 
   const onClaimWin = useCallback(async () => {
@@ -1060,9 +1344,20 @@ const App = ({ vibe }) => {
   };
 
   const displayBid = currentBid + increment;
-  const predictionPoints = Number.isFinite(profile?.prediction_points) ? profile.prediction_points : 0;
-  const savedPredictedPrice = safeBid(predictionData?.predictedPrice, Number.NaN);
-  const savedPointsAwarded = safeBid(predictionData?.pointsAwarded, 0);
+  const hasVibeMarket = Boolean(vibeMarket?.id);
+  const probabilityYesRaw = safeBid(vibeMarket?.probabilityYes, Number.NaN);
+  const hasLiveOdds = Number.isFinite(probabilityYesRaw);
+  const probabilityYesPct = hasLiveOdds ? Math.round(probabilityYesRaw * 100) : null;
+  const probabilityNoPct = hasLiveOdds ? 100 - probabilityYesPct : null;
+  const marketCloseMs = new Date(vibeMarket?.closesAt || '').getTime();
+  const marketIsClosed = Number.isFinite(marketCloseMs) && marketCloseMs <= Date.now();
+  const marketIsResolved = vibeMarket?.state === 'resolved' || vibeMarket?.state === 'cancelled';
+  const canResolveMarket =
+    Boolean(user) &&
+    Boolean(vibeMarket?.creatorId) &&
+    String(user?.id) === String(vibeMarket?.creatorId) &&
+    vibeMarket?.state === 'open' &&
+    marketIsClosed;
 
   return (
     <div style={customStyles.body}>
@@ -1376,132 +1671,209 @@ const App = ({ vibe }) => {
 
           <div style={{ ...customStyles.predictionPanel, padding: isMobile ? '12px' : customStyles.predictionPanel.padding }}>
             <div style={{ ...customStyles.predictionTitle, fontSize: isMobile ? '20px' : customStyles.predictionTitle.fontSize }}>
-              Prediction Side-Game
+              Vibe Prediction Market
             </div>
             <div style={customStyles.predictionHelp}>
-              Guess the final price and when the winning bid lands. You earn points only, no AURA payout.
+              This is the live market for this vibe. Trade YES/NO shares; first trade sets opening probability and winners claim AURA payouts.
             </div>
 
             <div style={customStyles.predictionBadgeRow}>
-              <span style={customStyles.predictionBadge}>Side-Game</span>
-              <span style={customStyles.predictionBadge}>Points Only</span>
+              <span style={customStyles.predictionBadge}>Vibe Market</span>
+              <span style={customStyles.predictionBadge}>Real Payouts</span>
               <span
                 style={{
                   ...customStyles.predictionBadge,
-                  color: predictionData?.resolved ? '#8FC8FF' : '#A8FF8F',
-                  borderColor: predictionData?.resolved ? '#2A4F6C' : '#2A5E2A',
+                  color: !hasVibeMarket ? '#FFC28F' : marketIsResolved ? '#8FC8FF' : '#A8FF8F',
+                  borderColor: !hasVibeMarket ? '#6B4A2A' : marketIsResolved ? '#2A4F6C' : '#2A5E2A',
                 }}
               >
-                {predictionData?.resolved ? 'resolved' : 'open'}
+                {!hasVibeMarket ? 'not started' : vibeMarket.state}
               </span>
             </div>
 
-            <div
-              style={{
-                ...customStyles.predictionStats,
-                marginTop: 0,
-                marginBottom: '10px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                color: '#D2D2D2',
-              }}
-            >
-              <span>Your prediction points</span>
-              <span style={{ color: '#C8FF00' }}>{predictionPoints.toLocaleString()}</span>
-            </div>
-
-            {!predictionData?.resolved && (
+            {predictionLoading ? (
+              <div style={customStyles.predictionStats}>Loading vibe market...</div>
+            ) : !hasVibeMarket ? (
               <>
-                <div
-                  style={{
-                    ...customStyles.predictionGrid,
-                    gridTemplateColumns: isMobile ? '1fr' : customStyles.predictionGrid.gridTemplateColumns,
-                  }}
-                >
-                  <label style={customStyles.predictionInputWrap}>
-                    <span style={customStyles.predictionLabel}>Final Price Guess (AURA)</span>
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={predictionPriceInput}
-                      onChange={(event) => {
-                        setPredictionPriceInput(event.target.value);
-                        setPredictionError('');
-                        setPredictionSuccess('');
-                      }}
-                      style={customStyles.predictionInput}
-                    />
-                  </label>
-
-                  <label style={customStyles.predictionInputWrap}>
-                    <span style={customStyles.predictionLabel}>Winner Timing (minutes from now)</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={10080}
-                      step={1}
-                      value={predictionMinutesInput}
-                      onChange={(event) => {
-                        setPredictionMinutesInput(event.target.value);
-                        setPredictionError('');
-                        setPredictionSuccess('');
-                      }}
-                      style={customStyles.predictionInput}
-                    />
-                  </label>
+                <div style={{ ...customStyles.predictionStats, marginTop: 0 }}>
+                  No market started yet for this vibe. Any signed-in user can launch it.
                 </div>
-
                 <button
                   type="button"
-                  onClick={onSubmitPrediction}
-                  disabled={predictionSaving || auctionEnded || !user}
+                  onClick={onCreateVibeMarket}
+                  disabled={predictionCreating || auctionEnded || !user}
                   style={{
                     ...customStyles.predictionButton,
-                    opacity: predictionSaving || auctionEnded || !user ? 0.6 : 1,
-                    cursor: predictionSaving || auctionEnded || !user ? 'not-allowed' : customStyles.predictionButton.cursor,
+                    opacity: predictionCreating || auctionEnded || !user ? 0.6 : 1,
+                    cursor: predictionCreating || auctionEnded || !user ? 'not-allowed' : customStyles.predictionButton.cursor,
                   }}
                 >
-                  {predictionSaving ? 'Saving Prediction...' : predictionData ? 'Update Prediction' : 'Lock Prediction'}
+                  {predictionCreating ? 'Starting Market...' : 'Start Vibe Market'}
                 </button>
+                {!user && <div style={customStyles.predictionStats}>Sign in to start this market.</div>}
+                {auctionEnded && <div style={customStyles.predictionStats}>Auction ended. Market start is closed.</div>}
+              </>
+            ) : (
+              <>
+                <div style={customStyles.predictionProbabilityWrap}>
+                  {hasLiveOdds ? (
+                    <>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '6px',
+                          fontSize: '12px',
+                          fontWeight: 800,
+                        }}
+                      >
+                        <span style={{ color: '#53FF8A' }}>{vibeMarket.yesLabel}: {probabilityYesPct}%</span>
+                        <span style={{ color: '#FF7998' }}>{vibeMarket.noLabel}: {probabilityNoPct}%</span>
+                      </div>
+                      <div style={customStyles.predictionProbabilityBar}>
+                        <div style={{ ...customStyles.predictionProbabilityYes, width: `${probabilityYesPct}%` }} />
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ ...customStyles.predictionStats, marginTop: 0, color: '#D2D2D2' }}>
+                      No live odds yet. First trader sets opening probability.
+                    </div>
+                  )}
+                </div>
 
-                {predictionData && (
-                  <div style={customStyles.predictionSuccess}>
-                    Current pick: {Number.isFinite(savedPredictedPrice) ? `${savedPredictedPrice.toLocaleString()} AURA` : '—'} at{' '}
-                    {formatPredictionClock(predictionData.predictedWinnerTime)}
+                <div
+                  style={{
+                    ...customStyles.predictionStatGrid,
+                    gridTemplateColumns: isMobile ? '1fr 1fr' : customStyles.predictionStatGrid.gridTemplateColumns,
+                  }}
+                >
+                  <div style={{ ...customStyles.predictionStats, marginTop: 0 }}>
+                    Pool: {safeBid(vibeMarket.totalPool, 0).toLocaleString()} AURA
+                  </div>
+                  <div style={{ ...customStyles.predictionStats, marginTop: 0 }}>
+                    Traders: {safeBid(vibeMarket.participants, 0)}
+                  </div>
+                  <div style={{ ...customStyles.predictionStats, marginTop: 0, gridColumn: isMobile ? '1 / -1' : 'auto' }}>
+                    Closes: {new Date(vibeMarket.closesAt).toLocaleString()}
+                  </div>
+                </div>
+
+                {vibeMarket.myPosition && (
+                  <div style={{ ...customStyles.predictionStats, color: '#C8FFAA' }}>
+                    Your exposure: {safeBid(vibeMarket.myPosition.totalStake, 0).toLocaleString()} AURA ·
+                    YES shares {safeBid(vibeMarket.myPosition.yesShares, 0).toLocaleString()} ·
+                    NO shares {safeBid(vibeMarket.myPosition.noShares, 0).toLocaleString()}
+                  </div>
+                )}
+
+                {vibeMarket.myClaim && (
+                  <div style={{ ...customStyles.predictionStats, color: '#9DD3FF' }}>
+                    Claimed: {safeBid(vibeMarket.myClaim.amount, 0).toLocaleString()} AURA on{' '}
+                    {new Date(vibeMarket.myClaim.claimedAt).toLocaleString()}
+                  </div>
+                )}
+
+                {vibeMarket.state === 'open' && !marketIsClosed && (
+                  <>
+                    <div
+                      style={{
+                        ...customStyles.predictionGrid,
+                        gridTemplateColumns: isMobile ? '1fr' : customStyles.predictionGrid.gridTemplateColumns,
+                      }}
+                    >
+                      <label style={customStyles.predictionInputWrap}>
+                        <span style={customStyles.predictionLabel}>Stake (AURA)</span>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={predictionStakeInput}
+                          onChange={(event) => {
+                            setPredictionStakeInput(event.target.value);
+                            setPredictionError('');
+                            setPredictionSuccess('');
+                          }}
+                          style={customStyles.predictionInput}
+                        />
+                      </label>
+
+                      {!hasLiveOdds && (
+                        <label style={customStyles.predictionInputWrap}>
+                          <span style={customStyles.predictionLabel}>Opening Probability %</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            step={1}
+                            value={predictionOpeningInput}
+                            onChange={(event) => {
+                              setPredictionOpeningInput(event.target.value);
+                              setPredictionError('');
+                              setPredictionSuccess('');
+                            }}
+                            style={customStyles.predictionInput}
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        ...customStyles.predictionTradeButtons,
+                        gridTemplateColumns: isMobile ? '1fr' : customStyles.predictionTradeButtons.gridTemplateColumns,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onTradeVibeMarket('yes')}
+                        disabled={predictionSaving}
+                        style={{ ...customStyles.predictionYesButton, opacity: predictionSaving ? 0.7 : 1 }}
+                      >
+                        Buy YES
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onTradeVibeMarket('no')}
+                        disabled={predictionSaving}
+                        style={{ ...customStyles.predictionNoButton, opacity: predictionSaving ? 0.7 : 1 }}
+                      >
+                        Buy NO
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {marketIsResolved && (
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      style={{ ...customStyles.predictionButton, fontSize: '16px', padding: '10px 12px', width: isMobile ? '100%' : 'auto' }}
+                      disabled={predictionSaving || Boolean(vibeMarket.myClaim)}
+                      onClick={onClaimVibeMarket}
+                    >
+                      {vibeMarket.myClaim ? 'Claimed' : 'Claim Payout'}
+                    </button>
+                    <span style={{ ...customStyles.predictionStats, marginTop: 0, alignSelf: 'center' }}>
+                      Outcome: {(vibeMarket.resolvedOutcome || vibeMarket.state).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {canResolveMarket && (
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button type="button" style={customStyles.predictionYesButton} disabled={predictionSaving} onClick={() => onResolveVibeMarket('yes')}>
+                      Resolve YES
+                    </button>
+                    <button type="button" style={customStyles.predictionNoButton} disabled={predictionSaving} onClick={() => onResolveVibeMarket('no')}>
+                      Resolve NO
+                    </button>
+                    <button type="button" style={{ ...customStyles.predictionButton, fontSize: '14px', padding: '10px 12px', width: 'auto' }} disabled={predictionSaving} onClick={() => onResolveVibeMarket('cancelled')}>
+                      Cancel / Refund
+                    </button>
                   </div>
                 )}
               </>
             )}
-
-            {predictionData?.resolved && (
-              <div style={customStyles.predictionResolved}>
-                <div style={customStyles.predictionResolvedTitle}>Round Scored</div>
-                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', color: '#C8FF00', lineHeight: 1, marginBottom: '8px' }}>
-                  +{savedPointsAwarded.toLocaleString()} pts
-                </div>
-                <div style={{ fontSize: '12px', color: '#D0D0D0', lineHeight: 1.6 }}>
-                  Price: {Number.isFinite(savedPredictedPrice) ? savedPredictedPrice.toLocaleString() : '—'} guess vs{' '}
-                  {Number.isFinite(safeBid(predictionData.actualFinalPrice, Number.NaN))
-                    ? safeBid(predictionData.actualFinalPrice, 0).toLocaleString()
-                    : '—'} final
-                </div>
-                <div style={{ fontSize: '12px', color: '#D0D0D0', lineHeight: 1.6 }}>
-                  Timing: {formatPredictionClock(predictionData.predictedWinnerTime)} guess vs{' '}
-                  {formatPredictionClock(predictionData.actualWinnerTime)} winner
-                </div>
-              </div>
-            )}
-
-            {!user && (
-              <div style={customStyles.predictionStats}>
-                Sign in to join this side-game.
-              </div>
-            )}
-            <div style={customStyles.predictionStats}>
-              {safeBid(predictionStats?.totalPredictions, 0).toLocaleString()} predictions placed on this vibe
-            </div>
 
             {predictionSuccess && <div style={customStyles.predictionSuccess}>{predictionSuccess}</div>}
             {predictionError && <div style={customStyles.predictionError}>{predictionError}</div>}

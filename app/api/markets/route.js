@@ -10,9 +10,10 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const state = searchParams.get('state') || 'all';
+    const marketId = searchParams.get('marketId') || null;
     const limit = Number(searchParams.get('limit') || 100);
     const authToken = request.headers.get('authorization')?.replace('Bearer ', '') ?? null;
-    const payload = await listPredictionMarkets({ state, limit, authToken });
+    const payload = await listPredictionMarkets({ state, limit, authToken, marketId });
     return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return NextResponse.json(
