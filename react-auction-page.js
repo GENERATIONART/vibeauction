@@ -703,29 +703,31 @@ const App = ({ vibe }) => {
 
   const vibeNormId = normalize(selectedVibe?.slug || selectedVibe?.title || '');
   const topBidUser = topBid?.user || null;
+  const topBidUserId = topBid?.userId || null;
   const userIsHighestBidder = Boolean(
     auctionEnded &&
-      viewerHandle &&
-      topBidUser &&
-      normalizeHandle(topBidUser) === normalizeHandle(viewerHandle),
+      ((viewerUserId && topBidUserId && String(viewerUserId) === String(topBidUserId)) ||
+        (viewerHandle && topBidUser && normalizeHandle(topBidUser) === normalizeHandle(viewerHandle))),
   );
   const viewerPlacedBid = Boolean(
-    viewerHandle &&
-      (bids.some((bid) => normalizeHandle(bid?.user) === normalizeHandle(viewerHandle)) ||
-        (topBidUser && normalizeHandle(topBidUser) === normalizeHandle(viewerHandle))),
+    (viewerUserId && bids.some((bid) => bid?.userId && String(bid.userId) === String(viewerUserId))) ||
+      (viewerHandle &&
+        (bids.some((bid) => normalizeHandle(bid?.user) === normalizeHandle(viewerHandle)) ||
+          (topBidUser && normalizeHandle(topBidUser) === normalizeHandle(viewerHandle)))),
   );
 
   const onClaimWin = useCallback(async () => {
+    const winningAmount = safeBid(topBid?.amount, currentBid);
     const params = new URLSearchParams({
       id: vibeNormId,
       name: selectedVibe?.title || 'Unknown Vibe',
       emoji: selectedVibe?.emoji || '✨',
-      amount: String(currentBid),
+      amount: String(winningAmount),
       slug: selectedVibe?.slug || vibeNormId,
       category: selectedVibe?.category || 'Vibes',
     });
     router.push(`/won?${params.toString()}`);
-  }, [vibeNormId, selectedVibe, currentBid, router]);
+  }, [vibeNormId, selectedVibe, currentBid, topBid, router]);
 
   const onPlaceBid = async () => {
     if (placingBid || auctionEnded) return;
@@ -769,6 +771,7 @@ const App = ({ vibe }) => {
     setCurrentBid(bidAmount);
     const clientBid = {
       id: Date.now(),
+      userId: viewerUserId || null,
       user: viewerHandle || '@You',
       time: 'just now',
       amount: bidAmount,

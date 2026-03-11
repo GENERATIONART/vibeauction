@@ -130,6 +130,19 @@ function TopUpSuccessContent() {
           return;
         }
 
+        if (result?.reason === 'credited_profile_retry') {
+          setCreditedAmount(Number(result?.auraAmount) || 0);
+          setPhase('success');
+          setMessage('Top-up finalized and synced to your profile.');
+          return;
+        }
+
+        if (result?.reason === 'profile_credit_failed') {
+          setPhase('pending');
+          setMessage('Payment was confirmed, but wallet sync needs a retry. Refresh this page.');
+          return;
+        }
+
         if (result?.reason === 'not_paid') {
           setPhase('pending');
           setMessage('Stripe reports this checkout is not paid yet.');

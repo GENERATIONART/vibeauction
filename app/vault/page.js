@@ -843,6 +843,7 @@ export default function VaultPage() {
   const { balance, vaultItems, activeBids, walletLog, mintVibe } = useVibeStore();
   const { user, profile } = useAuth();
   const username = profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
+  const profilePath = `/profile/${encodeURIComponent(username)}`;
   const userId = user?.id || null;
   const [activeTab, setActiveTab] = useState('trophies');
   const [viewportWidth, setViewportWidth] = useState(1200);
@@ -919,7 +920,7 @@ export default function VaultPage() {
                 fontSize: isMobile ? '34px' : (isTablet ? '46px' : customStyles.profileH1.fontSize),
               }}
             >
-              <Link href={`/profile/${username}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+              <Link href={profilePath} style={{ color: 'inherit', textDecoration: 'none' }}>
                 @{username}
               </Link>
             </h1>

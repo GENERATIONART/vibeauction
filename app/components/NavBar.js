@@ -30,6 +30,8 @@ export default function NavBar() {
   const headerHeight = isMobile ? 64 : 60;
   const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
   const userHandle = profile?.username || user?.email?.split('@')[0] || null;
+  const profilePath = userHandle ? `/profile/${encodeURIComponent(userHandle)}` : '/vault';
+  const profileLabel = userHandle ? `@${userHandle}` : '@you';
 
   useEffect(() => {
     const update = () => setViewportWidth(window.innerWidth);
@@ -124,10 +126,10 @@ export default function NavBar() {
           {!isMobile && user && (
             <>
               <Link
-                href={`/profile/${userHandle}`}
+                href={profilePath}
                 style={{ ...navItemStyle, color: '#C8FF00', fontSize: '13px', whiteSpace: 'nowrap' }}
               >
-                @{userHandle}
+                {profileLabel}
               </Link>
               <button
                 type="button"
@@ -295,7 +297,7 @@ export default function NavBar() {
           {user && (
             <>
               <Link
-                href={`/profile/${userHandle}`}
+                href={profilePath}
                 style={{
                   ...mobileNavLinkBase,
                   border: '2px solid #C8FF00',
@@ -304,7 +306,7 @@ export default function NavBar() {
                 }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                @{userHandle}
+                {profileLabel}
               </Link>
               <button
                 type="button"

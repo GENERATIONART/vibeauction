@@ -303,6 +303,10 @@ function WonPageInner() {
 
   const handleVaultClick = async () => {
     if (settling) return;
+    if (!wonVibeId || wonVibeId === 'unknown-vibe') {
+      setActionError('Missing winning vibe details. Return to the auction and claim again.');
+      return;
+    }
     setVaultClicked(true);
     setActionError('');
     setSettling(true);

@@ -63,6 +63,21 @@ async function creditAuraToProfile(userId, auraAmount) {
     }
   };
 
+  const incrementExistingProfile = async () => {
+    const { data: profile, error } = await sb
+      .from('profiles')
+      .select('aura_balance')
+      .eq('id', userId)
+      .single();
+    if (error || !profile) return false;
+    const nextBalance = safeNumber(profile?.aura_balance, 0) + auraAmount;
+    const { error: updateError } = await sb
+      .from('profiles')
+      .update({ aura_balance: nextBalance })
+      .eq('id', userId);
+    return !updateError;
+  };
+
   const { data: profile, error: profileError } = await sb
     .from('profiles')
     .select('aura_balance')
@@ -72,18 +87,33 @@ async function creditAuraToProfile(userId, auraAmount) {
   if (profileError) {
     // If the profile row does not exist yet, create it with the credited amount.
     if (profileError.code === 'PGRST116') {
-      const username = await resolveUsername();
-      const { error: insertError } = await sb
-        .from('profiles')
-        .upsert(
-          {
+      const preferredUsername = await resolveUsername();
+      const suffix = String(Date.now()).slice(-4);
+      const uniqueFallback = `${fallbackUsername}_${suffix}`.slice(0, 30);
+      const candidateUsernames = [...new Set([preferredUsername, fallbackUsername, uniqueFallback])];
+
+      for (const username of candidateUsernames) {
+        const { error: insertError } = await sb
+          .from('profiles')
+          .insert({
             id: userId,
             username,
             aura_balance: auraAmount,
-          },
-          { onConflict: 'id' },
-        );
-      return !insertError;
+          });
+
+        if (!insertError) return true;
+
+        if (insertError.code === '23505') {
+          // Duplicate key can be either username collision or profile already created concurrently.
+          const incremented = await incrementExistingProfile();
+          if (incremented) return true;
+          continue;
+        }
+
+        return false;
+      }
+
+      return false;
     }
     return false;
   }
@@ -170,13 +200,41 @@ export async function POST(request) {
 
     const userId = await resolveUserIdForCredit(session, authToken);
     let creditedToProfile = false;
-    if (result.credited && userId) {
+    const sessionProfileCredited = result?.session?.profileCredited === true;
+    const shouldAttemptProfileCredit = Boolean(
+      userId && !sessionProfileCredited && (result.credited || result.reason === 'already_processed'),
+    );
+
+    if (shouldAttemptProfileCredit) {
       creditedToProfile = await creditAuraToProfile(userId, auraAmount);
+      if (creditedToProfile) {
+        const markResult = await applyStripeCreditInStore({
+          sessionId,
+          auraAmount,
+          label: `Stripe ${label}`,
+          markProfileCredited: true,
+        });
+        if (markResult?.state) {
+          result.state = markResult.state;
+          result.session = markResult.session || result.session;
+        }
+      }
+    }
+
+    let credited = Boolean(result.credited);
+    let reason = result.reason || 'unknown';
+
+    if (shouldAttemptProfileCredit && !creditedToProfile) {
+      credited = false;
+      reason = 'profile_credit_failed';
+    } else if (!result.credited && result.reason === 'already_processed' && creditedToProfile) {
+      credited = true;
+      reason = 'credited_profile_retry';
     }
 
     return NextResponse.json({
-      credited: Boolean(result.credited),
-      reason: result.reason || 'unknown',
+      credited,
+      reason,
       auraAmount,
       creditedToProfile,
       paymentStatus,
