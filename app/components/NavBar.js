@@ -8,6 +8,7 @@ import { useAuth } from '../state/auth-store';
 
 const NAV_ITEMS = [
   { label: 'Browse Vibes', href: '/' },
+  { label: 'Markets', href: '/markets' },
   { label: 'Vibes', href: '/vibes' },
   { label: 'Drop Vibe', href: '/mint' },
   { label: 'Leaderboard', href: '/leaderboard' },
