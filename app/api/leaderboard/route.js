@@ -72,7 +72,7 @@ export async function GET(request) {
   // Top vibes by value
   const { data: vibes } = await sb
     .from('vibes')
-    .select('name, emoji, starting_price, buy_now_price, slug')
+    .select('name, starting_price, buy_now_price, slug')
     .order('starting_price', { ascending: false })
     .limit(6);
 
@@ -80,7 +80,6 @@ export async function GET(request) {
     .filter((v) => v?.slug)
     .map((v) => ({
       name: v.name,
-      emoji: v.emoji || '✨',
       slug: v.slug,
       price: v.buy_now_price || v.starting_price || 0,
     }));

@@ -445,12 +445,12 @@ export default function LeaderboardPage() {
       <div style={{ ...customStyles.tickerWrap, padding: isMobile ? '6px 0' : undefined }}>
         <div style={{ ...customStyles.ticker, gap: isMobile ? '18px' : undefined }}>
           {[
-            '⚡ Bid AURA to climb the leaderboard',
-            '🏆 Top bidders win legendary status',
-            '💫 Collect rare vibes — build your reputation',
-            '⚡ Bid AURA to climb the leaderboard',
-            '🏆 Top bidders win legendary status',
-            '💫 Collect rare vibes — build your reputation',
+            'Bid AURA to climb the leaderboard',
+            'Top bidders win legendary status',
+            'Collect rare vibes and build your reputation',
+            'Bid AURA to climb the leaderboard',
+            'Top bidders win legendary status',
+            'Collect rare vibes and build your reputation',
           ].map((text, i) => (
             <div
               key={i}
@@ -549,7 +549,7 @@ export default function LeaderboardPage() {
                 width: '100%',
               }}
             >
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '48px' : '72px', color: '#1A1A1A', marginBottom: '16px' }}>🏆</div>
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '48px' : '72px', color: '#1A1A1A', marginBottom: '16px' }}>LEAD</div>
               <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '22px' : '28px', textTransform: 'uppercase', color: '#333', marginBottom: '8px' }}>
                 No Top Bidders Yet
               </div>
@@ -627,7 +627,7 @@ export default function LeaderboardPage() {
                     style={customStyles.vibeItem}
                   >
                     <span style={customStyles.vibeName}>
-                      {vibe.emoji} {vibe.name}
+                      {vibe.name}
                     </span>
                     <span style={customStyles.vibePrice}>
                       {vibe.price.toLocaleString()} AURA

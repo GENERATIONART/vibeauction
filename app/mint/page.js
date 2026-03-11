@@ -18,15 +18,6 @@ const categoryOptions = [
 
 const durationOptions = ['12 Hours', '24 Hours', '3 Days', '7 Days'];
 
-const defaultEmojiByCategory = {
-  Feelings: '💸',
-  Permissions: '🚪',
-  Moments: '🍟',
-  Powers: '⚡',
-  Excuses: '🕳️',
-  Confessions: '🕵️',
-};
-
 const defaultTitleByCategory = {
   Feelings: 'Flirty Eye Contact at a Red Light That Lasted Too Long',
   Permissions: 'Permission to Leave Because Your Stomach Growled',
@@ -218,8 +209,14 @@ const customStyles = {
     height: '100%',
     position: 'absolute',
   },
-  cardEmoji: {
-    fontSize: '72px',
+  cardFallback: {
+    fontSize: '13px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    border: '2px solid #222222',
+    padding: '8px 12px',
+    background: 'rgba(255,255,255,0.6)',
     zIndex: 1,
   },
   liveBadge: {
@@ -434,7 +431,6 @@ export default function MintPage() {
   const [formData, setFormData] = useState({
     itemName: '',
     category: 'Feelings',
-    emoji: defaultEmojiByCategory.Feelings,
     startingPrice: '100',
     buyItNow: '',
     duration: '24 Hours',
@@ -513,15 +509,9 @@ export default function MintPage() {
     const nextCategory = event.target.value;
 
     setFormData((previous) => {
-      const previousDefaultEmoji = defaultEmojiByCategory[previous.category];
-      const nextDefaultEmoji = defaultEmojiByCategory[nextCategory];
-      const nextEmoji =
-        !previous.emoji || previous.emoji === previousDefaultEmoji ? nextDefaultEmoji : previous.emoji;
-
       return {
         ...previous,
         category: nextCategory,
-        emoji: nextEmoji,
         startingPrice:
           nextCategory === 'Confessions'
             ? previous.startingPrice === '' || previous.startingPrice === '0'
@@ -580,7 +570,6 @@ export default function MintPage() {
         const mirroredConfessionVibeResult = await mintVibe({
           name: cleanedName || mintedConfession.title,
           category: 'Confessions',
-          emoji: formData.emoji,
           startingPrice: 0,
           duration: 'N/A',
           manifesto: cleanedDetails,
@@ -623,7 +612,6 @@ export default function MintPage() {
       const mintResult = await mintVibe({
         name: cleanedName,
         category: formData.category,
-        emoji: formData.emoji,
         startingPrice: numericPrice,
         buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
         duration: formData.duration,
@@ -664,7 +652,6 @@ export default function MintPage() {
   };
 
   const previewTitle = formData.itemName || defaultTitleByCategory[formData.category];
-  const previewEmoji = formData.emoji || defaultEmojiByCategory[formData.category];
   const previewDetails =
     formData.details ||
     (isConfession
@@ -749,7 +736,7 @@ export default function MintPage() {
                 />
                 {!uploadedImage && (
                   <>
-                    <span style={customStyles.uploadIcon}>📸</span>
+                    <span style={customStyles.uploadIcon}>IMG</span>
                     <span style={customStyles.uploadText}>Drop an image or click to browse</span>
                     <span style={customStyles.uploadSubtext}>PNG, JPG, GIF · Max 5MB</span>
                   </>
@@ -778,19 +765,6 @@ export default function MintPage() {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div style={customStyles.inputGroup}>
-              <label style={customStyles.label}>Emoji Representation</label>
-              <input
-                type="text"
-                style={getInputStyle('emoji')}
-                placeholder={defaultEmojiByCategory[formData.category]}
-                value={formData.emoji}
-                onChange={(event) => setFormData((previous) => ({ ...previous, emoji: event.target.value }))}
-                onFocus={() => setFocusedField('emoji')}
-                onBlur={() => setFocusedField('')}
-              />
             </div>
 
             {!isConfession && (
@@ -964,7 +938,7 @@ export default function MintPage() {
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
                   />
                 ) : (
-                  <div style={customStyles.cardEmoji}>{previewEmoji}</div>
+                  <div style={customStyles.cardFallback}>IMAGE PREVIEW</div>
                 )}
               </div>
               <div style={customStyles.cardContent}>

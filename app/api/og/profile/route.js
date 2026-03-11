@@ -2,13 +2,10 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
-const AVATAR_EMOJIS = ['🕶️', '👾', '🌀', '🔮', '🎭', '🦋', '⚡', '🌊'];
-
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const username = searchParams.get('username') || 'unknown';
-
-  const avatarEmoji = AVATAR_EMOJIS[(username.charCodeAt(0) ?? 0) % AVATAR_EMOJIS.length];
+  const avatarMonogram = String(username).charAt(0).toUpperCase() || 'U';
 
   return new ImageResponse(
     (
@@ -63,7 +60,7 @@ export async function GET(request) {
             boxShadow: '12px 12px 0px rgba(0,0,0,0.5)',
             border: '4px solid #FFFFFF',
           }}>
-            {avatarEmoji}
+            {avatarMonogram}
           </div>
 
           {/* Text */}

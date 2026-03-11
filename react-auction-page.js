@@ -253,10 +253,15 @@ const customStyles = {
     height: '100%',
     position: 'absolute',
   },
-  heroEmoji: {
-    fontSize: '180px',
+  heroFallback: {
+    fontSize: '15px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    border: '2px solid #222222',
+    padding: '10px 16px',
+    background: 'rgba(255,255,255,0.6)',
     zIndex: 1,
-    filter: 'drop-shadow(10px 10px 0px rgba(0,0,0,0.1))',
   },
   heroInfo: {
     padding: '32px',
@@ -1216,9 +1221,8 @@ const App = ({ vibe }) => {
     const params = new URLSearchParams({
       id: vibeNormId,
       name: selectedVibe?.title || 'Unknown Vibe',
-      emoji: selectedVibe?.emoji || '✨',
+      image: selectedVibe?.imageUrl || '',
       amount: String(winningAmount),
-      slug: selectedVibe?.slug || vibeNormId,
       category: selectedVibe?.category || 'Vibes',
     });
     router.push(`/won?${params.toString()}`);
@@ -1241,7 +1245,7 @@ const App = ({ vibe }) => {
     const bidResult = await placeBid({
       id: selectedVibe?.slug || defaultAuctionSlug,
       name: selectedVibe?.title || 'Unknown Vibe',
-      emoji: selectedVibe?.emoji || '✨',
+      imageUrl: selectedVibe?.imageUrl ?? null,
       amount: bidAmount,
     });
 
@@ -1310,7 +1314,6 @@ const App = ({ vibe }) => {
     const settled = await settleAuction({
       id: selectedVibe?.slug || defaultAuctionSlug,
       name: selectedVibe?.title || 'Unknown Vibe',
-      emoji: selectedVibe?.emoji || '✨',
       category: selectedVibe?.category || 'Vibes',
       price: buyNowPrice,
       rarity: 'rare',
@@ -1393,8 +1396,8 @@ const App = ({ vibe }) => {
                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
                 />
               ) : (
-                <div style={{ ...customStyles.heroEmoji, fontSize: isMobile ? '118px' : customStyles.heroEmoji.fontSize }}>
-                  {selectedVibe?.emoji || '✨'}
+                <div style={{ ...customStyles.heroFallback, fontSize: isMobile ? '13px' : customStyles.heroFallback.fontSize }}>
+                  Image Pending
                 </div>
               )}
             </div>
@@ -1516,7 +1519,7 @@ const App = ({ vibe }) => {
             ) : auctionEnded ? (
               userIsHighestBidder ? (
                 <div style={{ background: '#0A1A0A', border: '2px solid #C8FF00', borderRadius: '8px', padding: '24px', textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', color: '#C8FF00', letterSpacing: '1px', marginBottom: '6px' }}>🏆 YOU WON!</div>
+                  <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', color: '#C8FF00', letterSpacing: '1px', marginBottom: '6px' }}>YOU WON</div>
                   <div style={{ fontSize: '13px', color: '#AAAAAA', marginBottom: '18px' }}>
                     Winning bid: <strong style={{ color: '#C8FF00' }}>{currentBid.toLocaleString()} AURA</strong>
                   </div>

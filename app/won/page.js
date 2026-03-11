@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { useVibeStore } from '../state/vibe-store';
@@ -112,6 +111,25 @@ const customStyles = {
     fontSize: '14px',
     letterSpacing: '4px',
     textTransform: 'uppercase',
+  },
+  certImageWrap: {
+    width: '100%',
+    height: '220px',
+    border: '2px solid #000000',
+    background: '#F0F0F0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  certImageFallback: {
+    fontSize: '14px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    border: '2px solid #222222',
+    padding: '10px 14px',
+    background: 'rgba(255,255,255,0.6)',
   },
   vibeName: {
     fontFamily: "'Anton', sans-serif",
@@ -250,9 +268,8 @@ function WonPageInner() {
   // Read vibe data from URL params (set by auction page on win)
   const paramId = searchParams.get('id');
   const paramName = searchParams.get('name');
-  const paramEmoji = searchParams.get('emoji');
+  const paramImage = searchParams.get('image');
   const paramAmount = searchParams.get('amount');
-  const paramSlug = searchParams.get('slug');
   const paramCategory = searchParams.get('category') || 'Vibes';
 
   // Fall back to finding any active bid if no params
@@ -260,8 +277,7 @@ function WonPageInner() {
 
   const wonVibeId = paramId || (fallbackBid ? String(fallbackBid.id || fallbackBid.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : 'unknown-vibe');
   const wonVibeName = paramName || fallbackBid?.name || 'Unknown Vibe';
-  const wonVibeEmoji = paramEmoji || fallbackBid?.emoji || '✨';
-  const wonVibeSlug = paramSlug || wonVibeId;
+  const wonVibeImage = paramImage || fallbackBid?.imageUrl || null;
 
   const matchingBid = activeBids.find((bid) => {
     const normalizedName = String(bid?.id || bid?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -314,10 +330,10 @@ function WonPageInner() {
     const settled = await settleAuction({
       id: wonVibeId,
       name: wonVibeName,
-      emoji: wonVibeEmoji,
       category: paramCategory,
       rarity: 'epic',
       price: winningBid,
+      imageUrl: wonVibeImage,
     });
 
     setSettling(false);
@@ -439,7 +455,17 @@ function WonPageInner() {
             </h4>
           </div>
 
-          <div style={{ textAlign: 'center', fontSize: isMobile ? '50px' : '64px', marginBottom: '10px' }}>{wonVibeEmoji}</div>
+          <div style={{ ...customStyles.certImageWrap, height: isMobile ? '170px' : customStyles.certImageWrap.height }}>
+            {wonVibeImage ? (
+              <img
+                src={wonVibeImage}
+                alt={wonVibeName}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={customStyles.certImageFallback}>Image Pending</div>
+            )}
+          </div>
           <h2 style={{ ...customStyles.vibeName, fontSize: isSmallPhone ? '28px' : (isMobile ? '34px' : customStyles.vibeName.fontSize) }}>
             {wonVibeName}
           </h2>

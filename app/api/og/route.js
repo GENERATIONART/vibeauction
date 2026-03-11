@@ -33,8 +33,25 @@ export async function GET() {
           display: 'flex',
         }} />
 
-        {/* Big emoji */}
-        <div style={{ fontSize: '120px', lineHeight: 1, marginBottom: '32px', display: 'flex' }}>⚡</div>
+        <div style={{ marginBottom: '32px', display: 'flex' }}>
+          <div
+            style={{
+              width: '130px',
+              height: '130px',
+              border: '6px solid #C8FF00',
+              color: '#C8FF00',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '30px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+            }}
+          >
+            VIBE
+          </div>
+        </div>
 
         {/* Title */}
         <div style={{

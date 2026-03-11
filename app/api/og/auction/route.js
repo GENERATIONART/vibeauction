@@ -13,9 +13,9 @@ export async function GET(request) {
   const vibe = staticVibe ?? minted;
 
   const title = vibe ? (staticVibe ? staticVibe.title : vibe.name) : 'Unknown Vibe';
-  const emoji = vibe ? (staticVibe ? staticVibe.emoji : (vibe.emoji || '✨')) : '✨';
   const bid = vibe ? (staticVibe ? staticVibe.bid : vibe.startingPrice) : 0;
   const category = vibe ? (staticVibe ? staticVibe.category : vibe.category) : 'Vibes';
+  const imageUrl = vibe ? (staticVibe ? null : (vibe.imageUrl ?? null)) : null;
 
   return new ImageResponse(
     (
@@ -46,7 +46,6 @@ export async function GET(request) {
 
         {/* Left content */}
         <div style={{ display: 'flex', flex: 1, padding: '56px 64px', gap: '48px', alignItems: 'center' }}>
-          {/* Emoji box */}
           <div style={{
             width: '220px',
             height: '220px',
@@ -54,12 +53,18 @@ export async function GET(request) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '110px',
             flexShrink: 0,
             transform: 'rotate(-4deg)',
             boxShadow: '10px 10px 0px rgba(200,255,0,0.2)',
+            overflow: 'hidden',
           }}>
-            {emoji}
+            {imageUrl ? (
+              <img src={imageUrl} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'flex' }} />
+            ) : (
+              <div style={{ fontSize: '28px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', color: '#111111', display: 'flex' }}>
+                VIBE
+              </div>
+            )}
           </div>
 
           {/* Text */}

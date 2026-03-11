@@ -99,7 +99,7 @@ async function apiRequest(url, options = {}) {
 const mapVaultRow = (row) => ({
   id: row.id,
   name: row.name,
-  emoji: row.emoji || '✨',
+  emoji: row.emoji || null,
   category: row.category || 'Vibes',
   rarity: row.rarity || 'common',
   price: row.price || 0,

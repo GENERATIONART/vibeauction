@@ -213,10 +213,15 @@ const customStyles = {
     height: '100%',
     position: 'absolute',
   },
-  cardEmoji: {
-    fontSize: '64px',
+  cardFallback: {
+    fontSize: '13px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    border: '2px solid #222222',
+    padding: '8px 12px',
+    background: 'rgba(255,255,255,0.6)',
     zIndex: 1,
-    filter: 'drop-shadow(3px 3px 0px rgba(0,0,0,0.1))',
   },
   liveBadge: {
     position: 'absolute',
@@ -300,12 +305,12 @@ const customStyles = {
 const sortOptions = ['Ending Soon', 'Most Absurd', 'Highest Aura', 'Newest'];
 
 const staticTickerItems = [
-  '⚡ The world\'s first auction house for things that don\'t exist',
-  '💫 Mint your feelings — tokenize your vibes',
-  '🔥 Place bids in AURA and own what doesn\'t exist',
-  '✨ New vibes minted by the community every day',
-  '⚡ The world\'s first auction house for things that don\'t exist',
-  '💫 Mint your feelings — tokenize your vibes',
+  'The world\'s first auction house for things that don\'t exist',
+  'Mint your feelings and tokenize your vibes',
+  'Place bids in AURA and own what does not exist',
+  'New vibes minted by the community every day',
+  'The world\'s first auction house for things that don\'t exist',
+  'Mint your feelings and tokenize your vibes',
 ];
 
 const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile, shakeToken = 0 }) => {
@@ -361,7 +366,9 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile,
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : '64px' }}>{item.emoji}</div>
+          <div style={{ ...customStyles.cardFallback, fontSize: isMobile ? '12px' : customStyles.cardFallback.fontSize }}>
+            Image Pending
+          </div>
         )}
       </div>
       <div style={{ ...customStyles.cardContent, padding: isMobile ? '14px' : '16px' }}>
@@ -429,9 +436,11 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(HOME_BATCH_SIZE);
   const [loadMoreTrigger, setLoadMoreTrigger] = useState(null);
   const [shakeTokensById, setShakeTokensById] = useState({});
+  const [bumpedAtById, setBumpedAtById] = useState({});
   const prevBidActivityRef = useRef(null);
+  const bidBaselineReadyRef = useRef(false);
 
-  const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
+  const { balance, activeBids, mintedVibes, refreshState, isHydrating } = useVibeStore();
   const router = useRouter();
 
   const isMobile = viewportWidth <= 768;
@@ -550,8 +559,10 @@ const App = () => {
 
   useEffect(() => {
     const previous = prevBidActivityRef.current;
-    if (!previous) {
+    if (!bidBaselineReadyRef.current) {
       prevBidActivityRef.current = bidActivityLookup;
+      if (isHydrating) return;
+      bidBaselineReadyRef.current = true;
       return;
     }
 
@@ -562,11 +573,12 @@ const App = () => {
       const prevAmount = Number(prev?.amount || 0);
       const nextUpdatedAt = Number(next?.updatedAtMs || 0);
       const prevUpdatedAt = Number(prev?.updatedAtMs || 0);
-      const isNewBidSignal = !prev || nextAmount > prevAmount || nextUpdatedAt > prevUpdatedAt;
+      const isNewBidSignal = !prev ? nextAmount > 0 : nextAmount > prevAmount || nextUpdatedAt > prevUpdatedAt;
       if (isNewBidSignal && nextAmount > 0) bumpedKeys.push(key);
     }
 
     if (bumpedKeys.length > 0) {
+      const eventAtBase = Date.now();
       setShakeTokensById((previousTokens) => {
         const nextTokens = { ...previousTokens };
         for (const key of bumpedKeys) {
@@ -574,16 +586,22 @@ const App = () => {
         }
         return nextTokens;
       });
+      setBumpedAtById((previousBumps) => {
+        const nextBumps = { ...previousBumps };
+        bumpedKeys.forEach((key, index) => {
+          nextBumps[key] = eventAtBase + index;
+        });
+        return nextBumps;
+      });
     }
 
     prevBidActivityRef.current = bidActivityLookup;
-  }, [bidActivityLookup]);
+  }, [bidActivityLookup, isHydrating]);
 
   const liveVibes = useMemo(() => {
     const minted = (Array.isArray(mintedVibes) ? mintedVibes : []).map((v) => ({
       id: v.id || v.slug,
       slug: v.slug || v.id,
-      emoji: v.emoji || '✨',
       title: v.name || 'Untitled Vibe',
       bid: v.startingPrice || 0,
       timer: 'Live',
@@ -602,7 +620,6 @@ const App = () => {
     return auctionItems.map((item) => ({
       id: String(item.id),
       slug: item.slug,
-      emoji: item.emoji || '✨',
       title: item.title,
       bid: item.bid || 0,
       timer: item.timer || 'Live',
@@ -642,17 +659,17 @@ const App = () => {
       return Number.isFinite(fallback) ? fallback : 0;
     };
 
-    const resolveBidActivity = (item) => {
+    const resolveRecentBump = (item) => {
       const key = normalize(item.slug || item.title);
-      return safeNumber(bidActivityLookup[key]?.updatedAtMs, 0);
+      return safeNumber(bumpedAtById[key], 0);
     };
 
-    const compareByBidActivity = (a, b) => resolveBidActivity(b) - resolveBidActivity(a);
+    const compareByRecentBump = (a, b) => resolveRecentBump(b) - resolveRecentBump(a);
 
     const items = [...filteredItems];
     if (activeSort === 'Highest Aura') {
       items.sort((a, b) => {
-        const activityDiff = compareByBidActivity(a, b);
+        const activityDiff = compareByRecentBump(a, b);
         if (activityDiff !== 0) return activityDiff;
         return resolveLiveBid(b) - resolveLiveBid(a);
       });
@@ -660,7 +677,7 @@ const App = () => {
     }
     if (activeSort === 'Ending Soon') {
       items.sort((a, b) => {
-        const activityDiff = compareByBidActivity(a, b);
+        const activityDiff = compareByRecentBump(a, b);
         if (activityDiff !== 0) return activityDiff;
         return (a.endingSoonMs || Number.MAX_SAFE_INTEGER) - (b.endingSoonMs || Number.MAX_SAFE_INTEGER);
       });
@@ -668,7 +685,7 @@ const App = () => {
     }
     if (activeSort === 'Newest') {
       items.sort((a, b) => {
-        const activityDiff = compareByBidActivity(a, b);
+        const activityDiff = compareByRecentBump(a, b);
         if (activityDiff !== 0) return activityDiff;
         return (b.createdAtMs || 0) - (a.createdAtMs || 0);
       });
@@ -676,15 +693,15 @@ const App = () => {
     }
     if (activeSort === 'Most Absurd') {
       items.sort((a, b) => {
-        const activityDiff = compareByBidActivity(a, b);
+        const activityDiff = compareByRecentBump(a, b);
         if (activityDiff !== 0) return activityDiff;
         return (b.absurdityScore || 0) - (a.absurdityScore || 0);
       });
       return items;
     }
-    items.sort(compareByBidActivity);
+    items.sort(compareByRecentBump);
     return items;
-  }, [filteredItems, activeSort, bidActivityLookup]);
+  }, [filteredItems, activeSort, bidActivityLookup, bumpedAtById]);
 
   const visibleItems = useMemo(() => sortedItems.slice(0, visibleCount), [sortedItems, visibleCount]);
   const hasMoreItems = visibleCount < sortedItems.length;
@@ -985,7 +1002,9 @@ const App = () => {
               textAlign: 'center',
               color: '#555',
             }}>
-              <div style={{ fontSize: isMobile ? '48px' : '64px', marginBottom: '16px' }}>⚡</div>
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '40px' : '48px', marginBottom: '16px', color: '#2A2A2A' }}>
+                VIBE
+              </div>
               <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '24px' : '32px', textTransform: 'uppercase', color: '#444', marginBottom: '8px' }}>
                 No Vibes Listed Yet
               </div>

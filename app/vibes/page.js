@@ -229,10 +229,15 @@ const customStyles = {
     height: '100%',
     position: 'absolute',
   },
-  cardEmoji: {
-    fontSize: '62px',
+  cardFallback: {
+    fontSize: '13px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    border: '2px solid #222222',
+    padding: '8px 12px',
+    background: 'rgba(255,255,255,0.6)',
     zIndex: 1,
-    filter: 'drop-shadow(3px 3px 0px rgba(0,0,0,0.1))',
   },
   sourceBadge: {
     position: 'absolute',
@@ -350,8 +355,8 @@ const TokenCard = ({ item, isMobile }) => {
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <div style={{ ...customStyles.cardEmoji, fontSize: isMobile ? '52px' : customStyles.cardEmoji.fontSize }}>
-            {item.emoji}
+          <div style={{ ...customStyles.cardFallback, fontSize: isMobile ? '12px' : customStyles.cardFallback.fontSize }}>
+            Image Pending
           </div>
         )}
       </div>
@@ -485,7 +490,6 @@ export default function VibesPage() {
       return {
         id: `vault-${item.id || normalize(item.name)}`,
         name: item.name || 'Untitled Vibe',
-        emoji: item.emoji || '✨',
         category: item.category || 'Vault',
         source: 'Vault',
         owner: 'Unknown',
@@ -505,7 +509,6 @@ export default function VibesPage() {
         id: `minted-${item.id || normalize(item.name)}`,
         slug: item.slug || null,
         name: item.name || 'Untitled Vibe',
-        emoji: item.emoji || (isConfession ? '🕵️' : '✨'),
         category: item.category || 'Minted',
         source: isConfession ? 'Confessions' : 'Minted',
         owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',
@@ -526,7 +529,6 @@ export default function VibesPage() {
         return {
           id: `conf-${item.id || normalize(item.title)}`,
           name: item.title || 'Untitled Confession',
-          emoji: '🕵️',
           category: 'Confessions',
           source: 'Confessions',
           owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',

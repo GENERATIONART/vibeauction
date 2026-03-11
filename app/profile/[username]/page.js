@@ -170,11 +170,30 @@ const S = {
     textDecoration: 'none',
     color: 'inherit',
   },
-  listingEmoji: {
-    fontSize: '32px',
-    flexShrink: 0,
+  listingThumb: {
     width: '44px',
-    textAlign: 'center',
+    height: '44px',
+    borderRadius: '6px',
+    objectFit: 'cover',
+    border: '1px solid #2A2A2A',
+    flexShrink: 0,
+    background: '#111111',
+  },
+  listingThumbFallback: {
+    width: '44px',
+    height: '44px',
+    border: '1px solid #2A2A2A',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#181818',
+    color: '#666666',
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    flexShrink: 0,
   },
   listingName: {
     fontFamily: "'Anton', sans-serif",
@@ -218,7 +237,29 @@ const S = {
     gap: '8px',
     textAlign: 'center',
   },
-  wonEmoji: { fontSize: '36px' },
+  wonThumb: {
+    width: '70px',
+    height: '70px',
+    borderRadius: '8px',
+    objectFit: 'cover',
+    border: '1px solid #2A2A2A',
+    background: '#111111',
+  },
+  wonThumbFallback: {
+    width: '70px',
+    height: '70px',
+    border: '1px solid #2A2A2A',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#181818',
+    color: '#666666',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+  },
   wonName: {
     fontFamily: "'Anton', sans-serif",
     fontSize: '13px',
@@ -387,7 +428,7 @@ export default function ProfilePage() {
         // Fetch vibes listed by this user (by UUID stored in listed_by)
         const { data: vibeData } = await sb
           .from('vibes')
-          .select('id, slug, name, emoji, starting_price, created_at, category')
+          .select('id, slug, name, starting_price, created_at, category, image_url')
           .or(`listed_by.eq.${profileData.id},listed_by.eq.${profileData.username},author.eq.${profileData.username}`)
           .order('created_at', { ascending: false })
           .limit(20);
@@ -399,7 +440,7 @@ export default function ProfilePage() {
         // Fetch won vibes from vault_items
         const { data: vaultData } = await sb
           .from('vault_items')
-          .select('id, name, emoji, category, price, won_date')
+          .select('id, name, category, price, won_date, image_url')
           .eq('user_id', profileData.id)
           .order('created_at', { ascending: false })
           .limit(12);
@@ -421,15 +462,14 @@ export default function ProfilePage() {
   const memberYear = profile?.created_at ? new Date(profile.created_at).getFullYear() : '—';
   const auraBalance = profile?.aura_balance ?? 0;
   const predictionPoints = profile?.prediction_points ?? 0;
-  const avatarEmojis = ['🕶️', '👾', '🌀', '🔮', '🎭', '🦋', '⚡', '🌊'];
-  const avatarEmoji = avatarEmojis[(username?.charCodeAt(0) ?? 0) % avatarEmojis.length];
+  const avatarMonogram = String(profile?.username || username || 'U').charAt(0).toUpperCase();
 
   if (!loading && notFound) {
     return (
       <div style={S.page}>
         <NavBar />
         <div style={S.notFound}>
-          <div style={{ fontSize: '64px' }}>👻</div>
+          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '56px', color: '#2A2A2A' }}>404</div>
           <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '48px', textTransform: 'uppercase', color: '#C8FF00' }}>
             @{username}
           </h1>
@@ -452,7 +492,7 @@ export default function ProfilePage() {
       {/* Own profile banner */}
       {isOwnProfile && (
         <div style={S.ownProfileBanner}>
-          👁 This is your public profile — <Link href="/vault" style={{ color: '#C8FF00', textDecoration: 'underline' }}>go to your vault</Link>
+          This is your public profile — <Link href="/vault" style={{ color: '#C8FF00', textDecoration: 'underline' }}>go to your vault</Link>
         </div>
       )}
 
@@ -468,7 +508,7 @@ export default function ProfilePage() {
             <div style={{ ...S.avatar, width: isMobile ? '72px' : '110px', height: isMobile ? '72px' : '110px', fontSize: isMobile ? '36px' : '58px', background: '#222', border: '4px solid #333' }} />
           ) : (
             <div style={{ ...S.avatar, width: isMobile ? '72px' : '110px', height: isMobile ? '72px' : '110px', fontSize: isMobile ? '36px' : '58px' }}>
-              {avatarEmoji}
+              {avatarMonogram}
             </div>
           )}
           <div style={S.heroText}>
@@ -541,7 +581,6 @@ export default function ProfilePage() {
         {/* Active Listings */}
         <section>
           <div style={S.sectionTitle}>
-            <span>🔥</span>
             <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Active Listings</span>
           </div>
           <div style={S.card}>
@@ -556,7 +595,11 @@ export default function ProfilePage() {
                   href={`/auction/${listing.slug || listing.id}`}
                   style={{ ...S.listingRow, textDecoration: 'none' }}
                 >
-                  <span style={S.listingEmoji}>{listing.emoji || '✨'}</span>
+                  {listing.image_url ? (
+                    <img src={listing.image_url} alt={listing.name || 'Vibe'} style={S.listingThumb} />
+                  ) : (
+                    <span style={S.listingThumbFallback}>IMG</span>
+                  )}
                   <span style={S.listingName}>{listing.name}</span>
                   <div style={S.listingMeta}>
                     <div style={S.listingBid}>{Number(listing.starting_price).toLocaleString()} AURA</div>
@@ -571,7 +614,6 @@ export default function ProfilePage() {
         {/* Vibe Collection */}
         <section>
           <div style={S.sectionTitle}>
-            <span>🏆</span>
             <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Vibe Collection</span>
           </div>
           <div style={S.card}>
@@ -583,7 +625,11 @@ export default function ProfilePage() {
               <div style={{ ...S.wonGrid, gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr', padding: '14px' }}>
                 {wonVibes.map((entry, i) => (
                   <div key={entry.id || i} style={S.wonCard}>
-                    <span style={S.wonEmoji}>{entry.emoji || '✨'}</span>
+                    {entry.image_url ? (
+                      <img src={entry.image_url} alt={entry.name || 'Vibe'} style={S.wonThumb} />
+                    ) : (
+                      <span style={S.wonThumbFallback}>IMG</span>
+                    )}
                     <span style={S.wonName}>{entry.name || 'Unknown Vibe'}</span>
                     <span style={S.wonPrice}>{Number(entry.price || 0).toLocaleString()} AURA</span>
                   </div>
@@ -596,7 +642,6 @@ export default function ProfilePage() {
         {/* Past Auctions — full width */}
         <section style={{ gridColumn: isTablet ? 'auto' : '1 / -1' }}>
           <div style={S.sectionTitle}>
-            <span>📦</span>
             <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Past Auctions</span>
             {!loading && pastAuctions.length > 0 && (
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 700, color: '#555', textTransform: 'none', marginLeft: 'auto' }}>
@@ -628,9 +673,17 @@ export default function ProfilePage() {
                         color: 'inherit',
                       }}
                     >
-                      <span style={{ fontSize: '24px', flexShrink: 0, width: '32px', textAlign: 'center' }}>
-                        {vibe.emoji || '✨'}
-                      </span>
+                      {vibe.image_url ? (
+                        <img
+                          src={vibe.image_url}
+                          alt={vibe.name || 'Vibe'}
+                          style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0, border: '1px solid #2A2A2A' }}
+                        />
+                      ) : (
+                        <span style={{ width: '32px', height: '32px', borderRadius: '4px', border: '1px solid #2A2A2A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#666666', fontWeight: 800, textTransform: 'uppercase', flexShrink: 0 }}>
+                          IMG
+                        </span>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', textTransform: 'uppercase', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {vibe.name}
@@ -658,7 +711,6 @@ export default function ProfilePage() {
         {/* Ratings */}
         <section style={S.ratingsSection}>
           <div style={S.sectionTitle}>
-            <span>⭐</span>
             <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Reputation</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

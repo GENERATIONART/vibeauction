@@ -288,10 +288,15 @@ const customStyles = {
     background: '#444',
     color: '#aaa',
   },
-  trophyEmoji: {
-    fontSize: '64px',
+  trophyFallback: {
+    fontSize: '13px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    border: '2px solid #222222',
+    padding: '8px 12px',
+    background: 'rgba(255,255,255,0.6)',
     zIndex: 1,
-    filter: 'drop-shadow(3px 3px 0px rgba(0,0,0,0.1))',
   },
   trophyName: {
     fontFamily: "'Anton', sans-serif",
@@ -375,8 +380,30 @@ const customStyles = {
     gap: '16px',
     minWidth: '220px',
   },
-  bidVibeEmoji: {
-    fontSize: '24px',
+  bidVibeThumb: {
+    width: '38px',
+    height: '38px',
+    borderRadius: '6px',
+    objectFit: 'cover',
+    border: '1px solid #2A2A2A',
+    flexShrink: 0,
+    background: '#EEEEEE',
+  },
+  bidVibeThumbFallback: {
+    width: '38px',
+    height: '38px',
+    border: '1px solid #2A2A2A',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#F0F0F0',
+    color: '#444444',
+    fontSize: '9px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    flexShrink: 0,
   },
   bidVibeName: {
     fontFamily: "'Anton', sans-serif",
@@ -530,7 +557,6 @@ const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle, userId }) => {
     const mintResult = await mintVibe({
       name: trophy.name,
       category: trophy.category || 'Vibes',
-      emoji: trophy.emoji || '✨',
       startingPrice: numericPrice,
       buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
       duration: relistDuration,
@@ -566,8 +592,8 @@ const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle, userId }) => {
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
           />
         ) : (
-          <span style={{ ...customStyles.trophyEmoji, fontSize: isMobile ? '52px' : customStyles.trophyEmoji.fontSize }}>
-            {trophy.emoji || '✨'}
+          <span style={{ ...customStyles.trophyFallback, fontSize: isMobile ? '12px' : customStyles.trophyFallback.fontSize }}>
+            Image Pending
           </span>
         )}
       </div>
@@ -708,7 +734,7 @@ const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle, userId }) =>
   return (
     <div style={{ ...customStyles.tabPanel, padding: isMobile ? '18px 14px' : customStyles.tabPanel.padding }}>
       <div style={{ ...customStyles.vaultHeader, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center' }}>
-        <span style={{ ...customStyles.vaultTitle, fontSize: isMobile ? '28px' : customStyles.vaultTitle.fontSize }}>⚡ Your Vibe Vault</span>
+        <span style={{ ...customStyles.vaultTitle, fontSize: isMobile ? '28px' : customStyles.vaultTitle.fontSize }}>Your Vibe Vault</span>
         <span style={{ ...customStyles.vaultCount, fontSize: isMobile ? '14px' : customStyles.vaultCount.fontSize }}>
           {vaultItems.length} Vibes Collected
         </span>
@@ -763,7 +789,15 @@ const ActiveBidsTab = ({ isMobile, activeBids }) => (
           return (
             <div key={bid.id || bid.name} style={customStyles.bidRow}>
               <div style={customStyles.bidVibeInfo}>
-                <span style={customStyles.bidVibeEmoji}>{bid.emoji || '✨'}</span>
+                {bid.imageUrl ? (
+                  <img
+                    src={bid.imageUrl}
+                    alt={bid.name || 'Vibe'}
+                    style={customStyles.bidVibeThumb}
+                  />
+                ) : (
+                  <span style={customStyles.bidVibeThumbFallback}>IMG</span>
+                )}
                 <span style={{ ...customStyles.bidVibeName, fontSize: isMobile ? '16px' : customStyles.bidVibeName.fontSize }}>
                   {bid.name}
                 </span>
@@ -844,6 +878,7 @@ export default function VaultPage() {
   const { balance, vaultItems, activeBids, walletLog, mintVibe } = useVibeStore();
   const { user, profile } = useAuth();
   const username = profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
+  const avatarMonogram = String(username || 'U').trim().charAt(0).toUpperCase() || 'U';
   const profilePath = `/profile/${encodeURIComponent(username)}`;
   const userId = user?.id || null;
   const [activeTab, setActiveTab] = useState('trophies');
@@ -912,7 +947,7 @@ export default function VaultPage() {
               marginBottom: isMobile ? '10px' : customStyles.profileAvatar.marginBottom,
             }}
           >
-            🕶️
+            {avatarMonogram}
           </div>
           <div>
             <h1
