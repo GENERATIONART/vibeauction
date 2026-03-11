@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -13,7 +15,12 @@ export async function GET(request) {
   const period = searchParams.get('period') || 'all';
 
   const sb = getSupabaseAdmin();
-  if (!sb) return NextResponse.json({ topSpenders: [], topVibes: [] });
+  if (!sb) {
+    return NextResponse.json(
+      { topSpenders: [], topVibes: [] },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
 
   let cutoff = null;
   const now = new Date();
@@ -69,12 +76,17 @@ export async function GET(request) {
     .order('starting_price', { ascending: false })
     .limit(6);
 
-  const topVibes = (vibes || []).map((v) => ({
-    name: v.name,
-    emoji: v.emoji || '✨',
-    slug: v.slug,
-    price: v.buy_now_price || v.starting_price || 0,
-  }));
+  const topVibes = (vibes || [])
+    .filter((v) => v?.slug)
+    .map((v) => ({
+      name: v.name,
+      emoji: v.emoji || '✨',
+      slug: v.slug,
+      price: v.buy_now_price || v.starting_price || 0,
+    }));
 
-  return NextResponse.json({ topSpenders, topVibes });
+  return NextResponse.json(
+    { topSpenders, topVibes },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 }

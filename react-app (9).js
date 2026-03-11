@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import NavBar from './app/components/NavBar';
@@ -11,6 +12,23 @@ const normalize = (value) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+
+const parseCountdownToMs = (timerText) => {
+  if (typeof timerText !== 'string') return Number.MAX_SAFE_INTEGER;
+  const dayMatch = timerText.match(/(\d+)\s*d/i);
+  const hourMatch = timerText.match(/(\d+)\s*h/i);
+  const minMatch = timerText.match(/(\d+)\s*m/i);
+  const secMatch = timerText.match(/(\d+)\s*s/i);
+
+  if (!dayMatch && !hourMatch && !minMatch && !secMatch) return Number.MAX_SAFE_INTEGER;
+
+  let ms = 0;
+  if (dayMatch) ms += Number(dayMatch[1]) * 24 * 60 * 60 * 1000;
+  if (hourMatch) ms += Number(hourMatch[1]) * 60 * 60 * 1000;
+  if (minMatch) ms += Number(minMatch[1]) * 60 * 1000;
+  if (secMatch) ms += Number(secMatch[1]) * 1000;
+  return ms;
+};
 
 const customStyles = {
   body: {
@@ -364,7 +382,7 @@ const App = () => {
   const [activeSort, setActiveSort] = useState('');
   const [viewportWidth, setViewportWidth] = useState(0);
 
-  const { balance, activeBids, mintedVibes } = useVibeStore();
+  const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
   const router = useRouter();
 
   const isMobile = viewportWidth <= 768;
@@ -414,6 +432,43 @@ const App = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const syncLatestVibes = async () => {
+      try {
+        await refreshState();
+      } catch {
+        // Keep current UI state when background refresh fails.
+      }
+    };
+
+    syncLatestVibes();
+
+    const onFocus = () => {
+      syncLatestVibes();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncLatestVibes();
+      }
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncLatestVibes();
+      }
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.clearInterval(pollId);
+    };
+  }, [refreshState]);
+
   const bidLookup = useMemo(() => {
     const lookup = {};
     activeBids.forEach((entry) => {
@@ -434,6 +489,11 @@ const App = () => {
       badge: 'Live',
       category: v.category || 'Vibes',
       imageUrl: v.imageUrl ?? null,
+      createdAtMs: v.createdAt ? new Date(v.createdAt).getTime() : 0,
+      endingSoonMs: v.endTime
+        ? Math.max(0, new Date(v.endTime).getTime() - Date.now())
+        : parseCountdownToMs(v.duration),
+      absurdityScore: String(v.name || '').length + String(v.manifesto || '').length,
     }));
     const mintedSlugs = new Set(minted.map((v) => v.slug));
     const hardcoded = auctionItems
@@ -448,6 +508,9 @@ const App = () => {
         badge: item.badge || 'Live',
         category: item.category || 'Vibes',
         imageUrl: null,
+        createdAtMs: Number(item.id) || 0,
+        endingSoonMs: parseCountdownToMs(item.timer),
+        absurdityScore: String(item.title || '').length + String(item.description || '').length,
       }));
     return [...minted, ...hardcoded];
   }, [mintedVibes]);
@@ -469,6 +532,35 @@ const App = () => {
       : liveVibes.filter((item) => item.category === activeCategory),
     [liveVibes, activeCategory]
   );
+
+  const sortedItems = useMemo(() => {
+    const resolveLiveBid = (item) => {
+      const key = normalize(item.slug || item.title);
+      const live = bidLookup[key];
+      if (Number.isFinite(live)) return live;
+      const fallback = Number(item.bid);
+      return Number.isFinite(fallback) ? fallback : 0;
+    };
+
+    const items = [...filteredItems];
+    if (activeSort === 'Highest Aura') {
+      items.sort((a, b) => resolveLiveBid(b) - resolveLiveBid(a));
+      return items;
+    }
+    if (activeSort === 'Ending Soon') {
+      items.sort((a, b) => (a.endingSoonMs || Number.MAX_SAFE_INTEGER) - (b.endingSoonMs || Number.MAX_SAFE_INTEGER));
+      return items;
+    }
+    if (activeSort === 'Newest') {
+      items.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+      return items;
+    }
+    if (activeSort === 'Most Absurd') {
+      items.sort((a, b) => (b.absurdityScore || 0) - (a.absurdityScore || 0));
+      return items;
+    }
+    return items;
+  }, [filteredItems, activeSort, bidLookup]);
 
   const tickerItems = useMemo(() => {
     if (liveVibes.length > 0) {
@@ -671,7 +763,7 @@ const App = () => {
             minWidth: 0,
           }}
         >
-          {filteredItems.length === 0 ? (
+          {sortedItems.length === 0 ? (
             <div style={{
               gridColumn: '1 / -1',
               border: '2px dashed #2A2A2A',
@@ -691,7 +783,7 @@ const App = () => {
               </Link>
             </div>
           ) : (
-            filteredItems.map((item) => (
+            sortedItems.map((item) => (
               <AuctionCard
                 key={item.id}
                 item={item}

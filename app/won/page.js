@@ -318,8 +318,16 @@ function WonPageInner() {
 
     setSettling(false);
 
-    if (!settled) {
-      setActionError('Could not move this vibe to vault. Please try again.');
+    if (!settled?.settled) {
+      if (settled?.reason === 'not_highest_bidder') {
+        setActionError('This claim does not match the highest bid.');
+      } else if (settled?.reason === 'insufficient_balance') {
+        setActionError('Not enough AURA to complete this claim.');
+      } else if (settled?.reason === 'already_owned') {
+        setActionError('This vibe has already been claimed.');
+      } else {
+        setActionError('Could not move this vibe to vault. Please try again.');
+      }
       setVaultClicked(false);
       return;
     }

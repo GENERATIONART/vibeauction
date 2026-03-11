@@ -152,10 +152,18 @@ export function VibeStoreProvider({ children }) {
         });
         applyState(data.state);
         setError('');
-        return Boolean(data.accepted);
+        return {
+          accepted: Boolean(data.accepted),
+          reason: data.reason || null,
+          minimumBid: Number.isFinite(Number(data.minimumBid)) ? Number(data.minimumBid) : null,
+        };
       } catch (placeError) {
         setError(placeError instanceof Error ? placeError.message : 'Failed to place bid');
-        return false;
+        return {
+          accepted: false,
+          reason: 'request_failed',
+          minimumBid: null,
+        };
       }
     },
     [applyState],
@@ -186,10 +194,16 @@ export function VibeStoreProvider({ children }) {
         setError('');
         // Refresh AURA balance after deduction
         refreshProfile();
-        return Boolean(data.settled);
+        return {
+          settled: Boolean(data.settled),
+          reason: data.reason || null,
+        };
       } catch (settleError) {
         setError(settleError instanceof Error ? settleError.message : 'Failed to settle auction');
-        return false;
+        return {
+          settled: false,
+          reason: 'request_failed',
+        };
       }
     },
     [applyState, user, refreshProfile],
@@ -236,27 +250,40 @@ export function VibeStoreProvider({ children }) {
   );
 
   const createStripeCheckoutSession = useCallback(async (packId) => {
+    const sb = getSupabaseClient();
+    const sessionData = sb ? (await sb.auth.getSession()) : null;
+    const token = sessionData?.data?.session?.access_token ?? null;
     const data = await apiRequest('/api/stripe/create-checkout-session', {
       method: 'POST',
       body: { packId },
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
     });
     return data;
   }, []);
 
   const confirmStripeSession = useCallback(
     async (sessionId) => {
+      const sb = getSupabaseClient();
+      const sessionData = sb ? (await sb.auth.getSession()) : null;
+      const token = sessionData?.data?.session?.access_token ?? null;
       const data = await apiRequest('/api/stripe/confirm', {
         method: 'POST',
         body: { sessionId },
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
       });
 
       if (data?.state) {
         applyState(data.state);
       }
 
+      // Profile balance is sourced from auth store when logged in.
+      if (data?.credited) {
+        refreshProfile();
+      }
+
       return data;
     },
-    [applyState],
+    [applyState, refreshProfile],
   );
 
   const clearError = useCallback(() => {

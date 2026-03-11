@@ -488,7 +488,7 @@ const formatSigned = (value) => {
 
 const durationOptions = ['12 Hours', '24 Hours', '3 Days', '7 Days'];
 
-const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle }) => {
+const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle, userId }) => {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [relisting, setRelisting] = useState(false);
@@ -534,8 +534,8 @@ const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle }) => {
       startingPrice: numericPrice,
       buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
       duration: relistDuration,
-      author: trophy.originalAuthor || null,
-      listedBy: userHandle || null,
+      author: trophy.originalAuthor || userHandle || null,
+      listedBy: userId || userHandle || null,
     });
     setSubmitting(false);
     if (!minted) {
@@ -681,7 +681,7 @@ const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle }) => {
   );
 };
 
-const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle }) => {
+const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle, userId }) => {
   const [activeFilter, setActiveFilter] = useState('All Vibes');
 
   const filterCategories = useMemo(() => {
@@ -736,7 +736,14 @@ const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle }) => {
           }}
         >
           {filteredTrophies.map((trophy) => (
-            <TrophyCard key={trophy.id || trophy.name} trophy={trophy} isMobile={isMobile} mintVibe={mintVibe} userHandle={userHandle} />
+            <TrophyCard
+              key={trophy.id || trophy.name}
+              trophy={trophy}
+              isMobile={isMobile}
+              mintVibe={mintVibe}
+              userHandle={userHandle}
+              userId={userId}
+            />
           ))}
         </div>
       )}
@@ -834,8 +841,9 @@ const WalletLogTab = ({ isMobile, walletLog, balance }) => {
 
 export default function VaultPage() {
   const { balance, vaultItems, activeBids, walletLog, mintVibe } = useVibeStore();
-  const { user } = useAuth();
-  const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
+  const { user, profile } = useAuth();
+  const username = profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
+  const userId = user?.id || null;
   const [activeTab, setActiveTab] = useState('trophies');
   const [viewportWidth, setViewportWidth] = useState(1200);
 
@@ -953,7 +961,15 @@ export default function VaultPage() {
           ))}
         </nav>
 
-        {activeTab === 'trophies' && <VibeVaultTab isMobile={isMobile} vaultItems={vaultItems} mintVibe={mintVibe} userHandle={username} />}
+        {activeTab === 'trophies' && (
+          <VibeVaultTab
+            isMobile={isMobile}
+            vaultItems={vaultItems}
+            mintVibe={mintVibe}
+            userHandle={username}
+            userId={userId}
+          />
+        )}
         {activeTab === 'bids' && <ActiveBidsTab isMobile={isMobile} activeBids={activeBids} />}
         {activeTab === 'wallet' && <WalletLogTab isMobile={isMobile} walletLog={walletLog} balance={balance} />}
       </div>

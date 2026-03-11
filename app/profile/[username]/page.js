@@ -357,9 +357,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!username) return;
+    const normalizedUsername = String(username).replace(/^@/, '').toLowerCase();
 
     async function fetchProfile() {
       setLoading(true);
+      setNotFound(false);
       const sb = getSupabaseClient();
 
       if (sb) {
@@ -367,7 +369,7 @@ export default function ProfilePage() {
         const { data: profileData, error } = await sb
           .from('profiles')
           .select('*')
-          .eq('username', username)
+          .ilike('username', normalizedUsername)
           .single();
 
         if (error || !profileData) {
@@ -382,7 +384,7 @@ export default function ProfilePage() {
         const { data: vibeData } = await sb
           .from('vibes')
           .select('id, slug, name, emoji, starting_price, created_at, category')
-          .eq('listed_by', profileData.id)
+          .or(`listed_by.eq.${profileData.id},listed_by.eq.${profileData.username},author.eq.${profileData.username}`)
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -399,7 +401,7 @@ export default function ProfilePage() {
           .limit(12);
         setWonVibes(vaultData || []);
       } else {
-        setProfile({ username, aura_balance: 200, created_at: new Date().toISOString() });
+        setProfile({ username: normalizedUsername, aura_balance: 200, created_at: new Date().toISOString() });
         setListings([]);
         setPastAuctions([]);
         setWonVibes([]);

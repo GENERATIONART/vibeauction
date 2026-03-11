@@ -169,7 +169,7 @@ export default function SignupPage() {
 
       <div style={styles.card}>
         <h1 style={styles.heading}>Sign Up</h1>
-        <p style={styles.subheading}>Join the auction. Bid on vibes. Sell a feeling.</p>
+        <p style={styles.subheading}>Join the auction. Bid on vibes. Drop your own.</p>
 
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}

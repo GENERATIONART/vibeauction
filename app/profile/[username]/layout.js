@@ -1,28 +1,34 @@
-import { getSupabaseClient } from '../../../lib/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 
 export async function generateMetadata({ params }) {
-  const { username } = params;
+  const rawUsername = params?.username || 'unknown';
+  const username = String(rawUsername).replace(/^@/, '').toLowerCase();
 
   let bio = `View @${username}'s vibe collection, auction history, and reputation on Vibe Auction.`;
   let repScore = null;
 
-  const sb = getSupabaseClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const sb =
+    supabaseUrl && supabaseAnon
+      ? createClient(supabaseUrl, supabaseAnon, { auth: { persistSession: false } })
+      : null;
+
   if (sb) {
     const { data } = await sb
-      .from('users')
-      .select('bio, reputation, display_name')
-      .eq('username', username)
+      .from('profiles')
+      .select('username, aura_balance')
+      .ilike('username', username)
       .single();
 
     if (data) {
-      if (data.bio) bio = data.bio;
-      if (data.reputation) repScore = data.reputation;
+      repScore = Number(data.aura_balance) || null;
     }
   }
 
   const title = `@${username}`;
   const description = repScore
-    ? `${bio} ★ ${Number(repScore).toFixed(1)} rep.`
+    ? `${bio} Wallet: ${Number(repScore).toLocaleString()} AURA.`
     : bio;
   const ogImage = `/api/og/profile?username=${encodeURIComponent(username)}`;
 

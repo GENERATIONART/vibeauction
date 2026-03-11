@@ -17,6 +17,13 @@ const normalize = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+const normalizeHandle = (value) => normalize(String(value || '').replace(/^@/, ''));
+
+const looksLikeUuid = (value) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || '').trim(),
+  );
+
 const safeBid = (value, fallback = 100) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string') {
@@ -62,6 +69,27 @@ const splitTitle = (title) => {
 };
 
 const makeInitialBidHistory = () => [];
+
+const resolveTopBid = (apiTopBid, bidRows) => {
+  const apiAmount = safeBid(apiTopBid?.amount, Number.NaN);
+  if (Number.isFinite(apiAmount)) {
+    return { ...apiTopBid, amount: apiAmount };
+  }
+
+  let winner = null;
+  for (const row of Array.isArray(bidRows) ? bidRows : []) {
+    const amount = safeBid(row?.amount, Number.NaN);
+    if (!Number.isFinite(amount)) continue;
+    if (
+      !winner ||
+      amount > winner.amount ||
+      (amount === winner.amount && String(row?.createdAt || '') > String(winner.createdAt || ''))
+    ) {
+      winner = { ...row, amount };
+    }
+  }
+  return winner;
+};
 
 const getTimerFromVibe = (vibe) => {
   if (vibe?.endTime) {
@@ -512,20 +540,29 @@ const Timer = ({ hours, mins, secs }) => (
 );
 
 const App = ({ vibe }) => {
-  const { balance, activeBids, placeBid, settleAuction } = useVibeStore();
-  const { profile } = useAuth();
+  const { balance, activeBids, placeBid, settleAuction, refreshState } = useVibeStore();
+  const { profile, user } = useAuth();
   const router = useRouter();
   const selectedVibe = vibe || getAuctionItemBySlug(defaultAuctionSlug);
   const baseBid = safeBid(selectedVibe?.bid, 100);
   const buyNowPrice = selectedVibe?.buyNowPrice ?? null;
 
+  const listedByRaw = selectedVibe?.listedBy || null;
+  const authorRaw = selectedVibe?.author || null;
+  const listedByHandle = listedByRaw && !looksLikeUuid(listedByRaw) ? String(listedByRaw) : null;
+  const authorHandle = authorRaw ? String(authorRaw) : null;
+  const viewerHandle = profile?.username ? `@${profile.username}` : null;
+  const viewerUserId = user?.id || null;
   const isOwnVibe = Boolean(
-    profile?.username &&
-      selectedVibe?.author &&
-      profile.username.toLowerCase() === selectedVibe.author.replace(/^@/, '').toLowerCase(),
+    (viewerHandle && [authorHandle, listedByHandle].some((handle) => normalizeHandle(handle) === normalizeHandle(viewerHandle))) ||
+      (viewerUserId && listedByRaw && String(viewerUserId) === String(listedByRaw)),
   );
   const categoryTag = getCategoryTag(selectedVibe?.category);
   const [titleLineOne, titleLineTwo] = splitTitle(selectedVibe?.title);
+  const primaryListedByHandle = listedByHandle || authorHandle;
+  const showOriginalAuthorLine =
+    Boolean(listedByHandle && authorHandle) &&
+    listedByHandle.replace(/^@/, '').toLowerCase() !== authorHandle.replace(/^@/, '').toLowerCase();
 
   const [viewportWidth, setViewportWidth] = useState(1200);
 
@@ -541,6 +578,7 @@ const App = ({ vibe }) => {
   const [timer, setTimer] = useState(() => getTimerFromVibe(selectedVibe));
   const [error, setError] = useState('');
   const [bids, setBids] = useState(() => makeInitialBidHistory(baseBid));
+  const [topBid, setTopBid] = useState(null);
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1120;
@@ -558,18 +596,72 @@ const App = ({ vibe }) => {
     setIncrement(0);
     setTimer(getTimerFromVibe(selectedVibe));
     setBids([]);
+    setTopBid(null);
     setError('');
     setShowBidSuccess(false);
-
-    // Load existing bid history from Supabase
-    const vibeId = selectedVibe?.slug;
-    if (vibeId) {
-      fetch(`/api/auction/bids?vibeId=${encodeURIComponent(vibeId)}`)
-        .then((r) => r.json())
-        .then(({ bids }) => { if (Array.isArray(bids) && bids.length > 0) setBids(bids); })
-        .catch(() => {});
-    }
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
+
+  const loadBidHistory = useCallback(async () => {
+    const vibeId = selectedVibe?.slug;
+    if (!vibeId) return;
+
+    try {
+      const response = await fetch(`/api/auction/bids?vibeId=${encodeURIComponent(vibeId)}`, { cache: 'no-store' });
+      const payload = await response.json();
+      const incomingBids = Array.isArray(payload?.bids) ? payload.bids : [];
+      setBids(incomingBids);
+
+      const resolvedTop = resolveTopBid(payload?.topBid, incomingBids);
+      setTopBid(resolvedTop);
+
+      const topAmount = safeBid(resolvedTop?.amount, Number.NaN);
+      if (Number.isFinite(topAmount)) {
+        setCurrentBid((previous) => Math.max(previous, topAmount));
+      }
+    } catch {
+      // Keep the existing UI state when bid-history refresh fails.
+    }
+  }, [selectedVibe?.slug]);
+
+  useEffect(() => {
+    const syncAuctionData = async () => {
+      try {
+        await refreshState();
+      } catch {
+        // Ignore state refresh errors and keep current state.
+      }
+      await loadBidHistory();
+    };
+
+    syncAuctionData();
+
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        syncAuctionData();
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncAuctionData();
+      }
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncAuctionData();
+      }
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.clearInterval(pollId);
+    };
+  }, [loadBidHistory, refreshState]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -609,12 +701,19 @@ const App = ({ vibe }) => {
 
   const auctionEnded = timer.hours === 0 && timer.mins === 0 && timer.secs === 0;
 
-  // Check if the current user has the highest bid on this vibe
   const vibeNormId = normalize(selectedVibe?.slug || selectedVibe?.title || '');
-  const userActiveBid = activeBids.find(
-    (b) => normalize(b.id || b.name) === vibeNormId,
+  const topBidUser = topBid?.user || null;
+  const userIsHighestBidder = Boolean(
+    auctionEnded &&
+      viewerHandle &&
+      topBidUser &&
+      normalizeHandle(topBidUser) === normalizeHandle(viewerHandle),
   );
-  const userIsHighestBidder = Boolean(userActiveBid && currentBid === userActiveBid.amount);
+  const viewerPlacedBid = Boolean(
+    viewerHandle &&
+      (bids.some((bid) => normalizeHandle(bid?.user) === normalizeHandle(viewerHandle)) ||
+        (topBidUser && normalizeHandle(topBidUser) === normalizeHandle(viewerHandle))),
+  );
 
   const onClaimWin = useCallback(async () => {
     const params = new URLSearchParams({
@@ -642,7 +741,7 @@ const App = ({ vibe }) => {
     setTimeout(() => setBidPressed(false), 180);
     setPlacingBid(true);
 
-    const accepted = await placeBid({
+    const bidResult = await placeBid({
       id: selectedVibe?.slug || defaultAuctionSlug,
       name: selectedVibe?.title || 'Unknown Vibe',
       emoji: selectedVibe?.emoji || '✨',
@@ -651,17 +750,41 @@ const App = ({ vibe }) => {
 
     setPlacingBid(false);
 
-    if (!accepted) {
-      setError('Failed to place bid. Try again.');
+    if (!bidResult?.accepted) {
+      if (bidResult?.reason === 'bid_too_low') {
+        const minBid = Number(bidResult?.minimumBid);
+        setError(
+          Number.isFinite(minBid)
+            ? `Bid too low. Minimum is ${minBid.toLocaleString()} AURA.`
+            : 'Bid too low. Another bidder is ahead.',
+        );
+        await loadBidHistory();
+      } else {
+        setError('Failed to place bid. Try again.');
+      }
       setShowBidSuccess(false);
       return;
     }
 
     setCurrentBid(bidAmount);
+    const clientBid = {
+      id: Date.now(),
+      user: viewerHandle || '@You',
+      time: 'just now',
+      amount: bidAmount,
+      createdAt: new Date().toISOString(),
+    };
     setBids((previous) => [
-      { id: Date.now(), user: '@You', time: 'just now', amount: bidAmount },
+      clientBid,
       ...previous,
     ]);
+    setTopBid((previous) => {
+      const prevAmount = safeBid(previous?.amount, Number.NaN);
+      if (!Number.isFinite(prevAmount) || bidAmount >= prevAmount) {
+        return clientBid;
+      }
+      return previous;
+    });
     setIncrement(0);
     setError('');
     setShowBidSuccess(true);
@@ -687,10 +810,18 @@ const App = ({ vibe }) => {
       rarity: 'rare',
       imageUrl: selectedVibe?.imageUrl ?? null,
       author: selectedVibe?.author ?? null,
+      directPurchase: true,
     });
     setBuyingNow(false);
-    if (!settled) {
-      setError('Purchase failed. Try again.');
+    if (!settled?.settled) {
+      if (settled?.reason === 'insufficient_balance') {
+        setError('Insufficient balance for this purchase.');
+      } else if (settled?.reason === 'already_owned') {
+        setError('This vibe is no longer available.');
+      } else {
+        setError('Purchase failed. Try again.');
+      }
+      await loadBidHistory();
       return;
     }
     setShowBuySuccess(true);
@@ -763,29 +894,21 @@ const App = ({ vibe }) => {
                 {selectedVibe?.description || 'This vibe is live and currently accepting bids.'}
               </p>
 
-              {(selectedVibe?.author || selectedVibe?.listedBy) && (
+              {(authorHandle || primaryListedByHandle) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2A2A2A' }}>
-                  {selectedVibe?.listedBy && (
+                  {primaryListedByHandle && (
                     <div style={{ fontSize: '13px', color: '#888888', fontWeight: 600 }}>
                       <span style={{ color: '#555555', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px', marginRight: '6px' }}>Listed by</span>
                       <span style={{ color: '#C8FF00' }}>
-                        {String(selectedVibe.listedBy).startsWith('@') ? selectedVibe.listedBy : `@${selectedVibe.listedBy}`}
+                        {primaryListedByHandle.startsWith('@') ? primaryListedByHandle : `@${primaryListedByHandle}`}
                       </span>
                     </div>
                   )}
-                  {selectedVibe?.author && selectedVibe.author !== selectedVibe.listedBy && (
+                  {showOriginalAuthorLine && (
                     <div style={{ fontSize: '13px', color: '#888888', fontWeight: 600 }}>
                       <span style={{ color: '#555555', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px', marginRight: '6px' }}>Original vibe by</span>
                       <span style={{ color: '#AAAAAA' }}>
-                        {String(selectedVibe.author).startsWith('@') ? selectedVibe.author : `@${selectedVibe.author}`}
-                      </span>
-                    </div>
-                  )}
-                  {selectedVibe?.author && !selectedVibe?.listedBy && (
-                    <div style={{ fontSize: '13px', color: '#888888', fontWeight: 600 }}>
-                      <span style={{ color: '#555555', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px', marginRight: '6px' }}>Vibe by</span>
-                      <span style={{ color: '#C8FF00' }}>
-                        {String(selectedVibe.author).startsWith('@') ? selectedVibe.author : `@${selectedVibe.author}`}
+                        {authorHandle.startsWith('@') ? authorHandle : `@${authorHandle}`}
                       </span>
                     </div>
                   )}
@@ -877,7 +1000,9 @@ const App = ({ vibe }) => {
               ) : (
                 <div style={{ background: '#1A0A0A', border: '2px solid #FF0055', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
                   <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', color: '#FF0055', letterSpacing: '1px' }}>AUCTION ENDED</div>
-                  <div style={{ fontSize: '13px', color: '#888888', marginTop: '6px' }}>This auction has closed. {userActiveBid ? 'You were outbid.' : 'Check your Vault if you won.'}</div>
+                  <div style={{ fontSize: '13px', color: '#888888', marginTop: '6px' }}>
+                    This auction has closed. {viewerPlacedBid ? 'You were outbid.' : 'Check your Vault if you won.'}
+                  </div>
                 </div>
               )
             ) : (

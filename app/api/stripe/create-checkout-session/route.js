@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const PACKS = {
   starter: { id: 'starter', label: 'Starter Pack', usdCents: 500, aura: 500 },
@@ -15,6 +16,24 @@ function resolveAppUrl(request) {
   return `${proto}://${host}`;
 }
 
+async function resolveUserIdFromAuthHeader(request) {
+  const authHeader = request.headers.get('authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return null;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anon) return null;
+
+  try {
+    const sb = createClient(url, anon, { auth: { persistSession: false } });
+    const { data } = await sb.auth.getUser(token);
+    return data?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request) {
   try {
     const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -25,6 +44,7 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const packId = typeof body?.packId === 'string' ? body.packId : 'starter';
     const pack = PACKS[packId] || PACKS.starter;
+    const userId = await resolveUserIdFromAuthHeader(request);
 
     const appUrl = resolveAppUrl(request);
     const successUrl = `${appUrl}/top-up/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -41,6 +61,9 @@ export async function POST(request) {
     params.set('metadata[aura_amount]', String(pack.aura));
     params.set('metadata[pack_id]', pack.id);
     params.set('metadata[pack_label]', pack.label);
+    if (userId) {
+      params.set('metadata[user_id]', userId);
+    }
 
     const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
