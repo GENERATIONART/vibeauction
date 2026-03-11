@@ -25,6 +25,17 @@ const formatDate = (value) => {
   }).format(value);
 };
 
+const toTimestampMs = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    const parsed = new Date(value).getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+};
+
 const customStyles = {
   page: {
     background: '#0D0D0D',
@@ -413,22 +424,26 @@ export default function VibesPage() {
   }, []);
 
   const allItems = useMemo(() => {
-    const vaultList = (Array.isArray(vaultItems) ? vaultItems : []).map((item) => ({
-      id: `vault-${item.id || normalize(item.name)}`,
-      name: item.name || 'Untitled Vibe',
-      emoji: item.emoji || '✨',
-      category: item.category || 'Vault',
-      source: 'Vault',
-      owner: 'Unknown',
-      description: `Won on ${item.wonDate || 'unknown date'}. Currently kept off auction.`,
-      valueLabel: `${formatAura(item.price)} AURA`,
-      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : 0,
-      dateLabel: item.wonDate ? `Won ${item.wonDate}` : 'Owned',
-      signature: normalize(`${item.name}-${item.category}`),
-    }));
+    const vaultList = (Array.isArray(vaultItems) ? vaultItems : []).map((item) => {
+      const createdAtMs = toTimestampMs(item.createdAt);
+      return {
+        id: `vault-${item.id || normalize(item.name)}`,
+        name: item.name || 'Untitled Vibe',
+        emoji: item.emoji || '✨',
+        category: item.category || 'Vault',
+        source: 'Vault',
+        owner: 'Unknown',
+        description: `Won on ${item.wonDate || 'unknown date'}. Currently kept off auction.`,
+        valueLabel: `${formatAura(item.price)} AURA`,
+        createdAt: createdAtMs,
+        dateLabel: item.wonDate ? `Won ${item.wonDate}` : 'Owned',
+        signature: normalize(`${item.name}-${item.category}`),
+      };
+    });
 
     const mintedList = (Array.isArray(mintedVibes) ? mintedVibes : []).map((item) => {
       const isConfession = normalize(item.category) === 'confessions';
+      const createdAtMs = toTimestampMs(item.createdAt);
       return {
         id: `minted-${item.id || normalize(item.name)}`,
         slug: item.slug || null,
@@ -439,8 +454,8 @@ export default function VibesPage() {
         owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',
         description: item.manifesto || (isConfession ? 'Anonymous confession minted and archived.' : 'Direct mint stored as a collectible vibe.'),
         valueLabel: isConfession ? 'Soulbound' : `${formatAura(item.startingPrice)} AURA`,
-        createdAt: Number.isFinite(item.createdAt) ? item.createdAt : 0,
-        dateLabel: Number.isFinite(item.createdAt) ? formatDate(item.createdAt) : 'Recently minted',
+        createdAt: createdAtMs,
+        dateLabel: createdAtMs > 0 ? formatDate(createdAtMs) : 'Recently minted',
         signature: normalize(`${item.name}-${item.manifesto}-${item.category}`),
       };
     });
@@ -448,19 +463,22 @@ export default function VibesPage() {
     const mintedSignatures = new Set(mintedList.map((item) => item.signature));
 
     const confessionFallback = (Array.isArray(confessions) ? confessions : [])
-      .map((item) => ({
-        id: `conf-${item.id || normalize(item.title)}`,
-        name: item.title || 'Untitled Confession',
-        emoji: '🕵️',
-        category: 'Confessions',
-        source: 'Confessions',
-        owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',
-        description: item.confession || 'No confession text.',
-        valueLabel: 'Soulbound',
-        createdAt: Number.isFinite(item.createdAt) ? item.createdAt : 0,
-        dateLabel: Number.isFinite(item.createdAt) ? formatDate(item.createdAt) : 'Recently minted',
-        signature: normalize(`${item.title}-${item.confession}-confessions`),
-      }))
+      .map((item) => {
+        const createdAtMs = toTimestampMs(item.createdAt);
+        return {
+          id: `conf-${item.id || normalize(item.title)}`,
+          name: item.title || 'Untitled Confession',
+          emoji: '🕵️',
+          category: 'Confessions',
+          source: 'Confessions',
+          owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',
+          description: item.confession || 'No confession text.',
+          valueLabel: 'Soulbound',
+          createdAt: createdAtMs,
+          dateLabel: createdAtMs > 0 ? formatDate(createdAtMs) : 'Recently minted',
+          signature: normalize(`${item.title}-${item.confession}-confessions`),
+        };
+      })
       .filter((item) => !mintedSignatures.has(item.signature));
 
     return [...mintedList, ...confessionFallback, ...vaultList].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
