@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
@@ -454,6 +455,7 @@ export default function MintPage() {
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
   const isConfession = formData.category === 'Confessions';
+  const isAuthed = Boolean(user);
 
   const confessionCount = Array.isArray(confessions) ? confessions.length : 0;
   const mintedVibeCount = Array.isArray(mintedVibes) ? mintedVibes.length : 0;
@@ -538,6 +540,10 @@ export default function MintPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (submitting) return;
+    if (!isAuthed) {
+      setError('Sign in to mint and list vibes.');
+      return;
+    }
 
     const cleanedName = formData.itemName.trim();
     const cleanedDetails = formData.details.trim();
@@ -897,11 +903,13 @@ export default function MintPage() {
                   fontSize: isMobile ? '20px' : customStyles.btnSubmit.fontSize,
                   padding: isMobile ? '16px' : customStyles.btnSubmit.padding,
                   opacity: submitting ? 0.7 : 1,
-                  cursor: submitting ? 'not-allowed' : customStyles.btnSubmit.cursor,
+                  cursor: submitting || !isAuthed ? 'not-allowed' : customStyles.btnSubmit.cursor,
                 }}
-                disabled={submitting}
+                disabled={submitting || !isAuthed}
               >
-                {submitting
+                {!isAuthed
+                  ? 'Sign In To Mint'
+                  : submitting
                   ? 'Submitting...'
                   : submitted
                   ? isConfession
@@ -912,6 +920,21 @@ export default function MintPage() {
                     : 'List Vibe for Auction'}
               </button>
 
+              {!isAuthed && (
+                <div
+                  style={{
+                    marginTop: '10px',
+                    background: 'rgba(255,210,120,0.12)',
+                    border: '1px solid rgba(255,210,120,0.45)',
+                    color: '#FFE5B3',
+                    padding: '10px 12px',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                  }}
+                >
+                  Sign in required. <Link href="/login" style={{ color: '#FFE5B3', textDecoration: 'underline' }}>Go to login</Link>
+                </div>
+              )}
               {error && <div style={customStyles.statusError}>{error}</div>}
               {success && <div style={customStyles.statusSuccess}>{success}</div>}
             </div>

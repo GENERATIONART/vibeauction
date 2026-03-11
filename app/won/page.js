@@ -323,7 +323,9 @@ function WonPageInner() {
     setSettling(false);
 
     if (!settled?.settled) {
-      if (settled?.reason === 'not_highest_bidder') {
+      if (settled?.reason === 'auth_required') {
+        setActionError('Sign in to claim this win.');
+      } else if (settled?.reason === 'not_highest_bidder') {
         setActionError('This claim does not match the highest bid.');
       } else if (settled?.reason === 'insufficient_balance') {
         setActionError('Not enough AURA to complete this claim.');

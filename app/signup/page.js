@@ -127,6 +127,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const reservedHandles = new Set(['api', 'auction', 'leaderboard', 'login', 'mint', 'profile', 'signup', 'top-up', 'vault', 'vibes', 'won']);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -136,6 +137,10 @@ export default function SignupPage() {
     const trimmedUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
     if (!trimmedUsername || trimmedUsername.length < 3) {
       setError('Username must be at least 3 characters (letters, numbers, underscores only).');
+      return;
+    }
+    if (reservedHandles.has(trimmedUsername)) {
+      setError('That username is reserved. Pick a different handle.');
       return;
     }
     if (password.length < 6) {

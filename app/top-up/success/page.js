@@ -143,6 +143,18 @@ function TopUpSuccessContent() {
           return;
         }
 
+        if (result?.reason === 'user_mismatch') {
+          setPhase('error');
+          setMessage('This checkout session belongs to a different account.');
+          return;
+        }
+
+        if (result?.reason === 'auth_required') {
+          setPhase('pending');
+          setMessage('Sign in to the account that started checkout, then retry.');
+          return;
+        }
+
         if (result?.reason === 'not_paid') {
           setPhase('pending');
           setMessage('Stripe reports this checkout is not paid yet.');

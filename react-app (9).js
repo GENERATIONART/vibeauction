@@ -381,6 +381,9 @@ const App = () => {
   const [activeCategory, setActiveCategory] = useState('All Vibes');
   const [activeSort, setActiveSort] = useState('');
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [syncNow, setSyncNow] = useState(Date.now());
+  const [surprisePressed, setSurprisePressed] = useState(false);
 
   const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
   const router = useRouter();
@@ -436,6 +439,7 @@ const App = () => {
     const syncLatestVibes = async () => {
       try {
         await refreshState();
+        setLastSyncedAt(Date.now());
       } catch {
         // Keep current UI state when background refresh fails.
       }
@@ -468,6 +472,11 @@ const App = () => {
       window.clearInterval(pollId);
     };
   }, [refreshState]);
+
+  useEffect(() => {
+    const clockId = window.setInterval(() => setSyncNow(Date.now()), 1000);
+    return () => window.clearInterval(clockId);
+  }, []);
 
   const bidLookup = useMemo(() => {
     const lookup = {};
@@ -561,6 +570,20 @@ const App = () => {
     }
     return items;
   }, [filteredItems, activeSort, bidLookup]);
+
+  const secondsSinceSync = Number.isFinite(lastSyncedAt)
+    ? Math.max(0, Math.floor((syncNow - lastSyncedAt) / 1000))
+    : null;
+
+  const handleSurpriseMe = () => {
+    const pool = sortedItems.length > 0 ? sortedItems : liveVibes;
+    if (pool.length === 0) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (!pick?.slug) return;
+    setSurprisePressed(true);
+    setTimeout(() => setSurprisePressed(false), 140);
+    router.push(`/auction/${pick.slug}`);
+  };
 
   const tickerItems = useMemo(() => {
     if (liveVibes.length > 0) {
@@ -669,6 +692,50 @@ const App = () => {
             VIBES
           </span>
         </h1>
+
+        <div
+          style={{
+            marginTop: isMobile ? '12px' : '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleSurpriseMe}
+            style={{
+              background: '#C8FF00',
+              color: '#000000',
+              border: '2px solid #000000',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              fontSize: isMobile ? '12px' : '13px',
+              letterSpacing: '0.5px',
+              padding: isMobile ? '9px 12px' : '10px 14px',
+              cursor: 'pointer',
+              boxShadow: surprisePressed ? '1px 1px 0 #000000' : '3px 3px 0 #000000',
+              transform: surprisePressed ? 'translate(2px, 2px)' : 'none',
+            }}
+          >
+            Surprise Me
+          </button>
+          <div
+            style={{
+              border: '1px solid #2D2D2D',
+              background: '#121212',
+              color: '#A9A9A9',
+              fontSize: isMobile ? '11px' : '12px',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              padding: isMobile ? '8px 10px' : '8px 12px',
+              letterSpacing: '0.3px',
+            }}
+          >
+            {secondsSinceSync === null ? 'Syncing live feed...' : `Live feed synced ${secondsSinceSync}s ago`}
+          </div>
+        </div>
       </section>
 
       <div

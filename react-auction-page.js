@@ -761,6 +761,8 @@ const App = ({ vibe }) => {
             : 'Bid too low. Another bidder is ahead.',
         );
         await loadBidHistory();
+      } else if (bidResult?.reason === 'auth_required') {
+        setError('Sign in to place bids.');
       } else {
         setError('Failed to place bid. Try again.');
       }
@@ -817,7 +819,9 @@ const App = ({ vibe }) => {
     });
     setBuyingNow(false);
     if (!settled?.settled) {
-      if (settled?.reason === 'insufficient_balance') {
+      if (settled?.reason === 'auth_required') {
+        setError('Sign in to purchase vibes.');
+      } else if (settled?.reason === 'insufficient_balance') {
         setError('Insufficient balance for this purchase.');
       } else if (settled?.reason === 'already_owned') {
         setError('This vibe is no longer available.');

@@ -45,6 +45,12 @@ export async function POST(request) {
     const packId = typeof body?.packId === 'string' ? body.packId : 'starter';
     const pack = PACKS[packId] || PACKS.starter;
     const userId = await resolveUserIdFromAuthHeader(request);
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'You must be signed in to start checkout.' },
+        { status: 401 },
+      );
+    }
 
     const appUrl = resolveAppUrl(request);
     const successUrl = `${appUrl}/top-up/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -61,9 +67,7 @@ export async function POST(request) {
     params.set('metadata[aura_amount]', String(pack.aura));
     params.set('metadata[pack_id]', pack.id);
     params.set('metadata[pack_label]', pack.label);
-    if (userId) {
-      params.set('metadata[user_id]', userId);
-    }
+    params.set('metadata[user_id]', userId);
 
     const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',

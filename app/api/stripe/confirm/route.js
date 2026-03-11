@@ -26,10 +26,7 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-async function resolveUserIdForCredit(session, authToken) {
-  const sessionUserId = safeText(session?.metadata?.user_id);
-  if (sessionUserId) return sessionUserId;
-
+async function resolveUserIdFromAuthToken(authToken) {
   const token = safeText(authToken);
   if (!token) return null;
 
@@ -192,13 +189,22 @@ export async function POST(request) {
 
     const label = safeText(session?.metadata?.pack_label) || packFromId?.label || 'Top Up';
 
+    const sessionUserId = safeText(session?.metadata?.user_id) || null;
+    const tokenUserId = await resolveUserIdFromAuthToken(authToken);
+    if (sessionUserId && tokenUserId && sessionUserId !== tokenUserId) {
+      return NextResponse.json({ credited: false, reason: 'user_mismatch' });
+    }
+    const userId = sessionUserId || tokenUserId;
+    if (!userId) {
+      return NextResponse.json({ credited: false, reason: 'auth_required' });
+    }
+
     const result = await applyStripeCreditInStore({
       sessionId,
       auraAmount,
       label: `Stripe ${label}`,
     });
 
-    const userId = await resolveUserIdForCredit(session, authToken);
     let creditedToProfile = false;
     const sessionProfileCredited = result?.session?.profileCredited === true;
     const shouldAttemptProfileCredit = Boolean(

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
+import { useAuth } from '../state/auth-store';
 import NavBar from '../components/NavBar';
 
 const packs = [
@@ -109,6 +110,14 @@ const customStyles = {
     fontWeight: 700,
     marginBottom: '16px',
   },
+  gated: {
+    padding: '12px 14px',
+    border: '1px solid rgba(255,201,64,0.45)',
+    background: 'rgba(255,201,64,0.12)',
+    color: '#FFE2A1',
+    fontWeight: 700,
+    marginBottom: '16px',
+  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -185,9 +194,11 @@ function TopUpPageContent() {
   const [error, setError] = useState('');
   const [viewportWidth, setViewportWidth] = useState(1200);
   const { createStripeCheckoutSession } = useVibeStore();
+  const { user, loading } = useAuth();
 
   const isMobile = viewportWidth <= 768;
   const isCanceled = searchParams.get('canceled') === '1';
+  const isAuthed = Boolean(user);
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -202,6 +213,10 @@ function TopUpPageContent() {
   );
 
   const startCheckout = async () => {
+    if (!isAuthed) {
+      setError('Sign in to start Stripe checkout.');
+      return;
+    }
     try {
       setSubmitting(true);
       setError('');
@@ -236,6 +251,11 @@ function TopUpPageContent() {
         </p>
 
         {isCanceled && <div style={customStyles.notice}>Checkout was canceled. No charge was made.</div>}
+        {!loading && !isAuthed && (
+          <div style={customStyles.gated}>
+            Sign in first so purchased AURA is credited to your wallet.
+          </div>
+        )}
         {error && <div style={customStyles.error}>{error}</div>}
 
         <section style={customStyles.grid}>
@@ -258,9 +278,19 @@ function TopUpPageContent() {
         </section>
 
         <div style={customStyles.ctaWrap}>
-          <button type="button" onClick={startCheckout} style={customStyles.ctaBtn} disabled={submitting}>
+          <button
+            type="button"
+            onClick={startCheckout}
+            style={{ ...customStyles.ctaBtn, opacity: submitting || !isAuthed ? 0.7 : 1, cursor: submitting || !isAuthed ? 'not-allowed' : 'pointer' }}
+            disabled={submitting || !isAuthed}
+          >
             {submitting ? 'Starting Checkout...' : `Checkout ${selectedPackData.usd}`}
           </button>
+          {!loading && !isAuthed && (
+            <Link href="/login" style={customStyles.ghostBtn}>
+              Sign In
+            </Link>
+          )}
           <Link href="/vault" style={customStyles.ghostBtn}>
             Back To Vault
           </Link>
