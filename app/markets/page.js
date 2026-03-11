@@ -20,7 +20,6 @@ const STARTER_MARKETS = [
     description: 'Resolves to YES if BTC weekly close is above 100,000 USD.',
     yesLabel: 'Above 100K',
     noLabel: 'Below 100K',
-    initialProbability: '42',
   },
   {
     type: 'timing',
@@ -29,7 +28,6 @@ const STARTER_MARKETS = [
     description: 'Resolves YES if total bids reach 50 before Friday 6PM ET.',
     yesLabel: 'Hits 50',
     noLabel: 'Doesn’t hit 50',
-    initialProbability: '35',
   },
   {
     type: 'price_target',
@@ -38,7 +36,6 @@ const STARTER_MARKETS = [
     description: 'Resolves YES if final auction settlement is strictly above 9,000 AURA.',
     yesLabel: 'Above 9,000',
     noLabel: '9,000 or lower',
-    initialProbability: '55',
   },
 ];
 
@@ -77,8 +74,6 @@ const DEFAULT_FORM = {
   type: 'binary',
   yesLabel: 'Yes',
   noLabel: 'No',
-  initialProbability: '50',
-  seedLiquidity: '100',
   closesAt: toLocalDateTimeValue(Date.now() + 24 * 60 * 60 * 1000),
   resolvesAt: '',
 };
@@ -281,6 +276,7 @@ export default function MarketsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [tradeInputs, setTradeInputs] = useState({});
+  const [openingPriceInputs, setOpeningPriceInputs] = useState({});
   const [actionBusy, setActionBusy] = useState({});
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 980 : false;
@@ -354,8 +350,6 @@ export default function MarketsPage() {
           body: {
             market: {
               ...form,
-              initialProbability: safeNumber(form.initialProbability, 50),
-              seedLiquidity: safeNumber(form.seedLiquidity, 0),
               closesAt: form.closesAt ? new Date(form.closesAt).toISOString() : null,
               resolvesAt: form.resolvesAt ? new Date(form.resolvesAt).toISOString() : null,
             },
@@ -365,9 +359,7 @@ export default function MarketsPage() {
       );
 
       if (!payload?.created) {
-        if (payload?.reason === 'insufficient_balance') {
-          setError('Not enough AURA to seed this market.');
-        } else if (payload?.reason === 'invalid_close_time') {
+        if (payload?.reason === 'invalid_close_time') {
           setError('Close time must be in the future.');
         } else if (payload?.reason === 'auth_required') {
           setError('Sign in to create markets.');
@@ -377,7 +369,7 @@ export default function MarketsPage() {
         return;
       }
 
-      setSuccess('Market created. Traders can now buy YES/NO positions.');
+      setSuccess('Market created. First trader now sets opening probability.');
       setForm(DEFAULT_FORM);
       await loadMarkets();
     } catch (createError) {
@@ -391,7 +383,8 @@ export default function MarketsPage() {
     setActionBusy((prev) => ({ ...prev, [marketId]: value }));
   };
 
-  const onTrade = async (marketId, side) => {
+  const onTrade = async (market, side) => {
+    const marketId = market?.id;
     const stake = safeNumber(tradeInputs[marketId], 0);
     if (stake < 1) {
       setError('Trade stake must be at least 1 AURA.');
@@ -406,17 +399,31 @@ export default function MarketsPage() {
     setBusy(marketId, true);
     try {
       const token = await getAuthToken();
+      const marketProbability = safeNumber(market?.probabilityYes, Number.NaN);
+      const openingPrice = safeNumber(openingPriceInputs[marketId], Number.NaN);
+      if (!Number.isFinite(marketProbability) && (!Number.isFinite(openingPrice) || openingPrice <= 0 || openingPrice >= 100)) {
+        setError('Opening probability must be between 1% and 99%.');
+        return;
+      }
       const result = await apiRequest(
         '/api/markets/trade',
         {
           method: 'POST',
-          body: { trade: { marketId, side, stake } },
+          body: {
+            trade: {
+              marketId,
+              side,
+              stake,
+              ...(Number.isFinite(marketProbability) ? {} : { price: openingPrice }),
+            },
+          },
         },
         token,
       );
 
       if (!result?.accepted) {
         if (result?.reason === 'insufficient_balance') setError('Not enough AURA for this trade.');
+        else if (result?.reason === 'price_required_for_first_trade') setError('Set opening probability (1-99%) for first trade.');
         else if (result?.reason === 'market_closed') setError('Market is closed for new trades.');
         else setError('Trade failed. Please try again.');
         return;
@@ -424,6 +431,7 @@ export default function MarketsPage() {
 
       setSuccess(`Trade executed: ${side.toUpperCase()} ${stake.toLocaleString()} AURA.`);
       setTradeInputs((prev) => ({ ...prev, [marketId]: '' }));
+      setOpeningPriceInputs((prev) => ({ ...prev, [marketId]: '' }));
       await loadMarkets();
     } catch (tradeError) {
       setError(tradeError instanceof Error ? tradeError.message : 'Trade failed');
@@ -508,8 +516,8 @@ export default function MarketsPage() {
         <section style={styles.panel}>
           <h1 style={styles.title}>Prediction Markets</h1>
           <p style={styles.sub}>
-            Create real-money-style AURA markets. Starter sets initial probability and seed liquidity.
-            Payouts are distributed from the market pool to winning shares.
+            Create real-money-style AURA markets with trader-driven odds.
+            Opening probability is set by the first trade and payouts are distributed from the market pool.
           </p>
 
           <div style={styles.pillRow}>
@@ -581,30 +589,6 @@ export default function MarketsPage() {
                   style={styles.input}
                   value={form.noLabel}
                   onChange={(event) => setFormField('noLabel', event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div style={styles.row2}>
-              <div>
-                <label style={styles.label}>Initial Probability (%)</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={99}
-                  style={styles.input}
-                  value={form.initialProbability}
-                  onChange={(event) => setFormField('initialProbability', event.target.value)}
-                />
-              </div>
-              <div>
-                <label style={styles.label}>Seed Liquidity (AURA)</label>
-                <input
-                  type="number"
-                  min={10}
-                  style={styles.input}
-                  value={form.seedLiquidity}
-                  onChange={(event) => setFormField('seedLiquidity', event.target.value)}
                 />
               </div>
             </div>
@@ -685,8 +669,10 @@ export default function MarketsPage() {
           ) : (
             <div style={{ marginTop: '14px' }}>
               {markets.map((market) => {
-                const probabilityYesPct = Math.round(safeNumber(market.probabilityYes, 0.5) * 100);
-                const probabilityNoPct = 100 - probabilityYesPct;
+                const probabilityYesRaw = safeNumber(market.probabilityYes, Number.NaN);
+                const hasLiveOdds = Number.isFinite(probabilityYesRaw);
+                const probabilityYesPct = hasLiveOdds ? Math.round(probabilityYesRaw * 100) : null;
+                const probabilityNoPct = hasLiveOdds ? 100 - probabilityYesPct : null;
                 const closesAtMs = new Date(market.closesAt || '').getTime();
                 const isClosed = Number.isFinite(closesAtMs) && closesAtMs <= Date.now();
                 const canResolve = user && market.creatorId && String(user.id) === String(market.creatorId) && market.state === 'open' && isClosed;
@@ -711,13 +697,21 @@ export default function MarketsPage() {
                     <p style={{ ...styles.sub, marginBottom: '10px' }}>{market.description || 'No description provided.'}</p>
 
                     <div style={styles.probabilityWrap}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', fontWeight: 800 }}>
-                        <span style={{ color: '#53FF8A' }}>{market.yesLabel}: {probabilityYesPct}%</span>
-                        <span style={{ color: '#FF7998' }}>{market.noLabel}: {probabilityNoPct}%</span>
-                      </div>
-                      <div style={styles.probabilityBar}>
-                        <div style={{ ...styles.probabilityYes, width: `${probabilityYesPct}%` }} />
-                      </div>
+                      {hasLiveOdds ? (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', fontWeight: 800 }}>
+                            <span style={{ color: '#53FF8A' }}>{market.yesLabel}: {probabilityYesPct}%</span>
+                            <span style={{ color: '#FF7998' }}>{market.noLabel}: {probabilityNoPct}%</span>
+                          </div>
+                          <div style={styles.probabilityBar}>
+                            <div style={{ ...styles.probabilityYes, width: `${probabilityYesPct}%` }} />
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ ...styles.miniText, color: '#D2D2D2', marginBottom: '2px' }}>
+                          No live odds yet. First trader sets opening probability.
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', marginBottom: '8px' }}>
@@ -742,7 +736,12 @@ export default function MarketsPage() {
                     )}
 
                     {market.state === 'open' && !isClosed && (
-                      <div style={styles.tradeRow}>
+                      <div
+                        style={{
+                          ...styles.tradeRow,
+                          gridTemplateColumns: hasLiveOdds ? '1fr auto auto' : '1fr 1fr auto auto',
+                        }}
+                      >
                         <input
                           type="number"
                           min={1}
@@ -752,10 +751,22 @@ export default function MarketsPage() {
                           value={tradeInputs[market.id] ?? ''}
                           onChange={(event) => setTradeInputs((prev) => ({ ...prev, [market.id]: event.target.value }))}
                         />
-                        <button type="button" style={styles.yesButton} disabled={busy} onClick={() => onTrade(market.id, 'yes')}>
+                        {!hasLiveOdds && (
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            step={1}
+                            style={{ ...styles.input, marginBottom: 0 }}
+                            placeholder="Opening prob %"
+                            value={openingPriceInputs[market.id] ?? ''}
+                            onChange={(event) => setOpeningPriceInputs((prev) => ({ ...prev, [market.id]: event.target.value }))}
+                          />
+                        )}
+                        <button type="button" style={styles.yesButton} disabled={busy} onClick={() => onTrade(market, 'yes')}>
                           Buy YES
                         </button>
-                        <button type="button" style={styles.noButton} disabled={busy} onClick={() => onTrade(market.id, 'no')}>
+                        <button type="button" style={styles.noButton} disabled={busy} onClick={() => onTrade(market, 'no')}>
                           Buy NO
                         </button>
                       </div>
