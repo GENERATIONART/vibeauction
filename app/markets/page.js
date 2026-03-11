@@ -55,6 +55,21 @@ const safeNumber = (value, fallback = 0) => {
   return fallback;
 };
 
+const toExpiryMs = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value > 1e12) return value;
+    if (value > 1e9) return value * 1000;
+    return 0;
+  }
+  if (typeof value === 'string') {
+    const numeric = Number(value.trim());
+    if (Number.isFinite(numeric)) return toExpiryMs(numeric);
+    const parsed = new Date(value).getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+};
+
 const toLocalDateTimeValue = (dateInput) => {
   const date = new Date(dateInput);
   if (!Number.isFinite(date.getTime())) return '';
@@ -341,10 +356,35 @@ export default function MarketsPage() {
     };
   }, []);
 
-  const getAuthToken = useCallback(async () => {
+  const getAuthToken = useCallback(async ({ forceRefresh = false } = {}) => {
     const sb = getSupabaseClient();
-    const sessionData = sb ? await sb.auth.getSession() : null;
-    return sessionData?.data?.session?.access_token ?? null;
+    if (!sb) return null;
+
+    let session = null;
+    try {
+      const sessionData = await sb.auth.getSession();
+      session = sessionData?.data?.session ?? null;
+    } catch {
+      session = null;
+    }
+
+    const token = session?.access_token ?? null;
+    const expiresAtMs = toExpiryMs(session?.expires_at);
+    const now = Date.now();
+    const canReuseToken = Boolean(token) && (expiresAtMs === 0 || expiresAtMs > now - 30000);
+    const shouldRefresh = forceRefresh || !token || (expiresAtMs > 0 && expiresAtMs - now < 30000);
+
+    if (shouldRefresh) {
+      try {
+        const { data: refreshed } = await sb.auth.refreshSession();
+        const refreshedToken = refreshed?.session?.access_token ?? null;
+        if (refreshedToken) return refreshedToken;
+      } catch {
+        return canReuseToken ? token : null;
+      }
+    }
+
+    return canReuseToken ? token : null;
   }, []);
 
   const loadMarkets = useCallback(async () => {

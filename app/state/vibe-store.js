@@ -147,10 +147,13 @@ const mergeMintedVibes = (baseList, supabaseList) => {
 const getMintFailureMessage = (reason) => {
   const normalized = String(reason || '').toLowerCase();
   if (!normalized) return 'Listing failed. Please try again.';
-  if (normalized === 'auth_required') return 'Your session expired. Please sign in again and retry.';
-  if (normalized === 'auth_invalid_token') return 'Your session expired. Please sign in again and retry.';
+  if (normalized === 'auth_required') return 'Could not verify your sign-in. Refresh and try again.';
+  if (normalized === 'auth_invalid_token') return 'Could not verify your sign-in. Refresh and try again. If it keeps failing, sign in again.';
+  if (normalized === 'auth_lookup_failed') return 'Sign-in check is temporarily unavailable. Please retry in a moment.';
   if (normalized === 'supabase_unavailable') return 'Minting backend is unavailable. Please try again shortly.';
-  if (normalized.includes('jwt') || normalized.includes('token')) return 'Your session expired. Please sign in again and retry.';
+  if (normalized.includes('jwt') || normalized.includes('token')) {
+    return 'Could not verify your sign-in. Refresh and retry. If needed, sign in again.';
+  }
   if (normalized.includes('row-level security') || normalized.includes('rls')) {
     return 'Mint permission check failed. Please sign out, sign in again, and retry.';
   }
@@ -218,19 +221,24 @@ export function VibeStoreProvider({ children }) {
     }
 
     let token = session?.access_token ?? null;
+    const fallbackToken = token;
+    const now = Date.now();
     const expiresAtMs = toExpiryMs(session?.expires_at);
-    const needsRefresh = forceRefresh || !token || (expiresAtMs > 0 && expiresAtMs - Date.now() < 60000);
+    const canReuseCurrentToken = Boolean(token) && (expiresAtMs === 0 || expiresAtMs > now - 30000);
+    const needsRefresh = forceRefresh || !token || (expiresAtMs > 0 && expiresAtMs - now < 30000);
 
     if (needsRefresh) {
       try {
         const { data: refreshed } = await sb.auth.refreshSession();
         token = refreshed?.session?.access_token ?? null;
+        if (token) return token;
       } catch {
-        token = null;
+        // Keep a still-usable token when refresh fails due transient network/auth service errors.
+        return canReuseCurrentToken ? fallbackToken : null;
       }
     }
 
-    return token;
+    return canReuseCurrentToken ? fallbackToken : null;
   }, []);
 
   useEffect(() => {

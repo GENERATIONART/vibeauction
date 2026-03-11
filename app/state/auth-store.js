@@ -55,14 +55,23 @@ export function AuthProvider({ children }) {
 
       const expiresAtSec = Number(session?.expires_at || 0);
       const expiresAtMs = Number.isFinite(expiresAtSec) && expiresAtSec > 0 ? expiresAtSec * 1000 : 0;
-      const shouldRefresh = !session?.access_token || (expiresAtMs > 0 && expiresAtMs - Date.now() < 60000);
+      const now = Date.now();
+      const hasToken = Boolean(session?.access_token);
+      const canReuseSession = hasToken && (expiresAtMs === 0 || expiresAtMs > now - 30000);
+      const shouldRefresh = !hasToken || (expiresAtMs > 0 && expiresAtMs - now < 30000);
 
       if (shouldRefresh) {
         try {
           const { data: refreshed } = await sb.auth.refreshSession();
-          session = refreshed?.session ?? null;
+          if (refreshed?.session) {
+            session = refreshed.session;
+          } else if (!canReuseSession) {
+            session = null;
+          }
         } catch {
-          session = null;
+          if (!canReuseSession) {
+            session = null;
+          }
         }
       }
 
