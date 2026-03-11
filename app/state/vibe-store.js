@@ -44,6 +44,7 @@ async function apiRequest(url, options = {}) {
   const hasBody = options.body !== undefined;
   const response = await fetch(url, {
     method,
+    cache: method === 'GET' ? 'no-store' : undefined,
     headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) },
     body: hasBody ? JSON.stringify(options.body) : undefined,
   });
@@ -76,7 +77,7 @@ const mapVaultRow = (row) => ({
 });
 
 export function VibeStoreProvider({ children }) {
-  const { profile, user } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const [store, setStore] = useState(() => createDefaultState());
   const [isHydrating, setIsHydrating] = useState(true);
   const [error, setError] = useState('');
@@ -183,13 +184,15 @@ export function VibeStoreProvider({ children }) {
             });
         }
         setError('');
+        // Refresh AURA balance after deduction
+        refreshProfile();
         return Boolean(data.settled);
       } catch (settleError) {
         setError(settleError instanceof Error ? settleError.message : 'Failed to settle auction');
         return false;
       }
     },
-    [applyState, user],
+    [applyState, user, refreshProfile],
   );
 
   const mintConfession = useCallback(
@@ -213,9 +216,13 @@ export function VibeStoreProvider({ children }) {
   const mintVibe = useCallback(
     async (payload) => {
       try {
+        const sb = getSupabaseClient();
+        const sessionData = sb ? (await sb.auth.getSession()) : null;
+        const token = sessionData?.data?.session?.access_token ?? null;
         const data = await apiRequest('/api/state/mint-vibe', {
           method: 'POST',
           body: { payload },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
         applyState(data.state);
         setError('');

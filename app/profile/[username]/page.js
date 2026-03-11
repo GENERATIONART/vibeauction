@@ -335,8 +335,7 @@ export default function ProfilePage() {
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
 
-  const isOwnProfile = user?.user_metadata?.username === username ||
-    user?.email?.split('@')[0] === username;
+  const isOwnProfile = Boolean(user && profile && user.id === profile.id);
 
   useEffect(() => {
     const update = () => setViewportWidth(window.innerWidth);
@@ -379,18 +378,26 @@ export default function ProfilePage() {
 
         setProfile(profileData);
 
-        // Fetch vibes listed by this user
+        // Fetch vibes listed by this user (by UUID stored in listed_by)
         const { data: vibeData } = await sb
           .from('vibes')
           .select('id, slug, name, emoji, starting_price, created_at, category')
-          .eq('author', username)
+          .eq('listed_by', profileData.id)
           .order('created_at', { ascending: false })
           .limit(20);
 
         const allVibes = vibeData || [];
         setListings(allVibes.slice(0, 6));
         setPastAuctions(allVibes.slice(6));
-        setWonVibes([]);
+
+        // Fetch won vibes from vault_items
+        const { data: vaultData } = await sb
+          .from('vault_items')
+          .select('id, name, emoji, category, price, won_date')
+          .eq('user_id', profileData.id)
+          .order('created_at', { ascending: false })
+          .limit(12);
+        setWonVibes(vaultData || []);
       } else {
         setProfile({ username, aura_balance: 200, created_at: new Date().toISOString() });
         setListings([]);
@@ -568,10 +575,10 @@ export default function ProfilePage() {
             ) : (
               <div style={{ ...S.wonGrid, gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr', padding: '14px' }}>
                 {wonVibes.map((entry, i) => (
-                  <div key={i} style={S.wonCard}>
-                    <span style={S.wonEmoji}>✨</span>
-                    <span style={S.wonName}>{entry.auctions?.title ?? 'Unknown Vibe'}</span>
-                    <span style={S.wonPrice}>{Number(entry.amount).toLocaleString()} AURA</span>
+                  <div key={entry.id || i} style={S.wonCard}>
+                    <span style={S.wonEmoji}>{entry.emoji || '✨'}</span>
+                    <span style={S.wonName}>{entry.name || 'Unknown Vibe'}</span>
+                    <span style={S.wonPrice}>{Number(entry.price || 0).toLocaleString()} AURA</span>
                   </div>
                 ))}
               </div>

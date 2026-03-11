@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import { useAuth } from './app/state/auth-store';
 import NavBar from './app/components/NavBar';
@@ -513,6 +514,7 @@ const Timer = ({ hours, mins, secs }) => (
 const App = ({ vibe }) => {
   const { balance, activeBids, placeBid, settleAuction } = useVibeStore();
   const { profile } = useAuth();
+  const router = useRouter();
   const selectedVibe = vibe || getAuctionItemBySlug(defaultAuctionSlug);
   const baseBid = safeBid(selectedVibe?.bid, 100);
   const buyNowPrice = selectedVibe?.buyNowPrice ?? null;
@@ -606,6 +608,25 @@ const App = ({ vibe }) => {
   };
 
   const auctionEnded = timer.hours === 0 && timer.mins === 0 && timer.secs === 0;
+
+  // Check if the current user has the highest bid on this vibe
+  const vibeNormId = normalize(selectedVibe?.slug || selectedVibe?.title || '');
+  const userActiveBid = activeBids.find(
+    (b) => normalize(b.id || b.name) === vibeNormId,
+  );
+  const userIsHighestBidder = Boolean(userActiveBid && currentBid === userActiveBid.amount);
+
+  const onClaimWin = useCallback(async () => {
+    const params = new URLSearchParams({
+      id: vibeNormId,
+      name: selectedVibe?.title || 'Unknown Vibe',
+      emoji: selectedVibe?.emoji || '✨',
+      amount: String(currentBid),
+      slug: selectedVibe?.slug || vibeNormId,
+      category: selectedVibe?.category || 'Vibes',
+    });
+    router.push(`/won?${params.toString()}`);
+  }, [vibeNormId, selectedVibe, currentBid, router]);
 
   const onPlaceBid = async () => {
     if (placingBid || auctionEnded) return;
@@ -840,10 +861,25 @@ const App = ({ vibe }) => {
                 This is your listing — you can't bid on your own vibe
               </div>
             ) : auctionEnded ? (
-              <div style={{ background: '#1A0A0A', border: '2px solid #FF0055', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', color: '#FF0055', letterSpacing: '1px' }}>AUCTION ENDED</div>
-                <div style={{ fontSize: '13px', color: '#888888', marginTop: '6px' }}>This auction has closed. Check your Vault if you won.</div>
-              </div>
+              userIsHighestBidder ? (
+                <div style={{ background: '#0A1A0A', border: '2px solid #C8FF00', borderRadius: '8px', padding: '24px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', color: '#C8FF00', letterSpacing: '1px', marginBottom: '6px' }}>🏆 YOU WON!</div>
+                  <div style={{ fontSize: '13px', color: '#AAAAAA', marginBottom: '18px' }}>
+                    Winning bid: <strong style={{ color: '#C8FF00' }}>{currentBid.toLocaleString()} AURA</strong>
+                  </div>
+                  <button
+                    onClick={onClaimWin}
+                    style={{ background: '#C8FF00', color: '#000000', border: 'none', padding: '14px 28px', fontFamily: "'Anton', sans-serif", fontSize: '18px', textTransform: 'uppercase', cursor: 'pointer', width: '100%' }}
+                  >
+                    Claim Your Vibe →
+                  </button>
+                </div>
+              ) : (
+                <div style={{ background: '#1A0A0A', border: '2px solid #FF0055', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', color: '#FF0055', letterSpacing: '1px' }}>AUCTION ENDED</div>
+                  <div style={{ fontSize: '13px', color: '#888888', marginTop: '6px' }}>This auction has closed. {userActiveBid ? 'You were outbid.' : 'Check your Vault if you won.'}</div>
+                </div>
+              )
             ) : (
               <div style={customStyles.bidControls}>
                 <div style={customStyles.incrementRow}>

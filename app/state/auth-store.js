@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { getSupabaseClient } from '../../lib/supabase-client';
 
 const AuthContext = createContext(null);
@@ -70,8 +70,15 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  const refreshProfile = useCallback(() => {
+    if (userRef.current?.id) loadProfile(userRef.current.id);
+  }, [loadProfile]);
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, loadProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, loadProfile, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

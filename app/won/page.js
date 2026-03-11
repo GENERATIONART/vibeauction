@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import { useVibeStore } from '../state/vibe-store';
+import NavBar from '../components/NavBar';
 
 const customStyles = {
   pageWrapper: {
@@ -230,8 +231,9 @@ const makeConfettiPieces = (count) => {
   return pieces;
 };
 
-export default function WonPage() {
+function WonPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { activeBids, settleAuction } = useVibeStore();
   const [confettiPieces, setConfettiPieces] = useState([]);
   const [flexHovered, setFlexHovered] = useState(false);
@@ -244,19 +246,30 @@ export default function WonPage() {
 
   const isMobile = viewportWidth <= 768;
   const isSmallPhone = viewportWidth <= 460;
-  const wonVibeId = 'canceling-plans-guilt-free';
-  const wonVibeName = 'Canceling Brunch Because Your Stomach Is Negotiating';
+
+  // Read vibe data from URL params (set by auction page on win)
+  const paramId = searchParams.get('id');
+  const paramName = searchParams.get('name');
+  const paramEmoji = searchParams.get('emoji');
+  const paramAmount = searchParams.get('amount');
+  const paramSlug = searchParams.get('slug');
+  const paramCategory = searchParams.get('category') || 'Vibes';
+
+  // Fall back to finding any active bid if no params
+  const fallbackBid = !paramId ? activeBids[0] : null;
+
+  const wonVibeId = paramId || (fallbackBid ? String(fallbackBid.id || fallbackBid.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : 'unknown-vibe');
+  const wonVibeName = paramName || fallbackBid?.name || 'Unknown Vibe';
+  const wonVibeEmoji = paramEmoji || fallbackBid?.emoji || '✨';
+  const wonVibeSlug = paramSlug || wonVibeId;
 
   const matchingBid = activeBids.find((bid) => {
-    const normalizedName = String(bid?.name || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    const normalizedName = String(bid?.id || bid?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     return normalizedName === wonVibeId;
   });
 
-  const winningBid = matchingBid?.amount || 9001;
-  const winningBidDisplay = Number.isFinite(winningBid) ? winningBid.toLocaleString() : '9,001';
+  const winningBid = paramAmount ? Number(paramAmount) : (matchingBid?.amount || 0);
+  const winningBidDisplay = Number.isFinite(winningBid) && winningBid > 0 ? winningBid.toLocaleString() : '—';
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -297,8 +310,8 @@ export default function WonPage() {
     const settled = await settleAuction({
       id: wonVibeId,
       name: wonVibeName,
-      emoji: '🫃',
-      category: 'Permissions',
+      emoji: wonVibeEmoji,
+      category: paramCategory,
       rarity: 'epic',
       price: winningBid,
     });
@@ -337,18 +350,7 @@ export default function WonPage() {
 
   return (
     <div style={customStyles.pageWrapper}>
-      <header
-        style={{
-          ...customStyles.header,
-          padding: isMobile ? '0 14px' : customStyles.header.padding,
-          height: isMobile ? '56px' : customStyles.header.height,
-        }}
-      >
-        <Link href="/" style={{ ...customStyles.logo, fontSize: isMobile ? '20px' : customStyles.logo.fontSize }}>
-          Vibe Auction
-        </Link>
-        <div style={{ ...customStyles.auctionSettled, fontSize: isMobile ? '12px' : '16px' }}>AUCTION SETTLED</div>
-      </header>
+      <NavBar />
 
       <svg
         style={{
@@ -415,9 +417,9 @@ export default function WonPage() {
             </h4>
           </div>
 
-          <div style={{ textAlign: 'center', fontSize: isMobile ? '50px' : '64px', marginBottom: '10px' }}>🫃</div>
+          <div style={{ textAlign: 'center', fontSize: isMobile ? '50px' : '64px', marginBottom: '10px' }}>{wonVibeEmoji}</div>
           <h2 style={{ ...customStyles.vibeName, fontSize: isSmallPhone ? '28px' : (isMobile ? '34px' : customStyles.vibeName.fontSize) }}>
-            Canceling Brunch <br /> Stomach Negotiation
+            {wonVibeName}
           </h2>
 
           <div
@@ -430,7 +432,7 @@ export default function WonPage() {
           >
             <div>
               <span style={{ color: '#888', display: 'block', marginBottom: '5px' }}>Winner</span>
-              <span>@YOU_THE_VIBE_GOD</span>
+              <span>You</span>
             </div>
             <div style={{ textAlign: isSmallPhone ? 'left' : 'right' }}>
               <span style={{ color: '#888', display: 'block', marginBottom: '5px' }}>Winning Bid</span>
@@ -501,5 +503,13 @@ export default function WonPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function WonPage() {
+  return (
+    <Suspense>
+      <WonPageInner />
+    </Suspense>
   );
 }

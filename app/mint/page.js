@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
+import { useAuth } from '../state/auth-store';
 import NavBar from '../components/NavBar';
 
 const categoryOptions = [
@@ -426,6 +427,7 @@ const truncate = (value, max) => {
 export default function MintPage() {
   const router = useRouter();
   const { confessions, mintedVibes, mintConfession, mintVibe } = useVibeStore();
+  const { user, profile } = useAuth();
 
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [formData, setFormData] = useState({
@@ -621,6 +623,8 @@ export default function MintPage() {
         duration: formData.duration,
         manifesto: cleanedDetails,
         hasImage: Boolean(uploadedImage),
+        author: profile?.username ?? null,
+        listedBy: user?.id ?? null,
       });
 
       if (!minted) {
