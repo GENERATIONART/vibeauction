@@ -130,6 +130,7 @@ const styles = {
   },
   input: {
     width: '100%',
+    minWidth: 0,
     background: '#090909',
     border: '1px solid #2E2E2E',
     borderRadius: '8px',
@@ -154,7 +155,7 @@ const styles = {
   },
   row2: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     gap: '8px',
   },
   btnPrimary: {
@@ -322,6 +323,22 @@ export default function MarketsPage() {
     updateViewport();
     window.addEventListener('resize', updateViewport);
     return () => window.removeEventListener('resize', updateViewport);
+  }, []);
+
+  useEffect(() => {
+    const styleId = 'vibeauction-fonts';
+    if (document.getElementById(styleId)) return undefined;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      if (style.parentNode) style.parentNode.removeChild(style);
+    };
   }, []);
 
   const getAuthToken = useCallback(async () => {
@@ -617,7 +634,7 @@ export default function MarketsPage() {
             />
 
             <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={styles.label}>Type</label>
                 <select
                   style={styles.input}
@@ -629,7 +646,7 @@ export default function MarketsPage() {
                   ))}
                 </select>
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={styles.label}>Category</label>
                 <input
                   style={styles.input}
@@ -641,7 +658,7 @@ export default function MarketsPage() {
             </div>
 
             <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={styles.label}>Yes Label</label>
                 <input
                   style={styles.input}
@@ -649,7 +666,7 @@ export default function MarketsPage() {
                   onChange={(event) => setFormField('yesLabel', event.target.value)}
                 />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={styles.label}>No Label</label>
                 <input
                   style={styles.input}
@@ -659,8 +676,8 @@ export default function MarketsPage() {
               </div>
             </div>
 
-            <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
-              <div>
+            <div style={{ ...styles.row2, gridTemplateColumns: '1fr' }}>
+              <div style={{ minWidth: 0 }}>
                 <label style={styles.label}>Close Time</label>
                 <input
                   type="datetime-local"
@@ -669,7 +686,7 @@ export default function MarketsPage() {
                   onChange={(event) => setFormField('closesAt', event.target.value)}
                 />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={styles.label}>Resolve Time (optional)</label>
                 <input
                   type="datetime-local"
