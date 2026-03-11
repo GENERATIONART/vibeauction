@@ -213,6 +213,58 @@ export function VibeStoreProvider({ children }) {
     [applyState, user, refreshProfile],
   );
 
+  const loadPrediction = useCallback(async (vibeId) => {
+    if (!vibeId) return { prediction: null, stats: { totalPredictions: 0 } };
+    try {
+      const sb = getSupabaseClient();
+      const sessionData = sb ? (await sb.auth.getSession()) : null;
+      const token = sessionData?.data?.session?.access_token ?? null;
+      const data = await apiRequest(`/api/state/prediction?vibeId=${encodeURIComponent(vibeId)}`, {
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+      });
+      return {
+        prediction: data?.prediction || null,
+        stats: data?.stats || { totalPredictions: 0 },
+      };
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load prediction');
+      return { prediction: null, stats: { totalPredictions: 0 } };
+    }
+  }, []);
+
+  const submitPrediction = useCallback(
+    async (prediction) => {
+      try {
+        const sb = getSupabaseClient();
+        const sessionData = sb ? (await sb.auth.getSession()) : null;
+        const token = sessionData?.data?.session?.access_token ?? null;
+        const data = await apiRequest('/api/state/prediction', {
+          method: 'POST',
+          body: { prediction },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+        });
+        if (data?.accepted) {
+          setError('');
+        }
+        return {
+          accepted: Boolean(data?.accepted),
+          reason: data?.reason || null,
+          prediction: data?.prediction || null,
+          stats: data?.stats || { totalPredictions: 0 },
+        };
+      } catch (submitError) {
+        setError(submitError instanceof Error ? submitError.message : 'Failed to submit prediction');
+        return {
+          accepted: false,
+          reason: 'request_failed',
+          prediction: null,
+          stats: { totalPredictions: 0 },
+        };
+      }
+    },
+    [],
+  );
+
   const mintConfession = useCallback(
     async (payload) => {
       try {
@@ -308,6 +360,8 @@ export function VibeStoreProvider({ children }) {
       clearError,
       placeBid,
       settleAuction,
+      loadPrediction,
+      submitPrediction,
       mintConfession,
       mintVibe,
       createStripeCheckoutSession,
@@ -323,6 +377,8 @@ export function VibeStoreProvider({ children }) {
       clearError,
       placeBid,
       settleAuction,
+      loadPrediction,
+      submitPrediction,
       mintConfession,
       mintVibe,
       createStripeCheckoutSession,

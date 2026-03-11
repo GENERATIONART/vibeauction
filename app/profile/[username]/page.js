@@ -420,6 +420,7 @@ export default function ProfilePage() {
   const repScore = 0;
   const memberYear = profile?.created_at ? new Date(profile.created_at).getFullYear() : '—';
   const auraBalance = profile?.aura_balance ?? 0;
+  const predictionPoints = profile?.prediction_points ?? 0;
   const avatarEmojis = ['🕶️', '👾', '🌀', '🔮', '🎭', '🦋', '⚡', '🌊'];
   const avatarEmoji = avatarEmojis[(username?.charCodeAt(0) ?? 0) % avatarEmojis.length];
 
@@ -503,7 +504,7 @@ export default function ProfilePage() {
         {[
           { label: 'Vibes Listed', value: loading ? '—' : (listings.length + pastAuctions.length) || '0' },
           { label: 'Aura Balance', value: loading ? '—' : auraBalance.toLocaleString() },
-          { label: 'Reputation', value: 'New' },
+          { label: 'Prediction Pts', value: loading ? '—' : predictionPoints.toLocaleString() },
           { label: 'Member Since', value: loading ? '—' : memberYear },
         ].map((stat, i, arr) => (
           <div

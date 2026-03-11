@@ -104,6 +104,12 @@ const getTimerFromVibe = (vibe) => {
   return parseTimer(vibe?.timer);
 };
 
+const formatPredictionClock = (timestamp) => {
+  const value = new Date(timestamp || '').getTime();
+  if (!Number.isFinite(value)) return 'Unknown';
+  return new Date(value).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+};
+
 const customStyles = {
   body: {
     backgroundColor: '#0D0D0D',
@@ -394,6 +400,110 @@ const customStyles = {
     fontFamily: "'Anton', sans-serif",
     fontSize: '16px',
   },
+  predictionPanel: {
+    background: '#0F1118',
+    border: '2px solid #2F6BFF',
+    borderRadius: '8px',
+    padding: '24px',
+  },
+  predictionTitle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '24px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: '10px',
+    color: '#8FB0FF',
+  },
+  predictionHelp: {
+    fontSize: '12px',
+    color: '#98A2B3',
+    lineHeight: 1.5,
+    marginBottom: '14px',
+  },
+  predictionGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+    marginBottom: '10px',
+  },
+  predictionInputWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  predictionLabel: {
+    fontSize: '11px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+    fontWeight: 700,
+    color: '#7F8BA0',
+  },
+  predictionInput: {
+    width: '100%',
+    background: '#070A11',
+    color: '#FFFFFF',
+    border: '1px solid #2B3750',
+    borderRadius: '6px',
+    padding: '10px 12px',
+    fontSize: '14px',
+    fontWeight: 700,
+    fontFamily: "'Inter', sans-serif",
+  },
+  predictionButton: {
+    width: '100%',
+    background: '#2F6BFF',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '13px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    fontSize: '13px',
+    letterSpacing: '0.4px',
+    cursor: 'pointer',
+    marginTop: '6px',
+  },
+  predictionStats: {
+    marginTop: '10px',
+    fontSize: '12px',
+    color: '#A8B1C4',
+    fontWeight: 600,
+  },
+  predictionSuccess: {
+    marginTop: '10px',
+    background: 'rgba(47, 107, 255, 0.2)',
+    border: '1px solid rgba(143, 176, 255, 0.45)',
+    color: '#BED0FF',
+    fontWeight: 700,
+    fontSize: '12px',
+    padding: '10px',
+    borderRadius: '6px',
+  },
+  predictionError: {
+    marginTop: '10px',
+    background: 'rgba(255, 90, 120, 0.16)',
+    border: '1px solid rgba(255, 110, 138, 0.42)',
+    color: '#FFC2CC',
+    fontWeight: 700,
+    fontSize: '12px',
+    padding: '10px',
+    borderRadius: '6px',
+  },
+  predictionResolved: {
+    marginTop: '6px',
+    background: '#0A142B',
+    border: '1px solid #35569D',
+    borderRadius: '8px',
+    padding: '12px',
+  },
+  predictionResolvedTitle: {
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    color: '#8FB0FF',
+    fontWeight: 800,
+    marginBottom: '8px',
+    letterSpacing: '0.5px',
+  },
   svgDrip: {
     position: 'fixed',
     bottom: '-50px',
@@ -540,7 +650,7 @@ const Timer = ({ hours, mins, secs }) => (
 );
 
 const App = ({ vibe }) => {
-  const { balance, activeBids, placeBid, settleAuction, refreshState } = useVibeStore();
+  const { balance, activeBids, placeBid, settleAuction, refreshState, loadPrediction, submitPrediction } = useVibeStore();
   const { profile, user } = useAuth();
   const router = useRouter();
   const selectedVibe = vibe || getAuctionItemBySlug(defaultAuctionSlug);
@@ -579,6 +689,13 @@ const App = ({ vibe }) => {
   const [error, setError] = useState('');
   const [bids, setBids] = useState(() => makeInitialBidHistory(baseBid));
   const [topBid, setTopBid] = useState(null);
+  const [predictionPriceInput, setPredictionPriceInput] = useState(String(baseBid));
+  const [predictionMinutesInput, setPredictionMinutesInput] = useState('30');
+  const [predictionSaving, setPredictionSaving] = useState(false);
+  const [predictionData, setPredictionData] = useState(null);
+  const [predictionStats, setPredictionStats] = useState({ totalPredictions: 0 });
+  const [predictionError, setPredictionError] = useState('');
+  const [predictionSuccess, setPredictionSuccess] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1120;
@@ -599,6 +716,12 @@ const App = ({ vibe }) => {
     setTopBid(null);
     setError('');
     setShowBidSuccess(false);
+    setPredictionPriceInput(String(baseBid));
+    setPredictionMinutesInput('30');
+    setPredictionData(null);
+    setPredictionStats({ totalPredictions: 0 });
+    setPredictionError('');
+    setPredictionSuccess('');
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
 
   const loadBidHistory = useCallback(async () => {
@@ -623,6 +746,14 @@ const App = ({ vibe }) => {
     }
   }, [selectedVibe?.slug]);
 
+  const loadPredictionState = useCallback(async () => {
+    const vibeId = selectedVibe?.slug;
+    if (!vibeId) return;
+    const payload = await loadPrediction(vibeId);
+    setPredictionData(payload?.prediction || null);
+    setPredictionStats(payload?.stats || { totalPredictions: 0 });
+  }, [selectedVibe?.slug, loadPrediction]);
+
   useEffect(() => {
     const syncAuctionData = async () => {
       try {
@@ -631,6 +762,7 @@ const App = ({ vibe }) => {
         // Ignore state refresh errors and keep current state.
       }
       await loadBidHistory();
+      await loadPredictionState();
     };
 
     syncAuctionData();
@@ -661,7 +793,7 @@ const App = ({ vibe }) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [loadBidHistory, refreshState]);
+  }, [loadBidHistory, loadPredictionState, refreshState]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -715,6 +847,62 @@ const App = ({ vibe }) => {
         (bids.some((bid) => normalizeHandle(bid?.user) === normalizeHandle(viewerHandle)) ||
           (topBidUser && normalizeHandle(topBidUser) === normalizeHandle(viewerHandle)))),
   );
+
+  const onSubmitPrediction = async () => {
+    setPredictionError('');
+    setPredictionSuccess('');
+
+    if (!user) {
+      setPredictionError('Sign in to submit predictions.');
+      return;
+    }
+    if (auctionEnded) {
+      setPredictionError('Predictions are closed for ended auctions.');
+      return;
+    }
+
+    const predictedPrice = Math.round(safeBid(predictionPriceInput, Number.NaN));
+    const predictedMinutes = Math.round(safeBid(predictionMinutesInput, Number.NaN));
+    if (!Number.isFinite(predictedPrice) || predictedPrice <= 0) {
+      setPredictionError('Enter a valid predicted final price.');
+      return;
+    }
+    if (!Number.isFinite(predictedMinutes) || predictedMinutes <= 0 || predictedMinutes > 10080) {
+      setPredictionError('Winner timing must be between 1 and 10,080 minutes.');
+      return;
+    }
+
+    const predictedWinnerTime = new Date(Date.now() + predictedMinutes * 60 * 1000).toISOString();
+    setPredictionSaving(true);
+    const result = await submitPrediction({
+      vibeId: selectedVibe?.slug || defaultAuctionSlug,
+      vibeName: selectedVibe?.title || 'Unknown Vibe',
+      predictedPrice,
+      predictedWinnerTime,
+    });
+    setPredictionSaving(false);
+
+    if (!result?.accepted) {
+      if (result?.reason === 'auth_required') {
+        setPredictionError('Sign in to submit predictions.');
+      } else if (result?.reason === 'vibe_not_found') {
+        setPredictionError('This vibe is no longer available.');
+      } else if (result?.reason === 'auction_ended') {
+        setPredictionError('This auction already ended. Predictions are closed.');
+      } else if (result?.reason === 'invalid_prediction_time') {
+        setPredictionError('Pick a winner timing in the near future.');
+      } else if (result?.reason === 'prediction_unavailable') {
+        setPredictionError('Prediction game is unavailable in this environment.');
+      } else {
+        setPredictionError('Could not save prediction. Try again.');
+      }
+      return;
+    }
+
+    setPredictionData(result?.prediction || null);
+    setPredictionStats(result?.stats || { totalPredictions: 0 });
+    setPredictionSuccess('Prediction locked in. You can update it before the auction ends.');
+  };
 
   const onClaimWin = useCallback(async () => {
     const winningAmount = safeBid(topBid?.amount, currentBid);
@@ -849,6 +1037,9 @@ const App = ({ vibe }) => {
   };
 
   const displayBid = currentBid + increment;
+  const predictionPoints = Number.isFinite(profile?.prediction_points) ? profile.prediction_points : 0;
+  const savedPredictedPrice = safeBid(predictionData?.predictedPrice, Number.NaN);
+  const savedPointsAwarded = safeBid(predictionData?.pointsAwarded, 0);
 
   return (
     <div style={customStyles.body}>
@@ -1159,6 +1350,115 @@ const App = ({ vibe }) => {
               )}
             </div>
           )}
+
+          <div style={{ ...customStyles.predictionPanel, padding: isMobile ? '18px 16px' : customStyles.predictionPanel.padding }}>
+            <div style={{ ...customStyles.predictionTitle, fontSize: isMobile ? '20px' : customStyles.predictionTitle.fontSize }}>
+              Prediction Side-Game
+            </div>
+            <div style={customStyles.predictionHelp}>
+              Guess the final price and when the winning bid lands. You earn points only, no AURA payout.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#B6C3DF', marginBottom: '10px', fontWeight: 700 }}>
+              <span>Your prediction points</span>
+              <span>{predictionPoints.toLocaleString()}</span>
+            </div>
+
+            {!predictionData?.resolved && (
+              <>
+                <div
+                  style={{
+                    ...customStyles.predictionGrid,
+                    gridTemplateColumns: isMobile ? '1fr' : customStyles.predictionGrid.gridTemplateColumns,
+                  }}
+                >
+                  <label style={customStyles.predictionInputWrap}>
+                    <span style={customStyles.predictionLabel}>Final Price Guess (AURA)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={predictionPriceInput}
+                      onChange={(event) => {
+                        setPredictionPriceInput(event.target.value);
+                        setPredictionError('');
+                        setPredictionSuccess('');
+                      }}
+                      style={customStyles.predictionInput}
+                    />
+                  </label>
+
+                  <label style={customStyles.predictionInputWrap}>
+                    <span style={customStyles.predictionLabel}>Winner Timing (minutes from now)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10080}
+                      step={1}
+                      value={predictionMinutesInput}
+                      onChange={(event) => {
+                        setPredictionMinutesInput(event.target.value);
+                        setPredictionError('');
+                        setPredictionSuccess('');
+                      }}
+                      style={customStyles.predictionInput}
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onSubmitPrediction}
+                  disabled={predictionSaving || auctionEnded || !user}
+                  style={{
+                    ...customStyles.predictionButton,
+                    opacity: predictionSaving || auctionEnded || !user ? 0.6 : 1,
+                    cursor: predictionSaving || auctionEnded || !user ? 'not-allowed' : customStyles.predictionButton.cursor,
+                  }}
+                >
+                  {predictionSaving ? 'Saving Prediction...' : predictionData ? 'Update Prediction' : 'Lock Prediction'}
+                </button>
+
+                {predictionData && (
+                  <div style={customStyles.predictionSuccess}>
+                    Current pick: {Number.isFinite(savedPredictedPrice) ? `${savedPredictedPrice.toLocaleString()} AURA` : '—'} at{' '}
+                    {formatPredictionClock(predictionData.predictedWinnerTime)}
+                  </div>
+                )}
+              </>
+            )}
+
+            {predictionData?.resolved && (
+              <div style={customStyles.predictionResolved}>
+                <div style={customStyles.predictionResolvedTitle}>Round Scored</div>
+                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', color: '#9CC0FF', lineHeight: 1, marginBottom: '8px' }}>
+                  +{savedPointsAwarded.toLocaleString()} pts
+                </div>
+                <div style={{ fontSize: '12px', color: '#C2CEE6', lineHeight: 1.6 }}>
+                  Price: {Number.isFinite(savedPredictedPrice) ? savedPredictedPrice.toLocaleString() : '—'} guess vs{' '}
+                  {Number.isFinite(safeBid(predictionData.actualFinalPrice, Number.NaN))
+                    ? safeBid(predictionData.actualFinalPrice, 0).toLocaleString()
+                    : '—'} final
+                </div>
+                <div style={{ fontSize: '12px', color: '#C2CEE6', lineHeight: 1.6 }}>
+                  Timing: {formatPredictionClock(predictionData.predictedWinnerTime)} guess vs{' '}
+                  {formatPredictionClock(predictionData.actualWinnerTime)} winner
+                </div>
+              </div>
+            )}
+
+            {!user && (
+              <div style={customStyles.predictionStats}>
+                Sign in to join this side-game.
+              </div>
+            )}
+            <div style={customStyles.predictionStats}>
+              {safeBid(predictionStats?.totalPredictions, 0).toLocaleString()} predictions placed on this vibe
+            </div>
+
+            {predictionSuccess && <div style={customStyles.predictionSuccess}>{predictionSuccess}</div>}
+            {predictionError && <div style={customStyles.predictionError}>{predictionError}</div>}
+          </div>
 
           <BidHistory bids={bids} />
         </aside>

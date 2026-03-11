@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Workflow"
+  short_description: "Safe, non-interactive Git workflows for local repos"
+  default_prompt: "Use this skill for git status/diff/branch/commit/tag/cherry-pick/rebase merge prep and safe recovery tasks."
