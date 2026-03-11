@@ -9,7 +9,7 @@ import { useAuth } from '../state/auth-store';
 const NAV_ITEMS = [
   { label: 'Browse Vibes', href: '/' },
   { label: 'Vibes', href: '/vibes' },
-  { label: 'Sell a Feeling', href: '/mint' },
+  { label: 'Drop Vibe', href: '/mint' },
   { label: 'Leaderboard', href: '/leaderboard' },
   { label: 'Vibe Vault', href: '/vault' },
   { label: 'Top Up', href: '/top-up' },

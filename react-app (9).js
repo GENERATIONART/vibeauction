@@ -684,10 +684,10 @@ const App = () => {
                 No Vibes Listed Yet
               </div>
               <div style={{ fontSize: '14px', color: '#555', marginBottom: '24px' }}>
-                Be the first to mint and auction a vibe.
+                Be the first to drop and auction a vibe.
               </div>
               <Link href="/mint" style={{ background: '#C8FF00', color: '#000', padding: '12px 24px', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', textDecoration: 'none' }}>
-                Sell a Feeling →
+                Drop Vibe →
               </Link>
             </div>
           ) : (
