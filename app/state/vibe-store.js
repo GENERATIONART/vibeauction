@@ -169,6 +169,7 @@ export function VibeStoreProvider({ children }) {
   const [error, setError] = useState('');
   const [supabaseVaultItems, setSupabaseVaultItems] = useState(null);
   const mintedCacheRef = useRef({ fetchedAt: 0, vibes: null });
+  const bidsCacheRef = useRef({ fetchedAt: 0, bids: null });
 
   const applyState = useCallback((nextState) => {
     setStore(sanitizeState(nextState));
@@ -194,18 +195,79 @@ export function VibeStoreProvider({ children }) {
     return mapped;
   }, []);
 
+  const fetchHighestBidsFromClientSupabase = useCallback(async ({ force = false } = {}) => {
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+
+    const now = Date.now();
+    const cache = bidsCacheRef.current;
+    if (!force && Array.isArray(cache?.bids) && now - safeNumber(cache?.fetchedAt, 0) < 4000) {
+      return cache.bids;
+    }
+
+    const { data, error: fetchError } = await sb
+      .from('vibe_bids')
+      .select('vibe_id, vibe_name, amount, created_at')
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (fetchError || !Array.isArray(data)) {
+      return Array.isArray(cache?.bids) ? cache.bids : null;
+    }
+
+    const highestByVibe = new Map();
+    for (const row of data) {
+      const key = normalizeKey(row?.vibe_id);
+      if (!key || highestByVibe.has(key)) continue;
+      highestByVibe.set(key, {
+        id: row.vibe_id,
+        name: row.vibe_name,
+        amount: row.amount,
+        status: 'HIGHEST',
+        updatedAt: row.created_at,
+      });
+    }
+
+    const mapped = Array.from(highestByVibe.values());
+    bidsCacheRef.current = { fetchedAt: now, bids: mapped };
+    return mapped;
+  }, []);
+
   const hydrateStateWithClientVibes = useCallback(
     async (nextState, { force = false } = {}) => {
-      const supabaseMintedVibes = await fetchMintedVibesFromClientSupabase({ force });
-      if (!Array.isArray(supabaseMintedVibes) || supabaseMintedVibes.length === 0) {
-        return sanitizeState(nextState);
+      const [supabaseMintedVibes, supabaseHighestBids] = await Promise.all([
+        fetchMintedVibesFromClientSupabase({ force }),
+        fetchHighestBidsFromClientSupabase({ force }),
+      ]);
+
+      const mergedMintedVibes =
+        Array.isArray(supabaseMintedVibes) && supabaseMintedVibes.length > 0
+          ? mergeMintedVibes(nextState?.mintedVibes, supabaseMintedVibes)
+          : nextState?.mintedVibes;
+
+      let mergedActiveBids = nextState?.activeBids;
+      if (Array.isArray(supabaseHighestBids) && supabaseHighestBids.length > 0) {
+        const byId = new Map();
+        for (const bid of supabaseHighestBids) {
+          const key = normalizeKey(bid?.id || bid?.name);
+          if (!key || byId.has(key)) continue;
+          byId.set(key, bid);
+        }
+        for (const bid of Array.isArray(nextState?.activeBids) ? nextState.activeBids : []) {
+          const key = normalizeKey(bid?.id || bid?.name);
+          if (!key || byId.has(key)) continue;
+          byId.set(key, bid);
+        }
+        mergedActiveBids = Array.from(byId.values());
       }
+
       return sanitizeState({
         ...nextState,
-        mintedVibes: mergeMintedVibes(nextState?.mintedVibes, supabaseMintedVibes),
+        mintedVibes: mergedMintedVibes,
+        activeBids: mergedActiveBids,
       });
     },
-    [fetchMintedVibesFromClientSupabase],
+    [fetchMintedVibesFromClientSupabase, fetchHighestBidsFromClientSupabase],
   );
 
   const getAccessToken = useCallback(async ({ forceRefresh = false } = {}) => {
