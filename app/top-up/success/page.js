@@ -103,6 +103,22 @@ function TopUpSuccessContent() {
   const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
 
   useEffect(() => {
+    const styleId = 'vibeauction-fonts';
+    if (document.getElementById(styleId)) return undefined;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      if (style.parentNode) style.parentNode.removeChild(style);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!sessionId) {
       setPhase('error');
       setMessage('No session ID was provided in the return URL.');
