@@ -7,7 +7,8 @@ export const maxDuration = 30;
 export async function POST(request) {
   try {
     const body = await request.json();
-    const authToken = request.headers.get('authorization')?.replace('Bearer ', '') ?? null;
+    const authHeader = request.headers.get('authorization') || '';
+    const authToken = authHeader.replace(/^Bearer\s+/i, '').trim() || null;
     const result = await mintVibeInStore(body?.payload, authToken);
     return NextResponse.json(result);
   } catch (error) {

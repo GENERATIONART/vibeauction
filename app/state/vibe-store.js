@@ -438,13 +438,26 @@ export function VibeStoreProvider({ children }) {
   const mintVibe = useCallback(
     async (payload) => {
       try {
-        const token = await getAccessToken();
-        const data = await apiRequest('/api/state/mint-vibe', {
-          method: 'POST',
-          body: { payload },
-          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
-        });
-        const reason = data?.reason || data?.saveReason || null;
+        const sendMintRequest = async (token) =>
+          apiRequest('/api/state/mint-vibe', {
+            method: 'POST',
+            body: { payload },
+            ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          });
+
+        let token = await getAccessToken();
+        let data = await sendMintRequest(token);
+        let reason = data?.reason || data?.saveReason || null;
+
+        if (!data?.mintedVibe && ['auth_required', 'auth_invalid_token', 'auth_lookup_failed'].includes(String(reason || ''))) {
+          const refreshedToken = await getAccessToken({ forceRefresh: true });
+          if (refreshedToken && refreshedToken !== token) {
+            token = refreshedToken;
+            data = await sendMintRequest(token);
+            reason = data?.reason || data?.saveReason || null;
+          }
+        }
+
         if (!data?.mintedVibe) {
           const message = getMintFailureMessage(reason);
           setError(message);

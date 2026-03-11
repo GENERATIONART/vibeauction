@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
@@ -30,6 +30,26 @@ const parseCountdownToMs = (timerText) => {
   if (minMatch) ms += Number(minMatch[1]) * 60 * 1000;
   if (secMatch) ms += Number(secMatch[1]) * 1000;
   return ms;
+};
+
+const safeNumber = (value, fallback = 0) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/,/g, '').trim());
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const toTimestampMs = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    const parsed = new Date(value).getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
 };
 
 const customStyles = {
@@ -288,21 +308,34 @@ const staticTickerItems = [
   '💫 Mint your feelings — tokenize your vibes',
 ];
 
-const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile }) => {
+const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile, shakeToken = 0 }) => {
   const [hovered, setHovered] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
     setImageFailed(false);
   }, [item.imageUrl]);
 
+  useEffect(() => {
+    if (!shakeToken) return;
+    setIsShaking(false);
+    const frameId = window.requestAnimationFrame(() => setIsShaking(true));
+    const timeoutId = window.setTimeout(() => setIsShaking(false), 620);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [shakeToken]);
+
   return (
     <article
       style={{
         ...customStyles.card,
-        transform: hovered && !isMobile ? 'translate(-2px, -2px)' : 'none',
+        transform: hovered && !isMobile && !isShaking ? 'translate(-2px, -2px)' : 'none',
         boxShadow: hovered && !isMobile ? '8px 8px 0px #C8FF00' : '6px 6px 0px rgba(200, 255, 0, 0.3)',
+        animation: isShaking ? 'va-bid-shake 620ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both' : 'none',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -395,6 +428,8 @@ const App = () => {
   const [surprisePressed, setSurprisePressed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(HOME_BATCH_SIZE);
   const [loadMoreTrigger, setLoadMoreTrigger] = useState(null);
+  const [shakeTokensById, setShakeTokensById] = useState({});
+  const prevBidActivityRef = useRef(null);
 
   const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
   const router = useRouter();
@@ -417,6 +452,12 @@ const App = () => {
       @keyframes scroll {
         0% { transform: translateX(0); }
         100% { transform: translateX(-50%); }
+      }
+      @keyframes va-bid-shake {
+        10%, 90% { transform: translateX(-1px); }
+        20%, 80% { transform: translateX(2px); }
+        30%, 50%, 70% { transform: translateX(-4px); }
+        40%, 60% { transform: translateX(4px); }
       }
       .ticker-anim {
         display: flex;
@@ -489,14 +530,54 @@ const App = () => {
     return () => window.clearInterval(clockId);
   }, []);
 
-  const bidLookup = useMemo(() => {
+  const bidActivityLookup = useMemo(() => {
     const lookup = {};
     activeBids.forEach((entry) => {
       const key = normalize(entry.id || entry.name);
-      if (key) lookup[key] = entry.amount;
+      if (!key) return;
+      const amount = Number(entry.amount);
+      const updatedAtMs = toTimestampMs(entry.updatedAt || entry.createdAt);
+      const previous = lookup[key];
+      if (!previous || updatedAtMs >= previous.updatedAtMs || amount > previous.amount) {
+        lookup[key] = {
+          amount: Number.isFinite(amount) ? amount : 0,
+          updatedAtMs,
+        };
+      }
     });
     return lookup;
   }, [activeBids]);
+
+  useEffect(() => {
+    const previous = prevBidActivityRef.current;
+    if (!previous) {
+      prevBidActivityRef.current = bidActivityLookup;
+      return;
+    }
+
+    const bumpedKeys = [];
+    for (const [key, next] of Object.entries(bidActivityLookup)) {
+      const prev = previous[key];
+      const nextAmount = Number(next?.amount || 0);
+      const prevAmount = Number(prev?.amount || 0);
+      const nextUpdatedAt = Number(next?.updatedAtMs || 0);
+      const prevUpdatedAt = Number(prev?.updatedAtMs || 0);
+      const isNewBidSignal = !prev || nextAmount > prevAmount || nextUpdatedAt > prevUpdatedAt;
+      if (isNewBidSignal && nextAmount > 0) bumpedKeys.push(key);
+    }
+
+    if (bumpedKeys.length > 0) {
+      setShakeTokensById((previousTokens) => {
+        const nextTokens = { ...previousTokens };
+        for (const key of bumpedKeys) {
+          nextTokens[key] = safeNumber(nextTokens[key], 0) + 1;
+        }
+        return nextTokens;
+      });
+    }
+
+    prevBidActivityRef.current = bidActivityLookup;
+  }, [bidActivityLookup]);
 
   const liveVibes = useMemo(() => {
     const minted = (Array.isArray(mintedVibes) ? mintedVibes : []).map((v) => ({
@@ -555,31 +636,55 @@ const App = () => {
   const sortedItems = useMemo(() => {
     const resolveLiveBid = (item) => {
       const key = normalize(item.slug || item.title);
-      const live = bidLookup[key];
+      const live = bidActivityLookup[key]?.amount;
       if (Number.isFinite(live)) return live;
       const fallback = Number(item.bid);
       return Number.isFinite(fallback) ? fallback : 0;
     };
 
+    const resolveBidActivity = (item) => {
+      const key = normalize(item.slug || item.title);
+      return safeNumber(bidActivityLookup[key]?.updatedAtMs, 0);
+    };
+
+    const compareByBidActivity = (a, b) => resolveBidActivity(b) - resolveBidActivity(a);
+
     const items = [...filteredItems];
     if (activeSort === 'Highest Aura') {
-      items.sort((a, b) => resolveLiveBid(b) - resolveLiveBid(a));
+      items.sort((a, b) => {
+        const activityDiff = compareByBidActivity(a, b);
+        if (activityDiff !== 0) return activityDiff;
+        return resolveLiveBid(b) - resolveLiveBid(a);
+      });
       return items;
     }
     if (activeSort === 'Ending Soon') {
-      items.sort((a, b) => (a.endingSoonMs || Number.MAX_SAFE_INTEGER) - (b.endingSoonMs || Number.MAX_SAFE_INTEGER));
+      items.sort((a, b) => {
+        const activityDiff = compareByBidActivity(a, b);
+        if (activityDiff !== 0) return activityDiff;
+        return (a.endingSoonMs || Number.MAX_SAFE_INTEGER) - (b.endingSoonMs || Number.MAX_SAFE_INTEGER);
+      });
       return items;
     }
     if (activeSort === 'Newest') {
-      items.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+      items.sort((a, b) => {
+        const activityDiff = compareByBidActivity(a, b);
+        if (activityDiff !== 0) return activityDiff;
+        return (b.createdAtMs || 0) - (a.createdAtMs || 0);
+      });
       return items;
     }
     if (activeSort === 'Most Absurd') {
-      items.sort((a, b) => (b.absurdityScore || 0) - (a.absurdityScore || 0));
+      items.sort((a, b) => {
+        const activityDiff = compareByBidActivity(a, b);
+        if (activityDiff !== 0) return activityDiff;
+        return (b.absurdityScore || 0) - (a.absurdityScore || 0);
+      });
       return items;
     }
+    items.sort(compareByBidActivity);
     return items;
-  }, [filteredItems, activeSort, bidLookup]);
+  }, [filteredItems, activeSort, bidActivityLookup]);
 
   const visibleItems = useMemo(() => sortedItems.slice(0, visibleCount), [sortedItems, visibleCount]);
   const hasMoreItems = visibleCount < sortedItems.length;
@@ -637,7 +742,7 @@ const App = () => {
 
   const getBidDisplay = (item) => {
     const key = normalize(item.slug || item.title);
-    const live = bidLookup[key];
+    const live = bidActivityLookup[key]?.amount;
     if (Number.isFinite(live)) return live.toLocaleString();
     const fallback = Number(item.bid);
     return Number.isFinite(fallback) ? fallback.toLocaleString() : '0';
@@ -900,6 +1005,7 @@ const App = () => {
                 onOpenAuction={handleOpenAuction}
                 isMobile={isMobile}
                 isSmallMobile={isSmallMobile}
+                shakeToken={shakeTokensById[normalize(item.slug || item.title)] || 0}
               />
             ))
           )}
