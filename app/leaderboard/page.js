@@ -2,9 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useVibeStore } from '../state/vibe-store';
-import { useAuth } from '../state/auth-store';
+import NavBar from '../components/NavBar';
 
 const PERIODS = [
   { key: 'week', label: 'This Week' },
@@ -385,13 +383,7 @@ const PodiumPlace = ({ rank, entry, isMobile }) => {
 };
 
 export default function LeaderboardPage() {
-  const { balance } = useVibeStore();
-  const { user, profile: authProfile, signOut } = useAuth();
-  const pathname = usePathname();
-  const [navHover, setNavHover] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(1200);
-  const userHandle = authProfile?.username || user?.email?.split('@')[0] || 'you';
   const [period, setPeriod] = useState('all');
   const [topSpenders, setTopSpenders] = useState([]);
   const [topVibes, setTopVibes] = useState([]);
@@ -402,17 +394,6 @@ export default function LeaderboardPage() {
   const isSmallMobile = viewportWidth <= 420;
   const sidePadding = isSmallMobile ? 12 : isMobile ? 16 : isTablet ? 20 : 24;
   const headerHeight = isMobile ? 64 : 60;
-  const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
-
-  const navItems = [
-    { label: 'Browse Vibes', href: '/' },
-    { label: 'Vibes', href: '/vibes' },
-    { label: 'Sell a Feeling', href: '/mint' },
-    { label: 'Leaderboard', href: '/leaderboard' },
-    { label: 'Vibe Vault', href: '/vault' },
-    { label: 'Top Up', href: '/top-up' },
-  ];
-
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
     updateViewportWidth();
@@ -432,10 +413,6 @@ export default function LeaderboardPage() {
       document.head.removeChild(style);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isMobile && mobileMenuOpen) setMobileMenuOpen(false);
-  }, [isMobile, mobileMenuOpen]);
 
   useEffect(() => {
     setLoading(true);
@@ -460,141 +437,7 @@ export default function LeaderboardPage() {
 
   return (
     <div style={customStyles.root}>
-      <header
-        style={{
-          ...customStyles.header,
-          height: headerHeight,
-          padding: `0 ${sidePadding}px`,
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            ...customStyles.logo,
-            fontSize: isSmallMobile ? '17px' : isMobile ? '20px' : '24px',
-            maxWidth: isMobile ? '45%' : 'none',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          Vibe Auction
-        </Link>
-
-        {!isMobile && (
-          <nav style={customStyles.navLinks}>
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  style={{
-                    ...customStyles.navItem,
-                    color: isActive || navHover === item.label ? '#C8FF00' : '#FFFFFF',
-                  }}
-                  onMouseEnter={() => setNavHover(item.label)}
-                  onMouseLeave={() => setNavHover('')}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: isSmallMobile ? '6px' : '8px', minWidth: 0 }}>
-          {!isMobile && user && (
-            <>
-              <Link href={`/profile/${userHandle}`} style={{ ...customStyles.navItem, color: '#C8FF00', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                @{userHandle}
-              </Link>
-              <button
-                type="button"
-                onClick={() => signOut()}
-                style={{ background: 'transparent', border: '1px solid #444', color: '#AAAAAA', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-              >
-                Sign Out
-              </button>
-            </>
-          )}
-          {!isMobile && !user && (
-            <>
-              <Link href="/login" style={{ ...customStyles.navItem, color: '#FFFFFF', fontSize: '13px', whiteSpace: 'nowrap' }}>Login</Link>
-              <Link href="/signup" style={{ background: '#C8FF00', color: '#000000', padding: '5px 12px', borderRadius: '4px', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                Sign Up
-              </Link>
-            </>
-          )}
-          <div
-            style={{
-              ...customStyles.userBalance,
-              padding: isSmallMobile ? '4px 8px' : isMobile ? '4px 10px' : '4px 12px',
-              fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '13px',
-              minWidth: 0,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <span>{balanceDisplay}</span> AURA
-          </div>
-          {isMobile && (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '6px',
-                border: '2px solid #C8FF00',
-                background: '#0D0D0D',
-                color: '#C8FF00',
-                fontSize: '20px',
-                lineHeight: 1,
-                cursor: 'pointer',
-              }}
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? '✕' : '☰'}
-            </button>
-          )}
-        </div>
-      </header>
-
-      {isMobile && mobileMenuOpen && (
-        <nav
-          style={{
-            background: '#000000',
-            borderBottom: '2px solid #C8FF00',
-            padding: '10px 14px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              style={{
-                textAlign: 'left',
-                border: pathname === item.href ? '2px solid #C8FF00' : '1px solid #2A2A2A',
-                background: pathname === item.href ? '#1A1A1A' : '#121212',
-                color: pathname === item.href ? '#C8FF00' : '#FFFFFF',
-                padding: '10px 12px',
-                borderRadius: '6px',
-                fontWeight: 700,
-                fontSize: '13px',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-                display: 'block',
-              }}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <NavBar />
 
       <div style={{ ...customStyles.tickerWrap, padding: isMobile ? '6px 0' : undefined }}>
         <div style={{ ...customStyles.ticker, gap: isMobile ? '18px' : undefined }}>

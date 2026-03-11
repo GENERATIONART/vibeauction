@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
+import NavBar from '../components/NavBar';
 
 const customStyles = {
   page: {
@@ -836,24 +837,10 @@ export default function VaultPage() {
   const { user } = useAuth();
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous';
   const [activeTab, setActiveTab] = useState('trophies');
-  const [navHover, setNavHover] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(1200);
-  const pathname = usePathname();
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
-  const balanceDisplay = formatAuraNumber(balance);
-
-  const navItems = [
-    { label: 'Browse Vibes', href: '/' },
-    { label: 'Vibes', href: '/vibes' },
-    { label: 'Sell a Feeling', href: '/mint' },
-    { label: 'Leaderboard', href: '/leaderboard' },
-    { label: 'Vibe Vault', href: '/vault' },
-    { label: 'Top Up', href: '/top-up' },
-  ];
-
   const tabs = [
     { id: 'trophies', label: 'Vibe Vault' },
     { id: 'bids', label: 'Active Bids' },
@@ -892,145 +879,11 @@ export default function VaultPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isMobile && mobileMenuOpen) {
-      setMobileMenuOpen(false);
-    }
-  }, [isMobile, mobileMenuOpen]);
-
   return (
     <div style={customStyles.page}>
       <div style={customStyles.patternDots}></div>
 
-      <header
-        style={{
-          ...customStyles.header,
-          height: isMobile ? '64px' : customStyles.header.height,
-          padding: isMobile ? '0 14px' : customStyles.header.padding,
-        }}
-      >
-        <Link href="/" style={{ ...customStyles.logo, fontSize: isMobile ? '20px' : customStyles.logo.fontSize }}>
-          Vibe Auction
-        </Link>
-
-        {!isMobile && (
-          <nav style={customStyles.navLinks}>
-            {navItems.map((item) => {
-              const isActive = item.href.startsWith('/') && pathname === item.href;
-
-              if (item.href.startsWith('/')) {
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    style={{
-                      ...customStyles.navItem,
-                      color: isActive || navHover === item.label ? '#C8FF00' : '#FFFFFF',
-                    }}
-                    onMouseEnter={() => setNavHover(item.label)}
-                    onMouseLeave={() => setNavHover('')}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              }
-
-              return (
-                <span
-                  key={item.label}
-                  style={{
-                    ...customStyles.navItem,
-                    color: navHover === item.label ? '#C8FF00' : '#FFFFFF',
-                  }}
-                  onMouseEnter={() => setNavHover(item.label)}
-                  onMouseLeave={() => setNavHover('')}
-                >
-                  {item.label}
-                </span>
-              );
-            })}
-          </nav>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div
-            style={{
-              ...customStyles.userBalance,
-              padding: isMobile ? '4px 10px' : customStyles.userBalance.padding,
-              fontSize: isMobile ? '12px' : customStyles.userBalance.fontSize,
-            }}
-          >
-            <span>{balanceDisplay}</span> AURA
-          </div>
-
-          {isMobile && (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '6px',
-                border: '2px solid #C8FF00',
-                background: '#0D0D0D',
-                color: '#C8FF00',
-                fontSize: '20px',
-                lineHeight: 1,
-                cursor: 'pointer',
-                touchAction: 'manipulation',
-              }}
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? '✕' : '☰'}
-            </button>
-          )}
-        </div>
-      </header>
-
-      {isMobile && mobileMenuOpen && (
-        <nav
-          style={{
-            background: '#000000',
-            borderBottom: '2px solid #C8FF00',
-            padding: '10px 14px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {navItems.map((item) => {
-            const isActive = item.href.startsWith('/') && pathname === item.href;
-            const menuItemStyle = {
-              textAlign: 'left',
-              width: '100%',
-              border: isActive ? '2px solid #C8FF00' : '1px solid #2A2A2A',
-              background: isActive ? '#1A1A1A' : '#121212',
-              color: isActive ? '#C8FF00' : '#FFFFFF',
-              padding: '10px 12px',
-              borderRadius: '6px',
-              fontWeight: 700,
-              fontSize: '13px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
-              cursor: 'pointer',
-            };
-
-            if (item.href.startsWith('/')) {
-              return (
-                <Link key={item.label} href={item.href} style={menuItemStyle} onClick={() => setMobileMenuOpen(false)}>
-                  {item.label}
-                </Link>
-              );
-            }
-
-            return (
-              <button key={item.label} type="button" onClick={() => setMobileMenuOpen(false)} style={menuItemStyle}>
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      )}
+      <NavBar />
 
       <section
         style={{

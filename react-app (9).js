@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
-import { useAuth } from './app/state/auth-store';
+import NavBar from './app/components/NavBar';
+import { auctionItems } from './lib/auction-items';
 
 const normalize = (value) =>
   String(value || '')
@@ -362,31 +362,15 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile 
 const App = () => {
   const [activeCategory, setActiveCategory] = useState('All Vibes');
   const [activeSort, setActiveSort] = useState('');
-  const [navHover, setNavHover] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
 
   const { balance, activeBids, mintedVibes } = useVibeStore();
-  const { user, signOut } = useAuth();
-  const userHandle = user?.user_metadata?.username || user?.email?.split('@')[0] || null;
-  const pathname = usePathname();
   const router = useRouter();
-
-  const navItems = [
-    { label: 'Browse Vibes', href: '/' },
-    { label: 'Vibes', href: '/vibes' },
-    { label: 'Sell a Feeling', href: '/mint' },
-    { label: 'Leaderboard', href: '/leaderboard' },
-    { label: 'Vibe Vault', href: '/vault' },
-    { label: 'Top Up', href: '/top-up' },
-  ];
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
   const isSmallMobile = viewportWidth <= 420;
   const sidePadding = isSmallMobile ? 12 : isMobile ? 16 : isTablet ? 20 : 24;
-  const headerHeight = isMobile ? 64 : 60;
-  const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -430,12 +414,6 @@ const App = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isMobile && mobileMenuOpen) {
-      setMobileMenuOpen(false);
-    }
-  }, [isMobile, mobileMenuOpen]);
-
   const bidLookup = useMemo(() => {
     const lookup = {};
     activeBids.forEach((entry) => {
@@ -445,8 +423,8 @@ const App = () => {
     return lookup;
   }, [activeBids]);
 
-  const liveVibes = useMemo(() =>
-    (Array.isArray(mintedVibes) ? mintedVibes : []).map((v) => ({
+  const liveVibes = useMemo(() => {
+    const minted = (Array.isArray(mintedVibes) ? mintedVibes : []).map((v) => ({
       id: v.id || v.slug,
       slug: v.slug || v.id,
       emoji: v.emoji || '✨',
@@ -456,9 +434,23 @@ const App = () => {
       badge: 'Live',
       category: v.category || 'Vibes',
       imageUrl: v.imageUrl ?? null,
-    })),
-    [mintedVibes]
-  );
+    }));
+    const mintedSlugs = new Set(minted.map((v) => v.slug));
+    const hardcoded = auctionItems
+      .filter((item) => !mintedSlugs.has(item.slug))
+      .map((item) => ({
+        id: String(item.id),
+        slug: item.slug,
+        emoji: item.emoji || '✨',
+        title: item.title,
+        bid: item.bid || 0,
+        timer: item.timer || 'Live',
+        badge: item.badge || 'Live',
+        category: item.category || 'Vibes',
+        imageUrl: null,
+      }));
+    return [...minted, ...hardcoded];
+  }, [mintedVibes]);
 
   const categories = useMemo(() => {
     const catMap = {};
@@ -526,284 +518,7 @@ const App = () => {
         *, *::before, *::after { box-sizing: border-box; }
         html, body { overflow-x: hidden; max-width: 100%; }
       `}</style>
-      <header
-        style={{
-          ...customStyles.header,
-          height: headerHeight,
-          padding: `0 ${sidePadding}px`,
-        }}
-      >
-        <span
-          style={{
-            ...customStyles.logo,
-            fontSize: isSmallMobile ? '17px' : isMobile ? '20px' : '24px',
-            maxWidth: isMobile ? '45%' : 'none',
-          }}
-        >
-          Vibe Auction
-        </span>
-        {!isMobile && (
-          <nav className="va-desktop-nav" style={customStyles.navLinks}>
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  style={{
-                    ...customStyles.navItem,
-                    color: isActive || navHover === item.label ? '#C8FF00' : '#FFFFFF',
-                  }}
-                  onMouseEnter={() => setNavHover(item.label)}
-                  onMouseLeave={() => setNavHover('')}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: isSmallMobile ? '6px' : '8px', minWidth: 0 }}>
-          {!isMobile && user && (
-            <>
-              <Link
-                href={`/profile/${userHandle}`}
-                style={{
-                  ...customStyles.navItem,
-                  color: '#C8FF00',
-                  fontSize: '13px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                @{userHandle}
-              </Link>
-              <button
-                type="button"
-                onClick={() => signOut()}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #444',
-                  color: '#AAAAAA',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  padding: '4px 10px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Sign Out
-              </button>
-            </>
-          )}
-          {!isMobile && !user && (
-            <>
-              <Link
-                href="/login"
-                style={{
-                  ...customStyles.navItem,
-                  color: pathname === '/login' ? '#C8FF00' : '#FFFFFF',
-                  fontSize: '13px',
-                }}
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                style={{
-                  background: '#C8FF00',
-                  color: '#000000',
-                  padding: '5px 12px',
-                  borderRadius: '4px',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Sign Up
-              </Link>
-            </>
-          )}
-          <div
-            style={{
-              ...customStyles.userBalance,
-              padding: isSmallMobile ? '4px 8px' : isMobile ? '4px 10px' : '4px 12px',
-              fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '13px',
-              minWidth: 0,
-              whiteSpace: 'nowrap',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            <span>{balanceDisplay} AURA</span>
-          </div>
-          {isMobile && (
-            <button
-              type="button"
-              className="va-hamburger"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              style={{
-                width: isSmallMobile ? '34px' : '38px',
-                height: isSmallMobile ? '34px' : '38px',
-                borderRadius: '6px',
-                border: '2px solid #C8FF00',
-                background: '#0D0D0D',
-                color: '#C8FF00',
-                fontSize: isSmallMobile ? '18px' : '20px',
-                lineHeight: 1,
-                cursor: 'pointer',
-              }}
-              aria-label="Toggle navigation menu"
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? '✕' : '☰'}
-            </button>
-          )}
-        </div>
-      </header>
-
-      {isMobile && mobileMenuOpen && (
-        <nav
-          style={{
-            background: '#000000',
-            borderBottom: '2px solid #C8FF00',
-            padding: `10px ${sidePadding}px 14px`,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  border: isActive ? '2px solid #C8FF00' : '1px solid #2A2A2A',
-                  background: isActive ? '#1A1A1A' : '#121212',
-                  color: isActive ? '#C8FF00' : '#FFFFFF',
-                  padding: '10px 12px',
-                  borderRadius: '6px',
-                  fontWeight: 700,
-                  fontSize: isSmallMobile ? '12px' : '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  textDecoration: 'none',
-                }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-          {!user && (
-            <>
-              <div style={{
-                fontFamily: "'Anton', sans-serif",
-                fontSize: isSmallMobile ? '18px' : '20px',
-                textTransform: 'uppercase',
-                color: '#C8FF00',
-                padding: '10px 12px',
-                borderBottom: '1px solid #2A2A2A',
-                marginBottom: '8px'
-              }}>
-                Authentication
-              </div>
-              <Link
-                href="/login"
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  border: pathname === '/login' ? '2px solid #C8FF00' : '1px solid #2A2A2A',
-                  background: pathname === '/login' ? '#1A1A1A' : '#121212',
-                  color: pathname === '/login' ? '#C8FF00' : '#FFFFFF',
-                  padding: '10px 12px',
-                  borderRadius: '6px',
-                  fontWeight: 700,
-                  fontSize: isSmallMobile ? '12px' : '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  textDecoration: 'none',
-                  marginBottom: '8px'
-                }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  border: '2px solid #C8FF00',
-                  background: '#C8FF00',
-                  color: '#000000',
-                  padding: '10px 12px',
-                  borderRadius: '6px',
-                  fontWeight: 700,
-                  fontSize: isSmallMobile ? '12px' : '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  textDecoration: 'none',
-                }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign Up
-              </Link>
-            </>
-          )}
-          {user && (
-            <>
-              <Link
-                href={`/profile/${userHandle}`}
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  border: '2px solid #C8FF00',
-                  background: '#1A1A1A',
-                  color: '#C8FF00',
-                  padding: '10px 12px',
-                  borderRadius: '6px',
-                  fontWeight: 700,
-                  fontSize: isSmallMobile ? '12px' : '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  textDecoration: 'none',
-                }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                @{userHandle}
-              </Link>
-              <button
-                type="button"
-                onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  border: '1px solid #444',
-                  background: '#121212',
-                  color: '#AAAAAA',
-                  padding: '10px 12px',
-                  borderRadius: '6px',
-                  fontWeight: 700,
-                  fontSize: isSmallMobile ? '12px' : '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  cursor: 'pointer',
-                }}
-              >
-                Sign Out
-              </button>
-            </>
-          )}
-        </nav>
-      )}
+      <NavBar />
 
       <div style={{ ...customStyles.tickerWrap, marginBottom: isMobile ? '10px' : '14px' }}>
         <div className="ticker-anim">

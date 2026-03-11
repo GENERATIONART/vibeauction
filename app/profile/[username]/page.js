@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, usePathname } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuth } from '../../state/auth-store';
+import NavBar from '../../components/NavBar';
 import { getSupabaseClient } from '../../../lib/supabase-client';
 
 const S = {
@@ -321,7 +322,6 @@ const MOCK_REVIEWS = [];
 
 export default function ProfilePage() {
   const { username } = useParams();
-  const pathname = usePathname();
   const { user } = useAuth();
 
   const [profile, setProfile] = useState(null);
@@ -331,20 +331,12 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
-  const [navHover, setNavHover] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
 
   const isOwnProfile = user?.user_metadata?.username === username ||
     user?.email?.split('@')[0] === username;
-
-  const navItems = [
-    { label: 'Browse Vibes', href: '/' },
-    { label: 'Sell a Feeling', href: '/mint' },
-    { label: 'Leaderboard', href: '/leaderboard' },
-    { label: 'Vibe Vault', href: '/vault' },
-  ];
 
   useEffect(() => {
     const update = () => setViewportWidth(window.innerWidth);
@@ -421,9 +413,7 @@ export default function ProfilePage() {
   if (!loading && notFound) {
     return (
       <div style={S.page}>
-        <header style={{ ...S.header, height: isMobile ? '56px' : '60px', padding: isMobile ? '0 16px' : '0 24px' }}>
-          <Link href="/" style={{ ...S.logo, fontSize: isMobile ? '18px' : '24px' }}>Vibe Auction</Link>
-        </header>
+        <NavBar />
         <div style={S.notFound}>
           <div style={{ fontSize: '64px' }}>👻</div>
           <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '48px', textTransform: 'uppercase', color: '#C8FF00' }}>
@@ -443,29 +433,7 @@ export default function ProfilePage() {
       <style>{`*, *::before, *::after { box-sizing: border-box; } html, body { overflow-x: hidden; }`}</style>
 
       {/* Header */}
-      <header style={{ ...S.header, height: isMobile ? '56px' : '60px', padding: isMobile ? '0 16px' : '0 24px' }}>
-        <Link href="/" style={{ ...S.logo, fontSize: isMobile ? '18px' : '24px' }}>Vibe Auction</Link>
-        {!isMobile && (
-          <nav style={S.navLinks}>
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                style={{ ...S.navItem, color: navHover === item.label || pathname === item.href ? '#C8FF00' : '#FFFFFF' }}
-                onMouseEnter={() => setNavHover(item.label)}
-                onMouseLeave={() => setNavHover('')}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        )}
-        {user && (
-          <Link href="/vault" style={{ background: '#C8FF00', color: '#000', padding: '4px 12px', fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', textDecoration: 'none', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            My Vault
-          </Link>
-        )}
-      </header>
+      <NavBar />
 
       {/* Own profile banner */}
       {isOwnProfile && (

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
+import NavBar from '../components/NavBar';
 
 const normalize = (value) =>
   String(value || '')
@@ -385,28 +385,14 @@ const TokenCard = ({ item, isMobile }) => {
 };
 
 export default function VibesPage() {
-  const pathname = usePathname();
-  const { balance, vaultItems, mintedVibes, confessions } = useVibeStore();
+  const { vaultItems, mintedVibes, confessions } = useVibeStore();
 
-  const [navHover, setNavHover] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
-  const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
-
-  const navItems = [
-    { label: 'Browse Vibes', href: '/' },
-    { label: 'Vibes', href: '/vibes' },
-    { label: 'Sell a Feeling', href: '/mint' },
-    { label: 'Leaderboard', href: '/leaderboard' },
-    { label: 'Vibe Vault', href: '/vault' },
-    { label: 'Top Up', href: '/top-up' },
-  ];
-
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
     updateViewportWidth();
@@ -425,12 +411,6 @@ export default function VibesPage() {
       document.head.removeChild(style);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isMobile && mobileMenuOpen) {
-      setMobileMenuOpen(false);
-    }
-  }, [isMobile, mobileMenuOpen]);
 
   const allItems = useMemo(() => {
     const vaultList = (Array.isArray(vaultItems) ? vaultItems : []).map((item) => ({
@@ -520,112 +500,7 @@ export default function VibesPage() {
 
   return (
     <div style={customStyles.page}>
-      <header
-        style={{
-          ...customStyles.header,
-          height: isMobile ? '64px' : customStyles.header.height,
-          padding: isMobile ? '0 14px' : customStyles.header.padding,
-        }}
-      >
-        <Link href="/" style={{ ...customStyles.logo, fontSize: isMobile ? '20px' : customStyles.logo.fontSize }}>
-          Vibe Auction
-        </Link>
-
-        {!isMobile && (
-          <nav style={customStyles.navLinks}>
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  style={{
-                    ...customStyles.navItem,
-                    color: isActive || navHover === item.label ? '#C8FF00' : '#FFFFFF',
-                  }}
-                  onMouseEnter={() => setNavHover(item.label)}
-                  onMouseLeave={() => setNavHover('')}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div
-            style={{
-              ...customStyles.userBalance,
-              padding: isMobile ? '4px 10px' : customStyles.userBalance.padding,
-              fontSize: isMobile ? '12px' : customStyles.userBalance.fontSize,
-            }}
-          >
-            <span>{balanceDisplay}</span> AURA
-          </div>
-
-          {isMobile && (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '6px',
-                border: '2px solid #C8FF00',
-                background: '#0D0D0D',
-                color: '#C8FF00',
-                fontSize: '20px',
-                lineHeight: 1,
-                cursor: 'pointer',
-              }}
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? '✕' : '☰'}
-            </button>
-          )}
-        </div>
-      </header>
-
-      {isMobile && mobileMenuOpen && (
-        <nav
-          style={{
-            background: '#000000',
-            borderBottom: '2px solid #C8FF00',
-            padding: '10px 14px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  border: isActive ? '2px solid #C8FF00' : '1px solid #2A2A2A',
-                  background: isActive ? '#1A1A1A' : '#121212',
-                  color: isActive ? '#C8FF00' : '#FFFFFF',
-                  padding: '10px 12px',
-                  borderRadius: '6px',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  textDecoration: 'none',
-                }}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      )}
+      <NavBar />
 
       <section
         style={{
