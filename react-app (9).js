@@ -302,7 +302,7 @@ const customStyles = {
   },
 };
 
-const sortOptions = ['Ending Soon', 'Most Absurd', 'Highest Aura', 'Newest'];
+const sortOptions = ['Trending', 'Ending Soon', 'Most Absurd', 'Highest Aura', 'Newest'];
 
 const staticTickerItems = [
   'The world\'s first auction house for things that don\'t exist',
@@ -428,7 +428,7 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile,
 
 const App = () => {
   const [activeCategory, setActiveCategory] = useState('All Vibes');
-  const [activeSort, setActiveSort] = useState('');
+  const [activeSort, setActiveSort] = useState('Trending');
   const [viewportWidth, setViewportWidth] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [syncNow, setSyncNow] = useState(Date.now());
@@ -437,10 +437,12 @@ const App = () => {
   const [loadMoreTrigger, setLoadMoreTrigger] = useState(null);
   const [shakeTokensById, setShakeTokensById] = useState({});
   const [bumpedAtById, setBumpedAtById] = useState({});
+  const [screenShakeToken, setScreenShakeToken] = useState(0);
+  const [isScreenShaking, setIsScreenShaking] = useState(false);
   const prevBidActivityRef = useRef(null);
   const bidBaselineReadyRef = useRef(false);
 
-  const { balance, activeBids, mintedVibes, refreshState, isHydrating } = useVibeStore();
+  const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
   const router = useRouter();
 
   const isMobile = viewportWidth <= 768;
@@ -467,6 +469,12 @@ const App = () => {
         20%, 80% { transform: translateX(2px); }
         30%, 50%, 70% { transform: translateX(-4px); }
         40%, 60% { transform: translateX(4px); }
+      }
+      @keyframes va-screen-shake {
+        10%, 90% { transform: translateX(-1px); }
+        20%, 80% { transform: translateX(2px); }
+        30%, 50%, 70% { transform: translateX(-5px); }
+        40%, 60% { transform: translateX(5px); }
       }
       .ticker-anim {
         display: flex;
@@ -561,7 +569,6 @@ const App = () => {
     const previous = prevBidActivityRef.current;
     if (!bidBaselineReadyRef.current) {
       prevBidActivityRef.current = bidActivityLookup;
-      if (isHydrating) return;
       bidBaselineReadyRef.current = true;
       return;
     }
@@ -593,10 +600,22 @@ const App = () => {
         });
         return nextBumps;
       });
+      setScreenShakeToken((token) => token + 1);
     }
 
     prevBidActivityRef.current = bidActivityLookup;
-  }, [bidActivityLookup, isHydrating]);
+  }, [bidActivityLookup]);
+
+  useEffect(() => {
+    if (!screenShakeToken) return;
+    setIsScreenShaking(false);
+    const frameId = window.requestAnimationFrame(() => setIsScreenShaking(true));
+    const timeoutId = window.setTimeout(() => setIsScreenShaking(false), 520);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [screenShakeToken]);
 
   const liveVibes = useMemo(() => {
     const minted = (Array.isArray(mintedVibes) ? mintedVibes : []).map((v) => ({
@@ -667,6 +686,16 @@ const App = () => {
     const compareByRecentBump = (a, b) => resolveRecentBump(b) - resolveRecentBump(a);
 
     const items = [...filteredItems];
+    if (activeSort === 'Trending') {
+      items.sort((a, b) => {
+        const activityDiff = compareByRecentBump(a, b);
+        if (activityDiff !== 0) return activityDiff;
+        const liveBidDiff = resolveLiveBid(b) - resolveLiveBid(a);
+        if (liveBidDiff !== 0) return liveBidDiff;
+        return (b.createdAtMs || 0) - (a.createdAtMs || 0);
+      });
+      return items;
+    }
     if (activeSort === 'Highest Aura') {
       items.sort((a, b) => {
         const activityDiff = compareByRecentBump(a, b);
@@ -699,7 +728,11 @@ const App = () => {
       });
       return items;
     }
-    items.sort(compareByRecentBump);
+    items.sort((a, b) => {
+      const activityDiff = compareByRecentBump(a, b);
+      if (activityDiff !== 0) return activityDiff;
+      return resolveLiveBid(b) - resolveLiveBid(a);
+    });
     return items;
   }, [filteredItems, activeSort, bidActivityLookup, bumpedAtById]);
 
@@ -792,7 +825,12 @@ const App = () => {
   };
 
   return (
-    <div style={customStyles.body}>
+    <div
+      style={{
+        ...customStyles.body,
+        animation: isScreenShaking ? 'va-screen-shake 520ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both' : 'none',
+      }}
+    >
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
         html, body { overflow-x: hidden; max-width: 100%; }
@@ -969,7 +1007,7 @@ const App = () => {
                 return (
                   <li
                     key={option}
-                    onClick={() => setActiveSort(isActive ? '' : option)}
+                    onClick={() => setActiveSort(option)}
                     style={filterOptionStyle(isActive)}
                   >
                     {option}
