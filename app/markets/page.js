@@ -88,6 +88,7 @@ const styles = {
     overflowX: 'hidden',
   },
   container: {
+    width: '100%',
     maxWidth: '1280px',
     margin: '0 auto',
     padding: '28px 20px 56px',
@@ -97,6 +98,7 @@ const styles = {
     alignItems: 'start',
   },
   panel: {
+    minWidth: 0,
     background: '#111111',
     border: '1px solid #232323',
     borderRadius: '12px',
@@ -108,8 +110,15 @@ const styles = {
     letterSpacing: '0.5px',
     fontSize: '28px',
     marginBottom: '8px',
+    lineHeight: 1.05,
   },
-  sub: { color: '#8F8F8F', fontSize: '13px', lineHeight: 1.5, marginBottom: '14px' },
+  sub: {
+    color: '#8F8F8F',
+    fontSize: '13px',
+    lineHeight: 1.5,
+    marginBottom: '14px',
+    overflowWrap: 'anywhere',
+  },
   label: {
     display: 'block',
     fontSize: '11px',
@@ -143,7 +152,11 @@ const styles = {
     fontWeight: 500,
     marginBottom: '10px',
   },
-  row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' },
+  row2: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+  },
   btnPrimary: {
     width: '100%',
     border: 'none',
@@ -167,7 +180,12 @@ const styles = {
     fontSize: '12px',
     cursor: 'pointer',
   },
-  pillRow: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' },
+  pillRow: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    marginBottom: '14px',
+  },
   pill: {
     border: '1px solid #2E2E2E',
     background: '#101010',
@@ -184,6 +202,7 @@ const styles = {
     borderRadius: '12px',
     padding: '16px',
     marginBottom: '12px',
+    overflow: 'hidden',
   },
   marketTitle: {
     fontFamily: "'Anton', sans-serif",
@@ -192,8 +211,14 @@ const styles = {
     fontSize: '24px',
     lineHeight: 1.05,
     marginBottom: '8px',
+    overflowWrap: 'anywhere',
   },
-  badgeRow: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' },
+  badgeRow: {
+    display: 'flex',
+    gap: '6px',
+    flexWrap: 'wrap',
+    marginBottom: '8px',
+  },
   badge: {
     fontSize: '10px',
     fontWeight: 800,
@@ -213,7 +238,12 @@ const styles = {
     border: '1px solid #3A3A3A',
   },
   probabilityYes: { height: '100%', background: '#53FF8A' },
-  tradeRow: { display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px', marginTop: '10px' },
+  tradeRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr auto auto',
+    gap: '8px',
+    marginTop: '10px',
+  },
   yesButton: {
     border: 'none',
     background: '#1A7F45',
@@ -232,7 +262,11 @@ const styles = {
     fontWeight: 800,
     cursor: 'pointer',
   },
-  miniText: { fontSize: '12px', color: '#9B9B9B' },
+  miniText: {
+    fontSize: '12px',
+    color: '#9B9B9B',
+    overflowWrap: 'anywhere',
+  },
   notice: {
     marginTop: '10px',
     borderRadius: '8px',
@@ -278,8 +312,17 @@ export default function MarketsPage() {
   const [tradeInputs, setTradeInputs] = useState({});
   const [openingPriceInputs, setOpeningPriceInputs] = useState({});
   const [actionBusy, setActionBusy] = useState({});
+  const [viewportWidth, setViewportWidth] = useState(1200);
 
-  const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 980 : false;
+  const isTablet = viewportWidth <= 980;
+  const isPhone = viewportWidth <= 640;
+
+  useEffect(() => {
+    const updateViewport = () => setViewportWidth(window.innerWidth);
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
 
   const getAuthToken = useCallback(async () => {
     const sb = getSupabaseClient();
@@ -307,27 +350,19 @@ export default function MarketsPage() {
   }, [loadMarkets]);
 
   const marketSummary = useMemo(() => {
-    const openCount = markets.filter((m) => m.state === 'open').length;
-    const resolvedCount = markets.filter((m) => m.state === 'resolved').length;
-    const totalPool = markets.reduce((sum, m) => sum + safeNumber(m.totalPool, 0), 0);
-    return {
-      openCount,
-      resolvedCount,
-      totalPool,
-    };
+    const openCount = markets.filter((market) => market.state === 'open').length;
+    const resolvedCount = markets.filter((market) => market.state === 'resolved').length;
+    const totalPool = markets.reduce((sum, market) => sum + safeNumber(market.totalPool, 0), 0);
+    return { openCount, resolvedCount, totalPool };
   }, [markets]);
 
   const setFormField = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((previous) => ({ ...previous, [key]: value }));
   };
 
   const applyStarter = (starter) => {
     const closesAt = toLocalDateTimeValue(Date.now() + 36 * 60 * 60 * 1000);
-    setForm((prev) => ({
-      ...prev,
-      ...starter,
-      closesAt,
-    }));
+    setForm((previous) => ({ ...previous, ...starter, closesAt }));
   };
 
   const onCreateMarket = async (event) => {
@@ -380,7 +415,7 @@ export default function MarketsPage() {
   };
 
   const setBusy = (marketId, value) => {
-    setActionBusy((prev) => ({ ...prev, [marketId]: value }));
+    setActionBusy((previous) => ({ ...previous, [marketId]: value }));
   };
 
   const onTrade = async (market, side) => {
@@ -394,9 +429,11 @@ export default function MarketsPage() {
       setError('Sign in to trade.');
       return;
     }
+
     setError('');
     setSuccess('');
     setBusy(marketId, true);
+
     try {
       const token = await getAuthToken();
       const marketProbability = safeNumber(market?.probabilityYes, Number.NaN);
@@ -405,6 +442,7 @@ export default function MarketsPage() {
         setError('Opening probability must be between 1% and 99%.');
         return;
       }
+
       const result = await apiRequest(
         '/api/markets/trade',
         {
@@ -422,16 +460,21 @@ export default function MarketsPage() {
       );
 
       if (!result?.accepted) {
-        if (result?.reason === 'insufficient_balance') setError('Not enough AURA for this trade.');
-        else if (result?.reason === 'price_required_for_first_trade') setError('Set opening probability (1-99%) for first trade.');
-        else if (result?.reason === 'market_closed') setError('Market is closed for new trades.');
-        else setError('Trade failed. Please try again.');
+        if (result?.reason === 'insufficient_balance') {
+          setError('Not enough AURA for this trade.');
+        } else if (result?.reason === 'price_required_for_first_trade') {
+          setError('Set opening probability (1-99%) for first trade.');
+        } else if (result?.reason === 'market_closed') {
+          setError('Market is closed for new trades.');
+        } else {
+          setError('Trade failed. Please try again.');
+        }
         return;
       }
 
       setSuccess(`Trade executed: ${side.toUpperCase()} ${stake.toLocaleString()} AURA.`);
-      setTradeInputs((prev) => ({ ...prev, [marketId]: '' }));
-      setOpeningPriceInputs((prev) => ({ ...prev, [marketId]: '' }));
+      setTradeInputs((previous) => ({ ...previous, [marketId]: '' }));
+      setOpeningPriceInputs((previous) => ({ ...previous, [marketId]: '' }));
       await loadMarkets();
     } catch (tradeError) {
       setError(tradeError instanceof Error ? tradeError.message : 'Trade failed');
@@ -445,9 +488,11 @@ export default function MarketsPage() {
       setError('Sign in to resolve markets.');
       return;
     }
+
     setError('');
     setSuccess('');
     setBusy(marketId, true);
+
     try {
       const token = await getAuthToken();
       const result = await apiRequest(
@@ -458,12 +503,18 @@ export default function MarketsPage() {
         },
         token,
       );
+
       if (!result?.resolved) {
-        if (result?.reason === 'only_creator_can_resolve') setError('Only the market creator can resolve this market.');
-        else if (result?.reason === 'market_still_open') setError('Market must be closed before resolution.');
-        else setError('Resolution failed.');
+        if (result?.reason === 'only_creator_can_resolve') {
+          setError('Only the market creator can resolve this market.');
+        } else if (result?.reason === 'market_still_open') {
+          setError('Market must be closed before resolution.');
+        } else {
+          setError('Resolution failed.');
+        }
         return;
       }
+
       setSuccess(`Market resolved as ${outcome.toUpperCase()}.`);
       await loadMarkets();
     } catch (resolveError) {
@@ -478,9 +529,11 @@ export default function MarketsPage() {
       setError('Sign in to claim payouts.');
       return;
     }
+
     setError('');
     setSuccess('');
     setBusy(marketId, true);
+
     try {
       const token = await getAuthToken();
       const result = await apiRequest(
@@ -493,12 +546,18 @@ export default function MarketsPage() {
       );
 
       if (!result?.claimed) {
-        if (result?.reason === 'already_claimed') setError('Payout already claimed.');
-        else if (result?.reason === 'no_position') setError('No position found on this market.');
-        else if (result?.reason === 'market_not_resolved') setError('Market is not resolved yet.');
-        else setError('Claim failed.');
+        if (result?.reason === 'already_claimed') {
+          setError('Payout already claimed.');
+        } else if (result?.reason === 'no_position') {
+          setError('No position found on this market.');
+        } else if (result?.reason === 'market_not_resolved') {
+          setError('Market is not resolved yet.');
+        } else {
+          setError('Claim failed.');
+        }
         return;
       }
+
       setSuccess(`Payout claimed: ${safeNumber(result.amount, 0).toLocaleString()} AURA.`);
       await loadMarkets();
     } catch (claimError) {
@@ -512,9 +571,16 @@ export default function MarketsPage() {
     <div style={styles.page}>
       <NavBar />
 
-      <div style={{ ...styles.container, gridTemplateColumns: isMobile ? '1fr' : styles.container.gridTemplateColumns }}>
-        <section style={styles.panel}>
-          <h1 style={styles.title}>Prediction Markets</h1>
+      <div
+        style={{
+          ...styles.container,
+          gridTemplateColumns: isTablet ? '1fr' : styles.container.gridTemplateColumns,
+          padding: isPhone ? '16px 12px 34px' : isTablet ? '20px 16px 40px' : styles.container.padding,
+          gap: isPhone ? '14px' : styles.container.gap,
+        }}
+      >
+        <section style={{ ...styles.panel, padding: isPhone ? '14px' : styles.panel.padding }}>
+          <h1 style={{ ...styles.title, fontSize: isPhone ? '23px' : styles.title.fontSize }}>Prediction Markets</h1>
           <p style={styles.sub}>
             Create real-money-style AURA markets with trader-driven odds.
             Opening probability is set by the first trade and payouts are distributed from the market pool.
@@ -550,7 +616,7 @@ export default function MarketsPage() {
               placeholder="Resolution source and exact criteria."
             />
 
-            <div style={styles.row2}>
+            <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
               <div>
                 <label style={styles.label}>Type</label>
                 <select
@@ -574,7 +640,7 @@ export default function MarketsPage() {
               </div>
             </div>
 
-            <div style={styles.row2}>
+            <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
               <div>
                 <label style={styles.label}>Yes Label</label>
                 <input
@@ -593,7 +659,7 @@ export default function MarketsPage() {
               </div>
             </div>
 
-            <div style={styles.row2}>
+            <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
               <div>
                 <label style={styles.label}>Close Time</label>
                 <input
@@ -614,7 +680,11 @@ export default function MarketsPage() {
               </div>
             </div>
 
-            <button type="submit" style={{ ...styles.btnPrimary, opacity: creating ? 0.7 : 1 }} disabled={creating}>
+            <button
+              type="submit"
+              style={{ ...styles.btnPrimary, opacity: creating ? 0.7 : 1, fontSize: isPhone ? '16px' : styles.btnPrimary.fontSize }}
+              disabled={creating}
+            >
               {creating ? 'Creating...' : 'Start Market'}
             </button>
           </form>
@@ -624,9 +694,18 @@ export default function MarketsPage() {
           </div>
         </section>
 
-        <section style={styles.panel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <h2 style={{ ...styles.title, fontSize: '24px', marginBottom: 0 }}>Live Board</h2>
+        <section style={{ ...styles.panel, padding: isPhone ? '14px' : styles.panel.padding }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: isPhone ? 'flex-start' : 'center',
+              flexWrap: 'wrap',
+              gap: '8px',
+              flexDirection: isPhone ? 'column' : 'row',
+            }}
+          >
+            <h2 style={{ ...styles.title, fontSize: isPhone ? '21px' : '24px', marginBottom: 0 }}>Live Board</h2>
             <div style={{ fontSize: '12px', color: '#A2A2A2', fontWeight: 700 }}>
               {marketSummary.openCount} open · {marketSummary.resolvedCount} resolved · {marketSummary.totalPool.toLocaleString()} AURA pooled
             </div>
@@ -652,12 +731,26 @@ export default function MarketsPage() {
           </div>
 
           {success && (
-            <div style={{ ...styles.notice, background: 'rgba(83,255,138,0.16)', border: '1px solid rgba(83,255,138,0.35)', color: '#A5FFC3' }}>
+            <div
+              style={{
+                ...styles.notice,
+                background: 'rgba(83,255,138,0.16)',
+                border: '1px solid rgba(83,255,138,0.35)',
+                color: '#A5FFC3',
+              }}
+            >
               {success}
             </div>
           )}
           {error && (
-            <div style={{ ...styles.notice, background: 'rgba(255,80,110,0.16)', border: '1px solid rgba(255,80,110,0.35)', color: '#FFC2CF' }}>
+            <div
+              style={{
+                ...styles.notice,
+                background: 'rgba(255,80,110,0.16)',
+                border: '1px solid rgba(255,80,110,0.35)',
+                color: '#FFC2CF',
+              }}
+            >
               {error}
             </div>
           )}
@@ -675,12 +768,25 @@ export default function MarketsPage() {
                 const probabilityNoPct = hasLiveOdds ? 100 - probabilityYesPct : null;
                 const closesAtMs = new Date(market.closesAt || '').getTime();
                 const isClosed = Number.isFinite(closesAtMs) && closesAtMs <= Date.now();
-                const canResolve = user && market.creatorId && String(user.id) === String(market.creatorId) && market.state === 'open' && isClosed;
+                const canResolve =
+                  user &&
+                  market.creatorId &&
+                  String(user.id) === String(market.creatorId) &&
+                  market.state === 'open' &&
+                  isClosed;
                 const isResolved = market.state === 'resolved' || market.state === 'cancelled';
                 const busy = actionBusy[market.id] === true;
+
+                const tradeLayoutStyle = isTablet
+                  ? { display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }
+                  : {
+                      ...styles.tradeRow,
+                      gridTemplateColumns: hasLiveOdds ? '1fr auto auto' : '1fr 1fr auto auto',
+                    };
+
                 return (
-                  <article key={market.id} style={styles.marketCard}>
-                    <div style={styles.marketTitle}>{market.title}</div>
+                  <article key={market.id} style={{ ...styles.marketCard, padding: isPhone ? '12px' : styles.marketCard.padding }}>
+                    <div style={{ ...styles.marketTitle, fontSize: isPhone ? '20px' : styles.marketTitle.fontSize }}>{market.title}</div>
                     <div style={styles.badgeRow}>
                       <span style={styles.badge}>{market.type.replace('_', ' ')}</span>
                       <span style={styles.badge}>{market.category}</span>
@@ -699,7 +805,15 @@ export default function MarketsPage() {
                     <div style={styles.probabilityWrap}>
                       {hasLiveOdds ? (
                         <>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', fontWeight: 800 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              marginBottom: '6px',
+                              fontSize: isPhone ? '11px' : '12px',
+                              fontWeight: 800,
+                            }}
+                          >
                             <span style={{ color: '#53FF8A' }}>{market.yesLabel}: {probabilityYesPct}%</span>
                             <span style={{ color: '#FF7998' }}>{market.noLabel}: {probabilityNoPct}%</span>
                           </div>
@@ -714,10 +828,19 @@ export default function MarketsPage() {
                       )}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: isPhone ? '1fr 1fr' : 'repeat(3, minmax(0, 1fr))',
+                        gap: '8px',
+                        marginBottom: '8px',
+                      }}
+                    >
                       <div style={styles.miniText}>Pool: {safeNumber(market.totalPool, 0).toLocaleString()} AURA</div>
                       <div style={styles.miniText}>Traders: {safeNumber(market.participants, 0)}</div>
-                      <div style={styles.miniText}>Closes: {new Date(market.closesAt).toLocaleString()}</div>
+                      <div style={{ ...styles.miniText, gridColumn: isPhone ? '1 / -1' : 'auto' }}>
+                        Closes: {new Date(market.closesAt).toLocaleString()}
+                      </div>
                     </div>
 
                     {market.myPosition && (
@@ -736,12 +859,7 @@ export default function MarketsPage() {
                     )}
 
                     {market.state === 'open' && !isClosed && (
-                      <div
-                        style={{
-                          ...styles.tradeRow,
-                          gridTemplateColumns: hasLiveOdds ? '1fr auto auto' : '1fr 1fr auto auto',
-                        }}
-                      >
+                      <div style={tradeLayoutStyle}>
                         <input
                           type="number"
                           min={1}
@@ -749,7 +867,9 @@ export default function MarketsPage() {
                           style={{ ...styles.input, marginBottom: 0 }}
                           placeholder="Stake AURA"
                           value={tradeInputs[market.id] ?? ''}
-                          onChange={(event) => setTradeInputs((prev) => ({ ...prev, [market.id]: event.target.value }))}
+                          onChange={(event) =>
+                            setTradeInputs((previous) => ({ ...previous, [market.id]: event.target.value }))
+                          }
                         />
                         {!hasLiveOdds && (
                           <input
@@ -760,13 +880,25 @@ export default function MarketsPage() {
                             style={{ ...styles.input, marginBottom: 0 }}
                             placeholder="Opening prob %"
                             value={openingPriceInputs[market.id] ?? ''}
-                            onChange={(event) => setOpeningPriceInputs((prev) => ({ ...prev, [market.id]: event.target.value }))}
+                            onChange={(event) =>
+                              setOpeningPriceInputs((previous) => ({ ...previous, [market.id]: event.target.value }))
+                            }
                           />
                         )}
-                        <button type="button" style={styles.yesButton} disabled={busy} onClick={() => onTrade(market, 'yes')}>
+                        <button
+                          type="button"
+                          style={{ ...styles.yesButton, width: isTablet ? '100%' : 'auto' }}
+                          disabled={busy}
+                          onClick={() => onTrade(market, 'yes')}
+                        >
                           Buy YES
                         </button>
-                        <button type="button" style={styles.noButton} disabled={busy} onClick={() => onTrade(market, 'no')}>
+                        <button
+                          type="button"
+                          style={{ ...styles.noButton, width: isTablet ? '100%' : 'auto' }}
+                          disabled={busy}
+                          onClick={() => onTrade(market, 'no')}
+                        >
                           Buy NO
                         </button>
                       </div>
