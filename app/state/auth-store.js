@@ -44,8 +44,29 @@ export function AuthProvider({ children }) {
     const sb = getSupabaseClient();
     if (!sb) { setProfile(null); setLoading(false); return; }
 
-    sb.auth.getSession().then(({ data }) => {
-      const u = data.session?.user ?? null;
+    const loadInitialSession = async () => {
+      let session = null;
+      try {
+        const { data } = await sb.auth.getSession();
+        session = data?.session ?? null;
+      } catch {
+        session = null;
+      }
+
+      const expiresAtSec = Number(session?.expires_at || 0);
+      const expiresAtMs = Number.isFinite(expiresAtSec) && expiresAtSec > 0 ? expiresAtSec * 1000 : 0;
+      const shouldRefresh = !session?.access_token || (expiresAtMs > 0 && expiresAtMs - Date.now() < 60000);
+
+      if (shouldRefresh) {
+        try {
+          const { data: refreshed } = await sb.auth.refreshSession();
+          session = refreshed?.session ?? null;
+        } catch {
+          session = null;
+        }
+      }
+
+      const u = session?.user ?? null;
       setUser(u);
       setLoading(false);
       if (u) loadProfile(u.id);
@@ -53,7 +74,9 @@ export function AuthProvider({ children }) {
         profileRequestRef.current += 1;
         setProfile(null);
       }
-    });
+    };
+
+    loadInitialSession();
 
     const { data: listener } = sb.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;

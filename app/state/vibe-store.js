@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createDefaultState } from '../../lib/default-store.js';
 import { useAuth } from './auth-store.js';
 import { getSupabaseClient } from '../../lib/supabase-client.js';
@@ -14,6 +14,38 @@ const safeNumber = (value, fallback = 0) => {
     return Number.isFinite(parsed) ? parsed : fallback;
   }
   return fallback;
+};
+
+const normalizeKey = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const toTimestampMs = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    const parsed = new Date(value).getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+};
+
+const toExpiryMs = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value > 1e12) return value; // already ms
+    if (value > 1e9) return value * 1000; // epoch seconds
+    return 0;
+  }
+  if (typeof value === 'string') {
+    const numeric = Number(value.trim());
+    if (Number.isFinite(numeric)) return toExpiryMs(numeric);
+    const parsed = new Date(value).getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
 };
 
 function sanitizeState(input) {
@@ -76,15 +108,129 @@ const mapVaultRow = (row) => ({
   originalAuthor: row.original_author ?? null,
 });
 
+const mapSupabaseVibeRow = (row) => ({
+  id: row.id,
+  slug: row.slug,
+  name: row.name,
+  category: row.category,
+  emoji: row.emoji,
+  manifesto: row.manifesto,
+  duration: row.duration,
+  startingPrice: row.starting_price,
+  buyNowPrice: row.buy_now_price ?? null,
+  imageUrl: row.image_url ?? null,
+  isAnonymous: row.is_anonymous,
+  author: row.author,
+  listedBy: row.listed_by ?? row.author,
+  createdAt: row.created_at,
+  endTime: row.end_time ?? null,
+});
+
+const mergeMintedVibes = (baseList, supabaseList) => {
+  const mergedByKey = new Map();
+
+  for (const vibe of Array.isArray(supabaseList) ? supabaseList : []) {
+    const key = normalizeKey(vibe?.slug || vibe?.id || vibe?.name || '');
+    if (!key) continue;
+    mergedByKey.set(key, vibe);
+  }
+
+  for (const vibe of Array.isArray(baseList) ? baseList : []) {
+    const key = normalizeKey(vibe?.slug || vibe?.id || vibe?.name || '');
+    if (!key || mergedByKey.has(key)) continue;
+    mergedByKey.set(key, vibe);
+  }
+
+  return Array.from(mergedByKey.values()).sort((a, b) => toTimestampMs(b?.createdAt) - toTimestampMs(a?.createdAt));
+};
+
+const getMintFailureMessage = (reason) => {
+  const normalized = String(reason || '').toLowerCase();
+  if (!normalized) return 'Listing failed. Please try again.';
+  if (normalized === 'auth_required') return 'Your session expired. Please sign in again and retry.';
+  if (normalized === 'auth_invalid_token') return 'Your session expired. Please sign in again and retry.';
+  if (normalized === 'supabase_unavailable') return 'Minting backend is unavailable. Please try again shortly.';
+  if (normalized.includes('jwt') || normalized.includes('token')) return 'Your session expired. Please sign in again and retry.';
+  if (normalized.includes('row-level security') || normalized.includes('rls')) {
+    return 'Mint permission check failed. Please sign out, sign in again, and retry.';
+  }
+  if (normalized.includes('insert')) return 'Could not save vibe. Please try again.';
+  if (normalized.includes('timeout')) return 'Mint request timed out. Please retry.';
+  return `Listing failed (${reason}).`;
+};
+
 export function VibeStoreProvider({ children }) {
   const { profile, user, refreshProfile } = useAuth();
   const [store, setStore] = useState(() => createDefaultState());
   const [isHydrating, setIsHydrating] = useState(true);
   const [error, setError] = useState('');
   const [supabaseVaultItems, setSupabaseVaultItems] = useState(null);
+  const mintedCacheRef = useRef({ fetchedAt: 0, vibes: null });
 
   const applyState = useCallback((nextState) => {
     setStore(sanitizeState(nextState));
+  }, []);
+
+  const fetchMintedVibesFromClientSupabase = useCallback(async ({ force = false } = {}) => {
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+
+    const now = Date.now();
+    const cache = mintedCacheRef.current;
+    if (!force && Array.isArray(cache?.vibes) && now - safeNumber(cache?.fetchedAt, 0) < 15000) {
+      return cache.vibes;
+    }
+
+    const { data, error: fetchError } = await sb.from('vibes').select('*').order('created_at', { ascending: false }).limit(200);
+    if (fetchError || !Array.isArray(data)) {
+      return Array.isArray(cache?.vibes) ? cache.vibes : null;
+    }
+
+    const mapped = data.map(mapSupabaseVibeRow);
+    mintedCacheRef.current = { fetchedAt: now, vibes: mapped };
+    return mapped;
+  }, []);
+
+  const hydrateStateWithClientVibes = useCallback(
+    async (nextState, { force = false } = {}) => {
+      const supabaseMintedVibes = await fetchMintedVibesFromClientSupabase({ force });
+      if (!Array.isArray(supabaseMintedVibes) || supabaseMintedVibes.length === 0) {
+        return sanitizeState(nextState);
+      }
+      return sanitizeState({
+        ...nextState,
+        mintedVibes: mergeMintedVibes(nextState?.mintedVibes, supabaseMintedVibes),
+      });
+    },
+    [fetchMintedVibesFromClientSupabase],
+  );
+
+  const getAccessToken = useCallback(async ({ forceRefresh = false } = {}) => {
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+
+    let session = null;
+    try {
+      const { data: sessionData } = await sb.auth.getSession();
+      session = sessionData?.session ?? null;
+    } catch {
+      session = null;
+    }
+
+    let token = session?.access_token ?? null;
+    const expiresAtMs = toExpiryMs(session?.expires_at);
+    const needsRefresh = forceRefresh || !token || (expiresAtMs > 0 && expiresAtMs - Date.now() < 60000);
+
+    if (needsRefresh) {
+      try {
+        const { data: refreshed } = await sb.auth.refreshSession();
+        token = refreshed?.session?.access_token ?? null;
+      } catch {
+        token = null;
+      }
+    }
+
+    return token;
   }, []);
 
   useEffect(() => {
@@ -105,9 +251,10 @@ export function VibeStoreProvider({ children }) {
 
   const refreshState = useCallback(async () => {
     const data = await apiRequest('/api/state');
-    applyState(data.state);
-    return data.state;
-  }, [applyState]);
+    const merged = await hydrateStateWithClientVibes(data.state);
+    applyState(merged);
+    return merged;
+  }, [applyState, hydrateStateWithClientVibes]);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,8 +263,9 @@ export function VibeStoreProvider({ children }) {
       try {
         setIsHydrating(true);
         const data = await apiRequest('/api/state');
+        const merged = await hydrateStateWithClientVibes(data.state);
         if (!cancelled) {
-          applyState(data.state);
+          applyState(merged);
           setError('');
         }
       } catch (loadError) {
@@ -137,20 +285,19 @@ export function VibeStoreProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [applyState]);
+  }, [applyState, hydrateStateWithClientVibes]);
 
   const placeBid = useCallback(
     async (bid) => {
       try {
-        const sb = getSupabaseClient();
-        const sessionData = sb ? (await sb.auth.getSession()) : null;
-        const token = sessionData?.data?.session?.access_token ?? null;
+        const token = await getAccessToken();
         const data = await apiRequest('/api/state/place-bid', {
           method: 'POST',
           body: { bid },
           ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
-        applyState(data.state);
+        const merged = await hydrateStateWithClientVibes(data.state);
+        applyState(merged);
         setError('');
         return {
           accepted: Boolean(data.accepted),
@@ -166,22 +313,22 @@ export function VibeStoreProvider({ children }) {
         };
       }
     },
-    [applyState],
+    [applyState, hydrateStateWithClientVibes, getAccessToken],
   );
 
   const settleAuction = useCallback(
     async (item) => {
       try {
         const sb = getSupabaseClient();
-        const sessionData = sb ? (await sb.auth.getSession()) : null;
-        const token = sessionData?.data?.session?.access_token ?? null;
+        const token = await getAccessToken();
         const data = await apiRequest('/api/state/settle-auction', {
           method: 'POST',
           body: { item },
           ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
         if (data?.state) {
-          applyState(data.state);
+          const merged = await hydrateStateWithClientVibes(data.state);
+          applyState(merged);
         }
         // Refresh vault from Supabase after a successful settle.
         if (data?.settled && user && sb) {
@@ -210,15 +357,13 @@ export function VibeStoreProvider({ children }) {
         };
       }
     },
-    [applyState, user, refreshProfile],
+    [applyState, user, refreshProfile, hydrateStateWithClientVibes, getAccessToken],
   );
 
   const loadPrediction = useCallback(async (vibeId) => {
     if (!vibeId) return { prediction: null, stats: { totalPredictions: 0 } };
     try {
-      const sb = getSupabaseClient();
-      const sessionData = sb ? (await sb.auth.getSession()) : null;
-      const token = sessionData?.data?.session?.access_token ?? null;
+      const token = await getAccessToken();
       const data = await apiRequest(`/api/state/prediction?vibeId=${encodeURIComponent(vibeId)}`, {
         ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
       });
@@ -230,14 +375,12 @@ export function VibeStoreProvider({ children }) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load prediction');
       return { prediction: null, stats: { totalPredictions: 0 } };
     }
-  }, []);
+  }, [getAccessToken]);
 
   const submitPrediction = useCallback(
     async (prediction) => {
       try {
-        const sb = getSupabaseClient();
-        const sessionData = sb ? (await sb.auth.getSession()) : null;
-        const token = sessionData?.data?.session?.access_token ?? null;
+        const token = await getAccessToken();
         const data = await apiRequest('/api/state/prediction', {
           method: 'POST',
           body: { prediction },
@@ -262,7 +405,7 @@ export function VibeStoreProvider({ children }) {
         };
       }
     },
-    [],
+    [getAccessToken],
   );
 
   const mintConfession = useCallback(
@@ -272,7 +415,8 @@ export function VibeStoreProvider({ children }) {
           method: 'POST',
           body: { payload },
         });
-        applyState(data.state);
+        const merged = await hydrateStateWithClientVibes(data.state, { force: true });
+        applyState(merged);
         setError('');
         return data.mintedConfession || null;
       } catch (mintError) {
@@ -280,48 +424,62 @@ export function VibeStoreProvider({ children }) {
         return null;
       }
     },
-    [applyState],
+    [applyState, hydrateStateWithClientVibes],
   );
 
   const mintVibe = useCallback(
     async (payload) => {
       try {
-        const sb = getSupabaseClient();
-        const sessionData = sb ? (await sb.auth.getSession()) : null;
-        const token = sessionData?.data?.session?.access_token ?? null;
+        const token = await getAccessToken();
         const data = await apiRequest('/api/state/mint-vibe', {
           method: 'POST',
           body: { payload },
           ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
-        applyState(data.state);
+        const reason = data?.reason || data?.saveReason || null;
+        if (!data?.mintedVibe) {
+          const message = getMintFailureMessage(reason);
+          setError(message);
+          return {
+            mintedVibe: null,
+            reason,
+            message,
+          };
+        }
+        const merged = await hydrateStateWithClientVibes(data.state, { force: true });
+        applyState(merged);
         setError('');
-        return data.mintedVibe || null;
+        return {
+          mintedVibe: data.mintedVibe,
+          reason: null,
+          message: null,
+        };
       } catch (mintError) {
-        setError(mintError instanceof Error ? mintError.message : 'Failed to mint vibe');
-        return null;
+        const message = mintError instanceof Error ? mintError.message : 'Failed to mint vibe';
+        setError(message);
+        return {
+          mintedVibe: null,
+          reason: 'request_failed',
+          message,
+        };
       }
     },
-    [applyState],
+    [applyState, hydrateStateWithClientVibes, getAccessToken],
   );
 
   const createStripeCheckoutSession = useCallback(async (packId) => {
-    const sb = getSupabaseClient();
-    const sessionData = sb ? (await sb.auth.getSession()) : null;
-    const token = sessionData?.data?.session?.access_token ?? null;
+    const token = await getAccessToken();
     const data = await apiRequest('/api/stripe/create-checkout-session', {
       method: 'POST',
       body: { packId },
       ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
     });
     return data;
-  }, []);
+  }, [getAccessToken]);
 
   const confirmStripeSession = useCallback(
     async (sessionId) => {
-      const sb = getSupabaseClient();
-      const sessionData = sb ? (await sb.auth.getSession()) : null;
-      const token = sessionData?.data?.session?.access_token ?? null;
+      const token = await getAccessToken();
       const data = await apiRequest('/api/stripe/confirm', {
         method: 'POST',
         body: { sessionId },
@@ -329,7 +487,8 @@ export function VibeStoreProvider({ children }) {
       });
 
       if (data?.state) {
-        applyState(data.state);
+        const merged = await hydrateStateWithClientVibes(data.state);
+        applyState(merged);
       }
 
       // Profile balance is sourced from auth store when logged in.
@@ -339,7 +498,7 @@ export function VibeStoreProvider({ children }) {
 
       return data;
     },
-    [applyState, refreshProfile],
+    [applyState, refreshProfile, hydrateStateWithClientVibes, getAccessToken],
   );
 
   const clearError = useCallback(() => {

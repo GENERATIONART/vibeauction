@@ -577,7 +577,7 @@ export default function MintPage() {
           return;
         }
 
-        const mirroredConfessionVibe = await mintVibe({
+        const mirroredConfessionVibeResult = await mintVibe({
           name: cleanedName || mintedConfession.title,
           category: 'Confessions',
           emoji: formData.emoji,
@@ -589,8 +589,8 @@ export default function MintPage() {
           author: mintedConfession.author,
         });
 
-        if (!mirroredConfessionVibe) {
-          setError('Confession created, but listing mirror failed. Try refreshing.');
+        if (!mirroredConfessionVibeResult?.mintedVibe) {
+          setError(mirroredConfessionVibeResult?.message || 'Confession created, but listing mirror failed. Try refreshing.');
           return;
         }
 
@@ -620,7 +620,7 @@ export default function MintPage() {
       }
 
       const buyNowNumeric = Number(String(formData.buyItNow || '').replace(/,/g, '').trim());
-      const minted = await mintVibe({
+      const mintResult = await mintVibe({
         name: cleanedName,
         category: formData.category,
         emoji: formData.emoji,
@@ -633,10 +633,12 @@ export default function MintPage() {
         listedBy: user?.id ?? null,
       });
 
-      if (!minted) {
-        setError('Listing failed. Please try again.');
+      if (!mintResult?.mintedVibe) {
+        setError(mintResult?.message || 'Listing failed. Please try again.');
         return;
       }
+
+      const minted = mintResult.mintedVibe;
 
       setSubmitted(true);
       setSuccess(`Vibe listed in ${formData.category}.`);

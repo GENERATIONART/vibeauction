@@ -527,7 +527,7 @@ const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle, userId }) => {
     const buyNowNumeric = Number(String(relistBuyNow || '').replace(/,/g, '').trim());
     setSubmitting(true);
     setRelistError('');
-    const minted = await mintVibe({
+    const mintResult = await mintVibe({
       name: trophy.name,
       category: trophy.category || 'Vibes',
       emoji: trophy.emoji || '✨',
@@ -538,10 +538,11 @@ const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle, userId }) => {
       listedBy: userId || userHandle || null,
     });
     setSubmitting(false);
-    if (!minted) {
-      setRelistError('Listing failed. Try again.');
+    if (!mintResult?.mintedVibe) {
+      setRelistError(mintResult?.message || 'Listing failed. Try again.');
       return;
     }
+    const minted = mintResult.mintedVibe;
     if (minted.slug) {
       router.push(`/auction/${minted.slug}`);
     } else {
