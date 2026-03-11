@@ -401,83 +401,106 @@ const customStyles = {
     fontSize: '16px',
   },
   predictionPanel: {
-    background: '#0F1118',
-    border: '2px solid #2F6BFF',
-    borderRadius: '8px',
-    padding: '24px',
+    background: '#121212',
+    border: '1px solid #2B2B2B',
+    borderRadius: '12px',
+    padding: '16px',
+    marginBottom: '12px',
+    overflow: 'hidden',
   },
   predictionTitle: {
     fontFamily: "'Anton', sans-serif",
     fontSize: '24px',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginBottom: '10px',
-    color: '#8FB0FF',
+    letterSpacing: '0.4px',
+    lineHeight: 1.05,
+    marginBottom: '8px',
+    color: '#FFFFFF',
   },
   predictionHelp: {
-    fontSize: '12px',
-    color: '#98A2B3',
+    fontSize: '13px',
+    color: '#8F8F8F',
     lineHeight: 1.5,
-    marginBottom: '14px',
+    marginBottom: '8px',
+    overflowWrap: 'anywhere',
+  },
+  predictionBadgeRow: {
+    display: 'flex',
+    gap: '6px',
+    flexWrap: 'wrap',
+    marginBottom: '10px',
+  },
+  predictionBadge: {
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    border: '1px solid #333333',
+    padding: '2px 8px',
+    borderRadius: '999px',
+    color: '#BBBBBB',
   },
   predictionGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '10px',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '8px',
     marginBottom: '10px',
   },
   predictionInputWrap: {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
+    minWidth: 0,
   },
   predictionLabel: {
     fontSize: '11px',
     textTransform: 'uppercase',
-    letterSpacing: '0.6px',
+    letterSpacing: '0.5px',
     fontWeight: 700,
-    color: '#7F8BA0',
+    color: '#999999',
   },
   predictionInput: {
     width: '100%',
-    background: '#070A11',
+    minWidth: 0,
+    background: '#090909',
     color: '#FFFFFF',
-    border: '1px solid #2B3750',
-    borderRadius: '6px',
+    border: '1px solid #2E2E2E',
+    borderRadius: '8px',
     padding: '10px 12px',
     fontSize: '14px',
-    fontWeight: 700,
+    fontWeight: 600,
     fontFamily: "'Inter', sans-serif",
   },
   predictionButton: {
     width: '100%',
-    background: '#2F6BFF',
-    color: '#FFFFFF',
+    background: '#C8FF00',
+    color: '#000000',
     border: 'none',
-    borderRadius: '6px',
-    padding: '13px',
-    fontWeight: 800,
+    borderRadius: '8px',
+    padding: '12px',
+    fontFamily: "'Anton', sans-serif",
+    fontWeight: 400,
     textTransform: 'uppercase',
-    fontSize: '13px',
-    letterSpacing: '0.4px',
+    fontSize: '18px',
+    letterSpacing: '0.5px',
     cursor: 'pointer',
-    marginTop: '6px',
+    marginTop: '2px',
   },
   predictionStats: {
     marginTop: '10px',
     fontSize: '12px',
-    color: '#A8B1C4',
-    fontWeight: 600,
+    color: '#9B9B9B',
+    fontWeight: 700,
+    overflowWrap: 'anywhere',
   },
   predictionSuccess: {
     marginTop: '10px',
-    background: 'rgba(47, 107, 255, 0.2)',
-    border: '1px solid rgba(143, 176, 255, 0.45)',
-    color: '#BED0FF',
+    background: 'rgba(83,255,138,0.16)',
+    border: '1px solid rgba(83,255,138,0.35)',
+    color: '#A5FFC3',
     fontWeight: 700,
     fontSize: '12px',
     padding: '10px',
-    borderRadius: '6px',
+    borderRadius: '8px',
   },
   predictionError: {
     marginTop: '10px',
@@ -487,19 +510,19 @@ const customStyles = {
     fontWeight: 700,
     fontSize: '12px',
     padding: '10px',
-    borderRadius: '6px',
+    borderRadius: '8px',
   },
   predictionResolved: {
     marginTop: '6px',
-    background: '#0A142B',
-    border: '1px solid #35569D',
+    background: '#101010',
+    border: '1px solid #333333',
     borderRadius: '8px',
     padding: '12px',
   },
   predictionResolvedTitle: {
     fontSize: '12px',
     textTransform: 'uppercase',
-    color: '#8FB0FF',
+    color: '#BBBBBB',
     fontWeight: 800,
     marginBottom: '8px',
     letterSpacing: '0.5px',
@@ -1351,7 +1374,7 @@ const App = ({ vibe }) => {
             </div>
           )}
 
-          <div style={{ ...customStyles.predictionPanel, padding: isMobile ? '18px 16px' : customStyles.predictionPanel.padding }}>
+          <div style={{ ...customStyles.predictionPanel, padding: isMobile ? '12px' : customStyles.predictionPanel.padding }}>
             <div style={{ ...customStyles.predictionTitle, fontSize: isMobile ? '20px' : customStyles.predictionTitle.fontSize }}>
               Prediction Side-Game
             </div>
@@ -1359,9 +1382,33 @@ const App = ({ vibe }) => {
               Guess the final price and when the winning bid lands. You earn points only, no AURA payout.
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#B6C3DF', marginBottom: '10px', fontWeight: 700 }}>
+            <div style={customStyles.predictionBadgeRow}>
+              <span style={customStyles.predictionBadge}>Side-Game</span>
+              <span style={customStyles.predictionBadge}>Points Only</span>
+              <span
+                style={{
+                  ...customStyles.predictionBadge,
+                  color: predictionData?.resolved ? '#8FC8FF' : '#A8FF8F',
+                  borderColor: predictionData?.resolved ? '#2A4F6C' : '#2A5E2A',
+                }}
+              >
+                {predictionData?.resolved ? 'resolved' : 'open'}
+              </span>
+            </div>
+
+            <div
+              style={{
+                ...customStyles.predictionStats,
+                marginTop: 0,
+                marginBottom: '10px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                color: '#D2D2D2',
+              }}
+            >
               <span>Your prediction points</span>
-              <span>{predictionPoints.toLocaleString()}</span>
+              <span style={{ color: '#C8FF00' }}>{predictionPoints.toLocaleString()}</span>
             </div>
 
             {!predictionData?.resolved && (
@@ -1431,16 +1478,16 @@ const App = ({ vibe }) => {
             {predictionData?.resolved && (
               <div style={customStyles.predictionResolved}>
                 <div style={customStyles.predictionResolvedTitle}>Round Scored</div>
-                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', color: '#9CC0FF', lineHeight: 1, marginBottom: '8px' }}>
+                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', color: '#C8FF00', lineHeight: 1, marginBottom: '8px' }}>
                   +{savedPointsAwarded.toLocaleString()} pts
                 </div>
-                <div style={{ fontSize: '12px', color: '#C2CEE6', lineHeight: 1.6 }}>
+                <div style={{ fontSize: '12px', color: '#D0D0D0', lineHeight: 1.6 }}>
                   Price: {Number.isFinite(savedPredictedPrice) ? savedPredictedPrice.toLocaleString() : '—'} guess vs{' '}
                   {Number.isFinite(safeBid(predictionData.actualFinalPrice, Number.NaN))
                     ? safeBid(predictionData.actualFinalPrice, 0).toLocaleString()
                     : '—'} final
                 </div>
-                <div style={{ fontSize: '12px', color: '#C2CEE6', lineHeight: 1.6 }}>
+                <div style={{ fontSize: '12px', color: '#D0D0D0', lineHeight: 1.6 }}>
                   Timing: {formatPredictionClock(predictionData.predictedWinnerTime)} guess vs{' '}
                   {formatPredictionClock(predictionData.actualWinnerTime)} winner
                 </div>
