@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useVibeStore } from '../state/vibe-store';
 import NavBar from '../components/NavBar';
+
+const VIBES_BATCH_SIZE = 12;
 
 const normalize = (value) =>
   String(value || '')
@@ -396,14 +398,25 @@ const TokenCard = ({ item, isMobile }) => {
 };
 
 export default function VibesPage() {
-  const { vaultItems, mintedVibes, confessions } = useVibeStore();
+  const { vaultItems, mintedVibes, confessions, refreshState } = useVibeStore();
 
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(VIBES_BATCH_SIZE);
+  const [loadMoreTrigger, setLoadMoreTrigger] = useState(null);
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
+
+  const syncLatestVibes = useCallback(async () => {
+    try {
+      await refreshState();
+    } catch {
+      // Keep existing UI data when refresh fails transiently.
+    }
+  }, [refreshState]);
+
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
     updateViewportWidth();
@@ -422,6 +435,34 @@ export default function VibesPage() {
       document.head.removeChild(style);
     };
   }, []);
+
+  useEffect(() => {
+    syncLatestVibes();
+
+    const onFocus = () => {
+      syncLatestVibes();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncLatestVibes();
+      }
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncLatestVibes();
+      }
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.clearInterval(pollId);
+    };
+  }, [syncLatestVibes]);
 
   const allItems = useMemo(() => {
     const vaultList = (Array.isArray(vaultItems) ? vaultItems : []).map((item) => {
@@ -489,7 +530,7 @@ export default function VibesPage() {
     const mintedCount = allItems.filter((item) => item.source === 'Minted').length;
     const confessionCount = allItems.filter((item) => item.source === 'Confessions').length;
     return {
-      total: allItems.length,
+      searchable: mintedCount,
       vault: vaultCount,
       minted: mintedCount,
       confessions: confessionCount,
@@ -513,6 +554,38 @@ export default function VibesPage() {
       );
     });
   }, [allItems, activeFilter, search]);
+
+  const visibleItems = useMemo(() => filteredItems.slice(0, visibleCount), [filteredItems, visibleCount]);
+  const hasMoreItems = visibleCount < filteredItems.length;
+
+  useEffect(() => {
+    setVisibleCount(VIBES_BATCH_SIZE);
+  }, [activeFilter, search]);
+
+  useEffect(() => {
+    setVisibleCount((previous) =>
+      Math.min(
+        Math.max(VIBES_BATCH_SIZE, previous),
+        filteredItems.length > 0 ? filteredItems.length : VIBES_BATCH_SIZE,
+      ),
+    );
+  }, [filteredItems.length]);
+
+  useEffect(() => {
+    if (!loadMoreTrigger || !hasMoreItems) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting) return;
+        setVisibleCount((previous) => Math.min(previous + VIBES_BATCH_SIZE, filteredItems.length));
+      },
+      { rootMargin: '240px 0px' },
+    );
+
+    observer.observe(loadMoreTrigger);
+    return () => observer.disconnect();
+  }, [loadMoreTrigger, hasMoreItems, filteredItems.length]);
 
   const filterOptions = ['All', 'Vault', 'Minted', 'Confessions'];
 
@@ -555,8 +628,8 @@ export default function VibesPage() {
           }}
         >
           <div style={customStyles.statCard}>
-            <div style={customStyles.statLabel}>Total Vibes</div>
-            <div style={customStyles.statValue}>{stats.total}</div>
+            <div style={customStyles.statLabel}>Searchable Listings</div>
+            <div style={customStyles.statValue}>{stats.searchable}</div>
           </div>
           <div style={customStyles.statCard}>
             <div style={customStyles.statLabel}>Vault Items</div>
@@ -607,9 +680,26 @@ export default function VibesPage() {
               gridTemplateColumns: isMobile ? '1fr' : customStyles.galleryGrid.gridTemplateColumns,
             }}
           >
-            {filteredItems.map((item) => (
+            {visibleItems.map((item) => (
               <TokenCard key={item.id} item={item} isMobile={isMobile} />
             ))}
+            {hasMoreItems && (
+              <div
+                ref={setLoadMoreTrigger}
+                style={{
+                  gridColumn: '1 / -1',
+                  color: '#787878',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  textAlign: 'center',
+                  padding: isMobile ? '6px 0 2px' : '8px 0 4px',
+                }}
+              >
+                Loading more vibes...
+              </div>
+            )}
           </div>
         )}
       </section>

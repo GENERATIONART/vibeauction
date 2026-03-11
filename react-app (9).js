@@ -7,6 +7,8 @@ import { useVibeStore } from './app/state/vibe-store';
 import NavBar from './app/components/NavBar';
 import { auctionItems } from './lib/auction-items';
 
+const HOME_BATCH_SIZE = 12;
+
 const normalize = (value) =>
   String(value || '')
     .toLowerCase()
@@ -384,6 +386,8 @@ const App = () => {
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [syncNow, setSyncNow] = useState(Date.now());
   const [surprisePressed, setSurprisePressed] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(HOME_BATCH_SIZE);
+  const [loadMoreTrigger, setLoadMoreTrigger] = useState(null);
 
   const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
   const router = useRouter();
@@ -504,24 +508,23 @@ const App = () => {
         : parseCountdownToMs(v.duration),
       absurdityScore: String(v.name || '').length + String(v.manifesto || '').length,
     }));
-    const mintedSlugs = new Set(minted.map((v) => v.slug));
-    const hardcoded = auctionItems
-      .filter((item) => !mintedSlugs.has(item.slug))
-      .map((item) => ({
-        id: String(item.id),
-        slug: item.slug,
-        emoji: item.emoji || '✨',
-        title: item.title,
-        bid: item.bid || 0,
-        timer: item.timer || 'Live',
-        badge: item.badge || 'Live',
-        category: item.category || 'Vibes',
-        imageUrl: null,
-        createdAtMs: Number(item.id) || 0,
-        endingSoonMs: parseCountdownToMs(item.timer),
-        absurdityScore: String(item.title || '').length + String(item.description || '').length,
-      }));
-    return [...minted, ...hardcoded];
+    if (minted.length > 0) {
+      return minted;
+    }
+    return auctionItems.map((item) => ({
+      id: String(item.id),
+      slug: item.slug,
+      emoji: item.emoji || '✨',
+      title: item.title,
+      bid: item.bid || 0,
+      timer: item.timer || 'Live',
+      badge: item.badge || 'Live',
+      category: item.category || 'Vibes',
+      imageUrl: null,
+      createdAtMs: Number(item.id) || 0,
+      endingSoonMs: parseCountdownToMs(item.timer),
+      absurdityScore: String(item.title || '').length + String(item.description || '').length,
+    }));
   }, [mintedVibes]);
 
   const categories = useMemo(() => {
@@ -570,6 +573,38 @@ const App = () => {
     }
     return items;
   }, [filteredItems, activeSort, bidLookup]);
+
+  const visibleItems = useMemo(() => sortedItems.slice(0, visibleCount), [sortedItems, visibleCount]);
+  const hasMoreItems = visibleCount < sortedItems.length;
+
+  useEffect(() => {
+    setVisibleCount(HOME_BATCH_SIZE);
+  }, [activeCategory, activeSort]);
+
+  useEffect(() => {
+    setVisibleCount((previous) =>
+      Math.min(
+        Math.max(HOME_BATCH_SIZE, previous),
+        sortedItems.length > 0 ? sortedItems.length : HOME_BATCH_SIZE,
+      ),
+    );
+  }, [sortedItems.length]);
+
+  useEffect(() => {
+    if (!loadMoreTrigger || !hasMoreItems) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting) return;
+        setVisibleCount((previous) => Math.min(previous + HOME_BATCH_SIZE, sortedItems.length));
+      },
+      { rootMargin: '240px 0px' },
+    );
+
+    observer.observe(loadMoreTrigger);
+    return () => observer.disconnect();
+  }, [loadMoreTrigger, hasMoreItems, sortedItems.length]);
 
   const secondsSinceSync = Number.isFinite(lastSyncedAt)
     ? Math.max(0, Math.floor((syncNow - lastSyncedAt) / 1000))
@@ -850,7 +885,7 @@ const App = () => {
               </Link>
             </div>
           ) : (
-            sortedItems.map((item) => (
+            visibleItems.map((item) => (
               <AuctionCard
                 key={item.id}
                 item={item}
@@ -860,6 +895,23 @@ const App = () => {
                 isSmallMobile={isSmallMobile}
               />
             ))
+          )}
+          {hasMoreItems && (
+            <div
+              ref={setLoadMoreTrigger}
+              style={{
+                gridColumn: '1 / -1',
+                color: '#787878',
+                fontSize: '11px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                textAlign: 'center',
+                padding: isMobile ? '6px 0 2px' : '8px 0 4px',
+              }}
+            >
+              Loading more vibes...
+            </div>
           )}
         </main>
       </div>
