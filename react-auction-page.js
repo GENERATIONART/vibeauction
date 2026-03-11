@@ -62,6 +62,19 @@ const splitTitle = (title) => {
 
 const makeInitialBidHistory = () => [];
 
+const getTimerFromVibe = (vibe) => {
+  if (vibe?.endTime) {
+    const remaining = new Date(vibe.endTime).getTime() - Date.now();
+    if (remaining <= 0) return { hours: 0, mins: 0, secs: 0 };
+    const totalSecs = Math.floor(remaining / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    return { hours, mins, secs };
+  }
+  return parseTimer(vibe?.timer);
+};
+
 const customStyles = {
   body: {
     backgroundColor: '#0D0D0D',
@@ -523,7 +536,7 @@ const App = ({ vibe }) => {
   const [showBuySuccess, setShowBuySuccess] = useState(false);
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
   const [increment, setIncrement] = useState(0);
-  const [timer, setTimer] = useState(() => parseTimer(selectedVibe?.timer));
+  const [timer, setTimer] = useState(() => getTimerFromVibe(selectedVibe));
   const [error, setError] = useState('');
   const [bids, setBids] = useState(() => makeInitialBidHistory(baseBid));
 
@@ -541,11 +554,20 @@ const App = ({ vibe }) => {
   useEffect(() => {
     setCurrentBid(baseBid);
     setIncrement(0);
-    setTimer(parseTimer(selectedVibe?.timer));
-    setBids(makeInitialBidHistory(baseBid));
+    setTimer(getTimerFromVibe(selectedVibe));
+    setBids([]);
     setError('');
     setShowBidSuccess(false);
-  }, [selectedVibe?.slug, selectedVibe?.timer, baseBid]);
+
+    // Load existing bid history from Supabase
+    const vibeId = selectedVibe?.slug;
+    if (vibeId) {
+      fetch(`/api/auction/bids?vibeId=${encodeURIComponent(vibeId)}`)
+        .then((r) => r.json())
+        .then(({ bids }) => { if (Array.isArray(bids) && bids.length > 0) setBids(bids); })
+        .catch(() => {});
+    }
+  }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -583,8 +605,10 @@ const App = ({ vibe }) => {
     setError('');
   };
 
+  const auctionEnded = timer.hours === 0 && timer.mins === 0 && timer.secs === 0;
+
   const onPlaceBid = async () => {
-    if (placingBid) return;
+    if (placingBid || auctionEnded) return;
     const bidAmount = currentBid + (increment > 0 ? increment : 50);
 
     if (balance < bidAmount) {
@@ -814,6 +838,11 @@ const App = ({ vibe }) => {
                 }}
               >
                 This is your listing — you can't bid on your own vibe
+              </div>
+            ) : auctionEnded ? (
+              <div style={{ background: '#1A0A0A', border: '2px solid #FF0055', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
+                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', color: '#FF0055', letterSpacing: '1px' }}>AUCTION ENDED</div>
+                <div style={{ fontSize: '13px', color: '#888888', marginTop: '6px' }}>This auction has closed. Check your Vault if you won.</div>
               </div>
             ) : (
               <div style={customStyles.bidControls}>

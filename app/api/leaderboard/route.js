@@ -26,6 +26,11 @@ export async function GET(request) {
   if (cutoff) bidsQuery = bidsQuery.gte('created_at', cutoff);
   const { data: bidRows } = await bidsQuery;
 
+  // Fetch vault_items for actual wins per user
+  let winsQuery = sb.from('vault_items').select('user_id');
+  if (cutoff) winsQuery = winsQuery.gte('created_at', cutoff);
+  const { data: winRows } = await winsQuery;
+
   // Fetch all profiles for username lookup
   const { data: profiles } = await sb.from('profiles').select('id, username');
 
@@ -33,19 +38,25 @@ export async function GET(request) {
   const spendMap = {};
   for (const row of bidRows || []) {
     if (!row.user_id) continue;
-    if (!spendMap[row.user_id]) spendMap[row.user_id] = { total: 0, count: 0 };
+    if (!spendMap[row.user_id]) spendMap[row.user_id] = { total: 0 };
     spendMap[row.user_id].total += Number(row.amount) || 0;
-    spendMap[row.user_id].count += 1;
+  }
+
+  // Count actual vault wins per user
+  const winsMap = {};
+  for (const row of winRows || []) {
+    if (!row.user_id) continue;
+    winsMap[row.user_id] = (winsMap[row.user_id] || 0) + 1;
   }
 
   const profileMap = {};
   for (const p of profiles || []) profileMap[p.id] = p.username;
 
   const topSpenders = Object.entries(spendMap)
-    .map(([userId, { total, count }]) => ({
+    .map(([userId, { total }]) => ({
       username: profileMap[userId] ? `@${profileMap[userId]}` : 'Anonymous',
       totalSpent: total,
-      vibesWon: count,
+      vibesWon: winsMap[userId] || 0,
     }))
     .filter((s) => s.totalSpent > 0)
     .sort((a, b) => b.totalSpent - a.totalSpent)

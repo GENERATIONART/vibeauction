@@ -67,9 +67,12 @@ export default async function Page({ params }) {
     buyNowPrice: minted.buyNowPrice ?? null,
     imageUrl: minted.imageUrl ?? null,
     timer: minted.duration,
+    endTime: minted.endTime ?? null,
     badge: 'New',
     category: minted.category,
     description: minted.manifesto,
+    author: minted.author ?? null,
+    listedBy: minted.listedBy ?? null,
   };
 
   return <AuctionPage vibe={vibe} />;
