@@ -441,6 +441,7 @@ const App = () => {
   const [isScreenShaking, setIsScreenShaking] = useState(false);
   const prevBidActivityRef = useRef(null);
   const bidBaselineReadyRef = useRef(false);
+  const latestBidSeenRef = useRef(0);
 
   const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
   const router = useRouter();
@@ -533,7 +534,7 @@ const App = () => {
       if (document.visibilityState === 'visible') {
         syncLatestVibes();
       }
-    }, 20000);
+    }, 5000);
 
     return () => {
       window.removeEventListener('focus', onFocus);
@@ -565,11 +566,25 @@ const App = () => {
     return lookup;
   }, [activeBids]);
 
+  const latestBidActivity = useMemo(() => {
+    let latestKey = '';
+    let latestUpdatedAt = 0;
+    Object.entries(bidActivityLookup).forEach(([key, value]) => {
+      const updatedAtMs = safeNumber(value?.updatedAtMs, 0);
+      if (updatedAtMs > latestUpdatedAt) {
+        latestUpdatedAt = updatedAtMs;
+        latestKey = key;
+      }
+    });
+    return { key: latestKey, updatedAtMs: latestUpdatedAt };
+  }, [bidActivityLookup]);
+
   useEffect(() => {
     const previous = prevBidActivityRef.current;
     if (!bidBaselineReadyRef.current) {
       prevBidActivityRef.current = bidActivityLookup;
       bidBaselineReadyRef.current = true;
+      latestBidSeenRef.current = safeNumber(latestBidActivity.updatedAtMs, 0);
       return;
     }
 
@@ -584,8 +599,14 @@ const App = () => {
       if (isNewBidSignal && nextAmount > 0) bumpedKeys.push(key);
     }
 
+    const latestUpdatedAt = safeNumber(latestBidActivity.updatedAtMs, 0);
+    const hasGlobalNewBid = latestUpdatedAt > safeNumber(latestBidSeenRef.current, 0);
+    if (hasGlobalNewBid && latestBidActivity.key && !bumpedKeys.includes(latestBidActivity.key)) {
+      bumpedKeys.push(latestBidActivity.key);
+    }
+
     if (bumpedKeys.length > 0) {
-      const eventAtBase = Date.now();
+      const eventAtBase = Math.max(Date.now(), latestUpdatedAt);
       setShakeTokensById((previousTokens) => {
         const nextTokens = { ...previousTokens };
         for (const key of bumpedKeys) {
@@ -604,7 +625,8 @@ const App = () => {
     }
 
     prevBidActivityRef.current = bidActivityLookup;
-  }, [bidActivityLookup]);
+    latestBidSeenRef.current = Math.max(safeNumber(latestBidSeenRef.current, 0), latestUpdatedAt);
+  }, [bidActivityLookup, latestBidActivity]);
 
   useEffect(() => {
     if (!screenShakeToken) return;
@@ -678,17 +700,19 @@ const App = () => {
       return Number.isFinite(fallback) ? fallback : 0;
     };
 
-    const resolveRecentBump = (item) => {
+    const resolveRecentActivity = (item) => {
       const key = normalize(item.slug || item.title);
-      return safeNumber(bumpedAtById[key], 0);
+      const clientBump = safeNumber(bumpedAtById[key], 0);
+      const serverBidAt = safeNumber(bidActivityLookup[key]?.updatedAtMs, 0);
+      return Math.max(clientBump, serverBidAt);
     };
 
-    const compareByRecentBump = (a, b) => resolveRecentBump(b) - resolveRecentBump(a);
+    const compareByRecentActivity = (a, b) => resolveRecentActivity(b) - resolveRecentActivity(a);
 
     const items = [...filteredItems];
     if (activeSort === 'Trending') {
       items.sort((a, b) => {
-        const activityDiff = compareByRecentBump(a, b);
+        const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
         const liveBidDiff = resolveLiveBid(b) - resolveLiveBid(a);
         if (liveBidDiff !== 0) return liveBidDiff;
@@ -698,7 +722,7 @@ const App = () => {
     }
     if (activeSort === 'Highest Aura') {
       items.sort((a, b) => {
-        const activityDiff = compareByRecentBump(a, b);
+        const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
         return resolveLiveBid(b) - resolveLiveBid(a);
       });
@@ -706,7 +730,7 @@ const App = () => {
     }
     if (activeSort === 'Ending Soon') {
       items.sort((a, b) => {
-        const activityDiff = compareByRecentBump(a, b);
+        const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
         return (a.endingSoonMs || Number.MAX_SAFE_INTEGER) - (b.endingSoonMs || Number.MAX_SAFE_INTEGER);
       });
@@ -714,7 +738,7 @@ const App = () => {
     }
     if (activeSort === 'Newest') {
       items.sort((a, b) => {
-        const activityDiff = compareByRecentBump(a, b);
+        const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
         return (b.createdAtMs || 0) - (a.createdAtMs || 0);
       });
@@ -722,14 +746,14 @@ const App = () => {
     }
     if (activeSort === 'Most Absurd') {
       items.sort((a, b) => {
-        const activityDiff = compareByRecentBump(a, b);
+        const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
         return (b.absurdityScore || 0) - (a.absurdityScore || 0);
       });
       return items;
     }
     items.sort((a, b) => {
-      const activityDiff = compareByRecentBump(a, b);
+      const activityDiff = compareByRecentActivity(a, b);
       if (activityDiff !== 0) return activityDiff;
       return resolveLiveBid(b) - resolveLiveBid(a);
     });
