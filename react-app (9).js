@@ -764,7 +764,7 @@ const App = () => {
       title: v.name || 'Untitled Vibe',
       bid: v.startingPrice || 0,
       timer: 'Live',
-      badge: 'Live',
+      badge: v.endTime && new Date(v.endTime).getTime() <= Date.now() ? null : 'Live',
       category: v.category || 'Vibes',
       imageUrl: v.imageUrl ?? null,
       createdAtMs: v.createdAt ? new Date(v.createdAt).getTime() : 0,
