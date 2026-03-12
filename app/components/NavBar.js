@@ -7,7 +7,7 @@ import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
 
 const NAV_ITEMS = [
-  { label: 'Browse Vibes', href: '/' },
+  { label: 'Live Feed', href: '/' },
   { label: 'Auctions', href: '/auctions' },
   { label: 'Markets', href: '/markets' },
   { label: 'Vibes', href: '/vibes' },
