@@ -91,6 +91,7 @@ const DEFAULT_FORM = {
   noLabel: 'No',
   closesAt: toLocalDateTimeValue(Date.now() + 24 * 60 * 60 * 1000),
   resolvesAt: '',
+  vibeId: '',
 };
 
 const styles = {
@@ -321,6 +322,7 @@ export default function MarketsPage() {
   const [filter, setFilter] = useState('all');
   const [markets, setMarkets] = useState([]);
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [vibeOptions, setVibeOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -406,6 +408,37 @@ export default function MarketsPage() {
     loadMarkets();
   }, [loadMarkets]);
 
+  useEffect(() => {
+    let active = true;
+    fetch('/api/state', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error('Failed to load vibes'))))
+      .then((data) => {
+        if (!active) return;
+        const minted = Array.isArray(data?.state?.mintedVibes) ? data.state.mintedVibes : [];
+        setVibeOptions(minted);
+        if (minted.length > 0) {
+          setForm((previous) => {
+            if (previous.vibeId) return previous;
+            return { ...previous, vibeId: minted[0].id || minted[0].slug || '' };
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!form.vibeId || vibeOptions.length === 0) return;
+    const vibe = vibeOptions.find(
+      (option) => option.id === form.vibeId || option.slug === form.vibeId,
+    );
+    if (vibe?.category && vibe.category !== form.category) {
+      setForm((previous) => ({ ...previous, category: vibe.category }));
+    }
+  }, [form.vibeId, form.category, vibeOptions]);
+
   const marketSummary = useMemo(() => {
     const openCount = markets.filter((market) => market.state === 'open').length;
     const resolvedCount = markets.filter((market) => market.state === 'resolved').length;
@@ -429,6 +462,10 @@ export default function MarketsPage() {
 
     if (!user) {
       setError('Sign in to create a market.');
+      return;
+    }
+    if (!form.vibeId) {
+      setError('Select a vibe for this market.');
       return;
     }
 
@@ -462,7 +499,13 @@ export default function MarketsPage() {
       }
 
       setSuccess('Market created. First trader now sets opening probability.');
-      setForm(DEFAULT_FORM);
+      setForm(() => {
+        const nextForm = { ...DEFAULT_FORM };
+        if (vibeOptions.length > 0) {
+          nextForm.vibeId = vibeOptions[0].id || vibeOptions[0].slug || '';
+        }
+        return nextForm;
+      });
       await loadMarkets();
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : 'Failed to create market');
@@ -672,6 +715,20 @@ export default function MarketsPage() {
               onChange={(event) => setFormField('description', event.target.value)}
               placeholder="Resolution source and exact criteria."
             />
+
+            <label style={styles.label}>Vibe</label>
+            <select
+              style={{ ...styles.input, appearance: 'none' }}
+              value={form.vibeId}
+              onChange={(event) => setFormField('vibeId', event.target.value)}
+            >
+              <option value="">Select a vibe</option>
+              {vibeOptions.map((vibe) => (
+                <option key={vibe.id} value={vibe.id}>
+                  {vibe.name || vibe.slug || 'Unnamed vibe'}
+                </option>
+              ))}
+            </select>
 
             <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
               <div style={{ minWidth: 0 }}>

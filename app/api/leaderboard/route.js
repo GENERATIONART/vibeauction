@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { listPredictionLeaderboard } from '../../../lib/server/prediction-markets-db.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,8 +85,9 @@ export async function GET(request) {
       price: v.buy_now_price || v.starting_price || 0,
     }));
 
+  const { leaderboard: predictionLeaderboard } = await listPredictionLeaderboard({ limit: 12 });
   return NextResponse.json(
-    { topSpenders, topVibes },
+    { topSpenders, topVibes, predictionLeaderboard },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }
