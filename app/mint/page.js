@@ -8,17 +8,14 @@ import { useAuth } from '../state/auth-store';
 import NavBar from '../components/NavBar';
 
 const categoryOptions = [
-  'Feelings',
-  'Permissions',
-  'Moments',
-  'Powers',
-  'Excuses',
-  'Confessions',
+  { value: 'Auto', label: 'Vibe (AI Picks Category)' },
+  { value: 'Confessions', label: 'Confession' },
 ];
 
 const durationOptions = ['12 Hours', '24 Hours', '3 Days', '7 Days'];
 
 const defaultTitleByCategory = {
+  Auto: 'The Exact Moment You Realize You Should Not Have Sent That Text',
   Feelings: 'Flirty Eye Contact at a Red Light That Lasted Too Long',
   Permissions: 'Permission to Leave Because Your Stomach Growled',
   Moments: 'Accidentally Moaning at Pasta in Public',
@@ -491,7 +488,7 @@ export default function MintPage() {
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [formData, setFormData] = useState({
     itemName: '',
-    category: 'Feelings',
+    category: 'Auto',
     startingPrice: '100',
     buyItNow: '',
     duration: '24 Hours',
@@ -698,7 +695,7 @@ export default function MintPage() {
       };
       const mintResult = await mintVibe({
         name: cleanedName,
-        category: formData.category,
+        category: isConfession ? 'Confessions' : 'Auto',
         startingPrice: numericPrice,
         buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
         duration: formData.duration,
@@ -719,7 +716,7 @@ export default function MintPage() {
 
       setMintStage('finalizing');
       setSubmitted(true);
-      setSuccess(`Vibe listed in ${formData.category}.`);
+      setSuccess(`Vibe listed in ${minted.category || 'AI category'}.`);
 
       if (minted.slug) {
         setTimeout(() => router.push(`/auction/${minted.slug}`), 1200);
@@ -742,7 +739,7 @@ export default function MintPage() {
     }
   };
 
-  const previewTitle = formData.itemName || defaultTitleByCategory[formData.category];
+  const previewTitle = formData.itemName || defaultTitleByCategory[formData.category] || defaultTitleByCategory.Auto;
   const previewDetails =
     formData.details ||
     (isConfession
@@ -782,7 +779,7 @@ export default function MintPage() {
                 display: isMobile ? 'inline-block' : customStyles.highlightTag.display,
               }}
             >
-              {formData.category.toUpperCase()}
+              {isConfession ? 'CONFESSION' : 'AI-CATEGORIZED VIBE'}
             </span>
           </h1>
 
@@ -848,14 +845,19 @@ export default function MintPage() {
             </div>
 
             <div style={customStyles.inputGroup}>
-              <label style={customStyles.label}>Category</label>
+              <label style={customStyles.label}>Listing Type</label>
               <select style={customStyles.selectField} value={formData.category} onChange={onCategoryChange}>
                 {categoryOptions.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.value} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
+              {!isConfession && (
+                <span style={customStyles.helperText}>
+                  AI will auto-assign one of the expanded categories when you mint.
+                </span>
+              )}
             </div>
 
             {!isConfession && (
@@ -1058,7 +1060,7 @@ export default function MintPage() {
             <div style={customStyles.previewLabel}>Live Preview</div>
 
             <article style={customStyles.card}>
-              <div style={customStyles.liveBadge}>{formData.category}</div>
+              <div style={customStyles.liveBadge}>{isConfession ? 'Confessions' : 'AI Category'}</div>
               <div style={customStyles.cardImageArea}>
                 {!uploadedImage && <div style={customStyles.patternDots}></div>}
                 {uploadedImage ? (
