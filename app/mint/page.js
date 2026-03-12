@@ -34,6 +34,15 @@ const durationMap = {
   '7 Days': '6d 23h',
 };
 
+const MINT_STAGE_ORDER = ['vibing', 'construction', 'generating', 'finalizing'];
+
+const MINT_STAGE_LABELS = {
+  vibing: 'Vibing',
+  construction: 'Construction Humor',
+  generating: 'Generating Image',
+  finalizing: 'Packaging Auction Card',
+};
+
 const customStyles = {
   root: {
     background: '#0D0D0D',
@@ -414,6 +423,58 @@ const customStyles = {
     padding: '14px',
     minHeight: '54px',
   },
+  loadingPanel: {
+    marginTop: '12px',
+    border: '1px solid rgba(200,255,0,0.35)',
+    background: 'linear-gradient(180deg, rgba(200,255,0,0.08), rgba(20,20,20,0.9))',
+    padding: '12px',
+  },
+  loadingTitle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '14px',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase',
+    color: '#C8FF00',
+    marginBottom: '8px',
+  },
+  loadingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: '12px',
+    color: '#8D8D8D',
+    marginBottom: '5px',
+    textTransform: 'uppercase',
+    fontWeight: 700,
+  },
+  loadingRowActive: {
+    color: '#E9FF9A',
+  },
+  loadingDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '999px',
+    background: '#2F2F2F',
+    border: '1px solid #555555',
+    flexShrink: 0,
+    marginRight: '8px',
+  },
+  loadingDotActive: {
+    background: '#C8FF00',
+    border: '1px solid #C8FF00',
+    boxShadow: '0 0 10px rgba(200,255,0,0.55)',
+  },
+  loadingTrack: {
+    marginTop: '8px',
+    height: '4px',
+    background: '#252525',
+    overflow: 'hidden',
+  },
+  loadingBar: {
+    height: '100%',
+    background: '#C8FF00',
+    transition: 'width 0.35s ease',
+  },
 };
 
 const truncate = (value, max) => {
@@ -445,6 +506,7 @@ export default function MintPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [mintStage, setMintStage] = useState('vibing');
 
   const fileInputRef = useRef(null);
 
@@ -541,7 +603,9 @@ export default function MintPage() {
 
     setError('');
     setSuccess('');
+    setMintStage('vibing');
     setSubmitting(true);
+    let generationEscalationTimeout = null;
 
     try {
       if (isConfession) {
@@ -609,6 +673,29 @@ export default function MintPage() {
       }
 
       const buyNowNumeric = Number(String(formData.buyItNow || '').replace(/,/g, '').trim());
+      const updateMintStageFromEvent = (eventName) => {
+        if (eventName === 'auth' || eventName === 'auth_retry') {
+          setMintStage('vibing');
+          return;
+        }
+        if (eventName === 'request' || eventName === 'request_retry') {
+          setMintStage('construction');
+          if (generationEscalationTimeout) clearTimeout(generationEscalationTimeout);
+          // The request stage includes planner + image generation; escalate after a short wait.
+          generationEscalationTimeout = setTimeout(() => {
+            setMintStage((current) => (current === 'construction' ? 'generating' : current));
+          }, 1400);
+          return;
+        }
+        if (eventName === 'hydrate' || eventName === 'done') {
+          if (generationEscalationTimeout) clearTimeout(generationEscalationTimeout);
+          setMintStage('finalizing');
+          return;
+        }
+        if (eventName === 'failed') {
+          if (generationEscalationTimeout) clearTimeout(generationEscalationTimeout);
+        }
+      };
       const mintResult = await mintVibe({
         name: cleanedName,
         category: formData.category,
@@ -619,6 +706,8 @@ export default function MintPage() {
         hasImage: Boolean(uploadedImage),
         author: profile?.username ?? null,
         listedBy: user?.id ?? null,
+      }, {
+        onStage: updateMintStageFromEvent,
       });
 
       if (!mintResult?.mintedVibe) {
@@ -628,6 +717,7 @@ export default function MintPage() {
 
       const minted = mintResult.mintedVibe;
 
+      setMintStage('finalizing');
       setSubmitted(true);
       setSuccess(`Vibe listed in ${formData.category}.`);
 
@@ -647,6 +737,7 @@ export default function MintPage() {
         duration: '24 Hours',
       }));
     } finally {
+      if (generationEscalationTimeout) clearTimeout(generationEscalationTimeout);
       setSubmitting(false);
     }
   };
@@ -886,7 +977,7 @@ export default function MintPage() {
                 {!isAuthed
                   ? 'Sign In To Mint'
                   : submitting
-                  ? 'Submitting...'
+                  ? `${MINT_STAGE_LABELS[mintStage] || 'Submitting'}...`
                   : submitted
                   ? isConfession
                     ? 'Confession Minted ✓'
@@ -895,6 +986,45 @@ export default function MintPage() {
                     ? 'Mint Confession'
                     : 'List Vibe for Auction'}
               </button>
+
+              {submitting && !isConfession && (
+                <div style={customStyles.loadingPanel}>
+                  <div style={customStyles.loadingTitle}>Cooking Your Vibe</div>
+                  {MINT_STAGE_ORDER.map((stageKey, index) => {
+                    const currentIndex = Math.max(0, MINT_STAGE_ORDER.indexOf(mintStage));
+                    const isActive = currentIndex === index;
+                    const isDone = currentIndex > index;
+                    return (
+                      <div
+                        key={stageKey}
+                        style={{
+                          ...customStyles.loadingRow,
+                          ...(isActive || isDone ? customStyles.loadingRowActive : {}),
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                          <span
+                            style={{
+                              ...customStyles.loadingDot,
+                              ...(isActive || isDone ? customStyles.loadingDotActive : {}),
+                            }}
+                          />
+                          {MINT_STAGE_LABELS[stageKey]}
+                        </span>
+                        <span>{isDone ? 'DONE' : isActive ? 'IN PROGRESS' : 'PENDING'}</span>
+                      </div>
+                    );
+                  })}
+                  <div style={customStyles.loadingTrack}>
+                    <div
+                      style={{
+                        ...customStyles.loadingBar,
+                        width: `${((Math.max(0, MINT_STAGE_ORDER.indexOf(mintStage)) + 1) / MINT_STAGE_ORDER.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {!isAuthed && (
                 <div

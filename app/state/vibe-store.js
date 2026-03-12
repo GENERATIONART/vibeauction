@@ -498,7 +498,8 @@ export function VibeStoreProvider({ children }) {
   );
 
   const mintVibe = useCallback(
-    async (payload) => {
+    async (payload, options = {}) => {
+      const onStage = typeof options?.onStage === 'function' ? options.onStage : null;
       try {
         const sendMintRequest = async (token) =>
           apiRequest('/api/state/mint-vibe', {
@@ -507,14 +508,18 @@ export function VibeStoreProvider({ children }) {
             ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
           });
 
+        onStage?.('auth');
         let token = await getAccessToken();
+        onStage?.('request');
         let data = await sendMintRequest(token);
         let reason = data?.reason || data?.saveReason || null;
 
         if (!data?.mintedVibe && ['auth_required', 'auth_invalid_token', 'auth_lookup_failed'].includes(String(reason || ''))) {
+          onStage?.('auth_retry');
           const refreshedToken = await getAccessToken({ forceRefresh: true });
           if (refreshedToken && refreshedToken !== token) {
             token = refreshedToken;
+            onStage?.('request_retry');
             data = await sendMintRequest(token);
             reason = data?.reason || data?.saveReason || null;
           }
@@ -523,15 +528,18 @@ export function VibeStoreProvider({ children }) {
         if (!data?.mintedVibe) {
           const message = getMintFailureMessage(reason);
           setError(message);
+          onStage?.('failed');
           return {
             mintedVibe: null,
             reason,
             message,
           };
         }
+        onStage?.('hydrate');
         const merged = await hydrateStateWithClientVibes(data.state, { force: true });
         applyState(merged);
         setError('');
+        onStage?.('done');
         return {
           mintedVibe: data.mintedVibe,
           reason: null,
@@ -540,6 +548,7 @@ export function VibeStoreProvider({ children }) {
       } catch (mintError) {
         const message = mintError instanceof Error ? mintError.message : 'Failed to mint vibe';
         setError(message);
+        onStage?.('failed');
         return {
           mintedVibe: null,
           reason: 'request_failed',
