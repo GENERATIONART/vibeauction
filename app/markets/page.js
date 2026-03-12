@@ -411,16 +411,17 @@ export default function MarketsPage() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/state', { cache: 'no-store' })
+    fetch('/api/auctions/history?status=live&limit=200', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error('Failed to load vibes'))))
       .then((data) => {
         if (!active) return;
-        const minted = Array.isArray(data?.state?.mintedVibes) ? data.state.mintedVibes : [];
-        setVibeOptions(minted);
-        if (minted.length > 0) {
+        const auctions = Array.isArray(data?.auctions) ? data.auctions : [];
+        const vibes = auctions.map((a) => ({ id: a.id, slug: a.slug, name: a.name, category: a.category }));
+        setVibeOptions(vibes);
+        if (vibes.length > 0) {
           setForm((previous) => {
             if (previous.vibeId) return previous;
-            return { ...previous, vibeId: minted[0].id || minted[0].slug || '' };
+            return { ...previous, vibeId: vibes[0].id || vibes[0].slug || '' };
           });
         }
       })

@@ -687,6 +687,15 @@ const App = () => {
       prevBidActivityRef.current = bidActivityLookup;
       bidBaselineReadyRef.current = true;
       latestBidSeenRef.current = safeNumber(latestBidActivity.updatedAtMs, 0);
+      const initialBumps = {};
+      for (const [key, value] of Object.entries(bidActivityLookup)) {
+        if (safeNumber(value?.updatedAtMs, 0) > 0) {
+          initialBumps[key] = value.updatedAtMs;
+        }
+      }
+      if (Object.keys(initialBumps).length > 0) {
+        setBumpedAtById(initialBumps);
+      }
       return;
     }
 

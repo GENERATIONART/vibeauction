@@ -1032,6 +1032,7 @@ const App = ({ vibe }) => {
           body: {
             market: {
               id: vibeMarketId,
+              vibeId: selectedVibe?.slug || selectedVibe?.id || '',
               type: 'price_target',
               category: 'Vibe Auctions',
               title: `Will "${selectedVibe?.title || 'this vibe'}" settle above ${threshold.toLocaleString()} AURA?`,
@@ -1472,6 +1473,21 @@ const App = ({ vibe }) => {
             >
               {displayBid.toLocaleString()} AURA
             </div>
+            {topBidUser && (
+              <div
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: '#888888',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginTop: '-8px',
+                  marginBottom: '14px',
+                }}
+              >
+                Leading: <span style={{ color: '#C8FF00' }}>{topBidUser}</span>
+              </div>
+            )}
 
             <div style={customStyles.panelLabel}>Auction Ends In</div>
             <Timer hours={timer.hours} mins={timer.mins} secs={timer.secs} />
