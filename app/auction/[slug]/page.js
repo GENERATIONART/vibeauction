@@ -66,7 +66,7 @@ export default async function Page({ params }) {
     imageUrl: minted.imageUrl ?? null,
     timer: minted.duration,
     endTime: minted.endTime ?? null,
-    badge: 'New',
+    badge: minted.endTime && new Date(minted.endTime).getTime() <= Date.now() ? null : 'New',
     category: minted.category,
     description: minted.manifesto,
     author: minted.author ?? null,
