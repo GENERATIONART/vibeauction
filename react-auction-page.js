@@ -853,6 +853,7 @@ const App = ({ vibe }) => {
     const vibeId = selectedVibe?.slug;
     const vibeIdAlt = selectedVibe?.id;
     const vibeName = selectedVibe?.title || selectedVibe?.name;
+    const fallbackBid = activeBids.find((entry) => normalize(entry?.id || entry?.name) === normalize(vibeId));
     if (!vibeId) return;
 
     try {
@@ -862,19 +863,50 @@ const App = ({ vibe }) => {
       const response = await fetch(`/api/auction/bids?${params.toString()}`, { cache: 'no-store' });
       const payload = await response.json();
       const incomingBids = Array.isArray(payload?.bids) ? payload.bids : [];
-      setBids(incomingBids);
-
       const resolvedTop = resolveTopBid(payload?.topBid, incomingBids);
-      setTopBid(resolvedTop);
+      const fallbackAmount = safeBid(fallbackBid?.amount, Number.NaN);
+      const fallbackTop =
+        Number.isFinite(fallbackAmount) && fallbackAmount > 0
+          ? {
+              id: `fallback-${vibeId}`,
+              userId: null,
+              user: 'Live bidder',
+              amount: fallbackAmount,
+              createdAt: new Date().toISOString(),
+              time: 'Now',
+            }
+          : null;
+      const nextTop = resolvedTop || fallbackTop;
+      const nextBids =
+        incomingBids.length > 0
+          ? incomingBids
+          : nextTop
+            ? [nextTop]
+            : [];
+      setBids(nextBids);
+      setTopBid(nextTop);
 
-      const topAmount = safeBid(resolvedTop?.amount, Number.NaN);
+      const topAmount = safeBid(nextTop?.amount, Number.NaN);
       if (Number.isFinite(topAmount)) {
         setCurrentBid((previous) => Math.max(previous, topAmount));
       }
     } catch {
-      // Keep the existing UI state when bid-history refresh fails.
+      const fallbackAmount = safeBid(fallbackBid?.amount, Number.NaN);
+      if (Number.isFinite(fallbackAmount) && fallbackAmount > 0) {
+        const fallbackTop = {
+          id: `fallback-${vibeId}`,
+          userId: null,
+          user: 'Live bidder',
+          amount: fallbackAmount,
+          createdAt: new Date().toISOString(),
+          time: 'Now',
+        };
+        setBids([fallbackTop]);
+        setTopBid(fallbackTop);
+        setCurrentBid((previous) => Math.max(previous, fallbackAmount));
+      }
     }
-  }, [selectedVibe?.slug, selectedVibe?.id]);
+  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title, selectedVibe?.name, activeBids]);
 
   const vibeMarketId = getVibeMarketId(selectedVibe);
 

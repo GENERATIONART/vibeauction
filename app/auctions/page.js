@@ -352,7 +352,7 @@ export default function AuctionsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auctions/history?status=all&limit=300', { cache: 'no-store' });
+      const res = await fetch('/api/auctions/history?status=all&limit=1000', { cache: 'no-store' });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || 'Failed to load auctions');
       setAllAuctions(Array.isArray(payload?.auctions) ? payload.auctions : []);
