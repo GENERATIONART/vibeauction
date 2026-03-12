@@ -445,7 +445,8 @@ export default function MarketsPage() {
     const openCount = markets.filter((market) => market.state === 'open').length;
     const resolvedCount = markets.filter((market) => market.state === 'resolved').length;
     const totalPool = markets.reduce((sum, market) => sum + safeNumber(market.totalPool, 0), 0);
-    return { openCount, resolvedCount, totalPool };
+    const avgPool = markets.length > 0 ? Math.round(totalPool / markets.length) : 0;
+    return { openCount, resolvedCount, totalPool, avgPool };
   }, [markets]);
 
   const setFormField = (key, value) => {
@@ -731,6 +732,15 @@ export default function MarketsPage() {
                 </option>
               ))}
             </select>
+            <div style={{ fontSize: '11px', color: '#666666', marginBottom: '10px', lineHeight: 1.5 }}>
+              Markets auto-resolve when the linked auction settles or ends. Oracle: Auction result (checked every 5 min).
+            </div>
+            <label style={styles.label}>Resolution basis</label>
+            <input
+              style={{ ...styles.input, color: '#777777', cursor: 'default' }}
+              value="Oracle: Linked auction result (vault settlement)"
+              readOnly
+            />
 
             <div style={{ ...styles.row2, gridTemplateColumns: isPhone ? '1fr' : styles.row2.gridTemplateColumns }}>
               <div style={{ minWidth: 0 }}>
@@ -823,7 +833,7 @@ export default function MarketsPage() {
           >
             <h2 style={{ ...styles.title, fontSize: isPhone ? '21px' : '24px', marginBottom: 0 }}>Live Board</h2>
             <div style={{ fontSize: '12px', color: '#A2A2A2', fontWeight: 700 }}>
-              {marketSummary.openCount} open · {marketSummary.resolvedCount} resolved · {marketSummary.totalPool.toLocaleString()} AURA pooled
+              {marketSummary.openCount} open · {marketSummary.resolvedCount} resolved · {marketSummary.totalPool.toLocaleString()} AURA pooled · avg {marketSummary.avgPool.toLocaleString()} AURA/market
             </div>
           </div>
 
@@ -936,6 +946,13 @@ export default function MarketsPage() {
                         {market.state}
                       </span>
                     </div>
+                    {market.state === 'open' && (
+                      <div style={{ ...styles.miniText, color: '#666666', marginBottom: '6px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <span>⚡ Oracle: Auction result</span>
+                        <span>·</span>
+                        <span>Auto-resolves {new Date(market.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    )}
                     <p style={{ ...styles.sub, marginBottom: '10px' }}>{market.description || 'No description provided.'}</p>
 
                     <div style={styles.probabilityWrap}>
@@ -1041,32 +1058,72 @@ export default function MarketsPage() {
                     )}
 
                     {isResolved && (
-                      <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          style={{ ...styles.btnGhost, borderColor: '#3F3F3F' }}
-                          disabled={busy || Boolean(market.myClaim)}
-                          onClick={() => onClaim(market.id)}
+                      <div style={{ marginTop: '10px' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexWrap: 'wrap',
+                            marginBottom: '6px',
+                          }}
                         >
-                          {market.myClaim ? 'Claimed' : 'Claim AURA'}
-                        </button>
-                        <span style={{ ...styles.miniText, alignSelf: 'center' }}>
-                          Outcome: {(market.resolvedOutcome || market.state).toUpperCase()}
-                        </span>
+                          <span
+                            style={{
+                              ...styles.badge,
+                              background: 'rgba(83,255,138,0.12)',
+                              color: '#A5FFC3',
+                              borderColor: 'rgba(83,255,138,0.3)',
+                              fontSize: '11px',
+                            }}
+                          >
+                            ✓ AUTO-RESOLVED
+                          </span>
+                          <span style={{ ...styles.miniText, alignSelf: 'center' }}>
+                            Outcome: <strong style={{ color: '#FFFFFF' }}>{(market.resolvedOutcome || market.state).toUpperCase()}</strong>
+                          </span>
+                        </div>
+                        {market.myClaim ? (
+                          <div
+                            style={{
+                              background: 'rgba(83,255,138,0.08)',
+                              border: '1px solid rgba(83,255,138,0.2)',
+                              borderRadius: '8px',
+                              padding: '10px 12px',
+                              fontSize: '13px',
+                              color: '#A5FFC3',
+                              fontWeight: 700,
+                            }}
+                          >
+                            ✓ {safeNumber(market.myClaim.amount, 0).toLocaleString()} AURA paid to your balance
+                          </div>
+                        ) : market.myPosition ? (
+                          <div style={{ ...styles.miniText, color: '#888888' }}>
+                            Your position is being processed — check your balance shortly.
+                          </div>
+                        ) : null}
                       </div>
                     )}
 
                     {canResolve && (
-                      <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button type="button" style={styles.yesButton} disabled={busy} onClick={() => onResolve(market.id, 'yes')}>
-                          Resolve YES
-                        </button>
-                        <button type="button" style={styles.noButton} disabled={busy} onClick={() => onResolve(market.id, 'no')}>
-                          Resolve NO
-                        </button>
-                        <button type="button" style={styles.btnGhost} disabled={busy} onClick={() => onResolve(market.id, 'cancelled')}>
-                          Cancel / Refund
-                        </button>
+                      <div
+                        style={{
+                          marginTop: '8px',
+                          padding: '8px 10px',
+                          background: 'rgba(200,255,0,0.06)',
+                          border: '1px solid rgba(200,255,0,0.2)',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          color: '#B8E800',
+                          fontWeight: 700,
+                        }}
+                      >
+                        ⚡ Auto-resolve pending — oracle check runs every 5 min. Manual override:
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          <button type="button" style={{ ...styles.yesButton, fontSize: '12px', padding: '6px 10px' }} disabled={busy} onClick={() => onResolve(market.id, 'yes')}>Resolve YES</button>
+                          <button type="button" style={{ ...styles.noButton, fontSize: '12px', padding: '6px 10px' }} disabled={busy} onClick={() => onResolve(market.id, 'no')}>Resolve NO</button>
+                          <button type="button" style={{ ...styles.btnGhost, fontSize: '11px' }} disabled={busy} onClick={() => onResolve(market.id, 'cancelled')}>Cancel</button>
+                        </div>
                       </div>
                     )}
                   </article>
