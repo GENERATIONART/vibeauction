@@ -8,7 +8,7 @@ import { useAuth } from '../state/auth-store';
 
 const NAV_ITEMS = [
   { label: 'Live Feed', href: '/' },
-  { label: 'Auctions', href: '/auctions' },
+  { label: 'All Auctions', href: '/auctions' },
   { label: 'Markets', href: '/markets' },
   { label: 'Vibes', href: '/vibes' },
   { label: 'Drop Vibe', href: '/mint' },

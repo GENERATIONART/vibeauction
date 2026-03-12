@@ -710,6 +710,7 @@ const TrophyCard = ({ trophy, isMobile, mintVibe, userHandle, userId }) => {
 
 const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle, userId }) => {
   const [activeFilter, setActiveFilter] = useState('All Vibes');
+  const [search, setSearch] = useState('');
 
   const filterCategories = useMemo(() => {
     const base = ['All Vibes', 'Rare', 'Epic', 'Common'];
@@ -719,17 +720,23 @@ const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle, userId }) =>
     return [...base, ...extra];
   }, [vaultItems]);
 
-  const filteredTrophies = useMemo(
-    () =>
-      vaultItems.filter((trophy) => {
+  const filteredTrophies = useMemo(() => {
+    const q = normalize(search);
+    return vaultItems.filter((trophy) => {
+      const filterMatch = (() => {
         if (activeFilter === 'All Vibes') return true;
         if (activeFilter === 'Rare') return normalize(trophy.rarity) === 'rare';
         if (activeFilter === 'Epic') return normalize(trophy.rarity) === 'epic';
         if (activeFilter === 'Common') return normalize(trophy.rarity) === 'common';
         return normalize(trophy.category) === normalize(activeFilter);
-      }),
-    [activeFilter, vaultItems],
-  );
+      })();
+      if (!filterMatch) return false;
+      if (!q) return true;
+      return [trophy.name, trophy.category, trophy.rarity, trophy.originalAuthor].some(
+        (f) => normalize(f).includes(q),
+      );
+    });
+  }, [activeFilter, search, vaultItems]);
 
   return (
     <div style={{ ...customStyles.tabPanel, padding: isMobile ? '18px 14px' : customStyles.tabPanel.padding }}>
@@ -739,6 +746,25 @@ const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle, userId }) =>
           {vaultItems.length} Vibes Collected
         </span>
       </div>
+
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search vault by name, category, rarity…"
+        style={{
+          width: '100%',
+          background: '#111',
+          border: '2px solid #333',
+          color: '#FFF',
+          fontSize: '14px',
+          fontFamily: "'Inter', sans-serif",
+          padding: '10px 14px',
+          outline: 'none',
+          marginBottom: '14px',
+          boxSizing: 'border-box',
+        }}
+      />
 
       <div style={customStyles.vaultFilters}>
         {filterCategories.map((cat) => (
@@ -753,7 +779,9 @@ const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle, userId }) =>
       </div>
 
       {filteredTrophies.length === 0 ? (
-        <div style={customStyles.emptyState}>No vibes match this filter yet</div>
+        <div style={customStyles.emptyState}>
+          {search ? `No vibes match "${search}"` : 'No vibes match this filter yet'}
+        </div>
       ) : (
         <div
           style={{
@@ -781,13 +809,41 @@ const VibeVaultTab = ({ isMobile, vaultItems, mintVibe, userHandle, userId }) =>
 const ActiveBidsTab = ({ isMobile, activeBids }) => (
   <div style={{ ...customStyles.tabPanel, padding: isMobile ? '18px 14px' : customStyles.tabPanel.padding }}>
     {activeBids.length === 0 ? (
-      <div style={customStyles.emptyState}>No active bids right now</div>
+      <div style={customStyles.emptyState}>
+        <div>No active bids right now</div>
+        <Link
+          href="/auctions"
+          style={{
+            display: 'inline-block',
+            marginTop: '12px',
+            background: '#C8FF00',
+            color: '#000',
+            padding: '8px 18px',
+            fontFamily: "'Anton', sans-serif",
+            fontSize: '15px',
+            textTransform: 'uppercase',
+            textDecoration: 'none',
+          }}
+        >
+          Browse Auctions →
+        </Link>
+      </div>
     ) : (
       <div style={customStyles.activeBidsList}>
         {activeBids.map((bid) => {
-          const statusColor = bid.status === 'HIGHEST' ? '#00AD11' : bid.status === 'OUTBID' ? '#FF4D00' : '#000000';
-          return (
-            <div key={bid.id || bid.name} style={customStyles.bidRow}>
+          const isHighest = bid.status === 'HIGHEST';
+          const isOutbid = bid.status === 'OUTBID';
+          const statusBg = isHighest ? '#00AD11' : isOutbid ? '#FF4D00' : '#444444';
+          const statusText = '#FFFFFF';
+          const auctionSlug = bid.slug || (bid.id ? String(bid.id).replace(/^bid-/, '') : null);
+          const row = (
+            <div
+              style={{
+                ...customStyles.bidRow,
+                borderLeft: `8px solid ${isHighest ? '#C8FF00' : isOutbid ? '#FF4D00' : '#444'}`,
+                opacity: isOutbid ? 0.8 : 1,
+              }}
+            >
               <div style={customStyles.bidVibeInfo}>
                 {bid.imageUrl ? (
                   <img
@@ -810,10 +866,34 @@ const ActiveBidsTab = ({ isMobile, activeBids }) => (
 
               <div style={{ ...customStyles.bidStatusGroup, textAlign: isMobile ? 'left' : customStyles.bidStatusGroup.textAlign }}>
                 <div style={customStyles.bidStatusLabel}>Status</div>
-                <div style={{ ...customStyles.bidStatusValue, color: statusColor }}>{bid.status || 'LIVE'}</div>
+                <div style={{ display: 'inline-block', background: statusBg, color: statusText, fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', padding: '3px 8px', borderRadius: '3px', letterSpacing: '0.3px' }}>
+                  {bid.status || 'LIVE'}
+                </div>
               </div>
+
+              {auctionSlug && (
+                <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                  <Link
+                    href={`/auction/${auctionSlug}`}
+                    style={{
+                      background: isHighest ? '#C8FF00' : '#222',
+                      color: isHighest ? '#000' : '#C8FF00',
+                      padding: '7px 12px',
+                      fontFamily: "'Anton', sans-serif",
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      textDecoration: 'none',
+                      whiteSpace: 'nowrap',
+                      border: `1px solid ${isHighest ? '#C8FF00' : '#444'}`,
+                    }}
+                  >
+                    View →
+                  </Link>
+                </div>
+              )}
             </div>
           );
+          return <div key={bid.id || bid.name}>{row}</div>;
         })}
       </div>
     )}
@@ -841,12 +921,22 @@ const WalletLogTab = ({ isMobile, walletLog, balance }) => {
           {sortedLog.length === 0 ? (
             <div style={{ ...customStyles.receiptRow, justifyContent: 'center' }}>No transactions yet</div>
           ) : (
-            sortedLog.map((entry) => (
-              <div key={entry.id} style={customStyles.receiptRow}>
-                <span>{entry.label}</span>
-                <span>{formatSigned(entry.amount)}</span>
-              </div>
-            ))
+            sortedLog.map((entry) => {
+              const ts = entry.createdAt
+                ? new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : null;
+              return (
+                <div key={entry.id} style={{ ...customStyles.receiptRow, flexDirection: 'column', gap: '2px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                    <span>{entry.label}</span>
+                    <span style={{ fontWeight: 900 }}>{formatSigned(entry.amount)}</span>
+                  </div>
+                  {ts && (
+                    <span style={{ fontSize: '10px', color: '#888', letterSpacing: '0.3px' }}>{ts}</span>
+                  )}
+                </div>
+              );
+            })
           )}
 
           <div style={customStyles.receiptRowTotal}>
@@ -961,7 +1051,7 @@ export default function VaultPage() {
               </Link>
             </h1>
             <div style={{ ...customStyles.profileTag, fontSize: isMobile ? '12px' : customStyles.profileTag.fontSize }}>
-              Vibe Master Lvl. 42
+              {vaultItems.length > 0 ? `${vaultItems.length} Vibe${vaultItems.length !== 1 ? 's' : ''} Collected` : 'Vibe Collector'}
             </div>
           </div>
         </div>

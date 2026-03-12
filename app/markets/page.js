@@ -350,6 +350,7 @@ export default function MarketsPage() {
     style.id = styleId;
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
+      @keyframes skeletonPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
     `;
     document.head.appendChild(style);
 
@@ -870,7 +871,27 @@ export default function MarketsPage() {
           )}
 
           {loading ? (
-            <div style={{ marginTop: '16px', color: '#8A8A8A', fontWeight: 700 }}>Loading markets...</div>
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: '#181818',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    animation: 'skeletonPulse 1.6s ease-in-out infinite',
+                    animationDelay: `${i * 0.12}s`,
+                  }}
+                >
+                  <div style={{ height: '20px', background: '#222', borderRadius: '4px', width: '70%' }} />
+                  <div style={{ height: '12px', background: '#1E1E1E', borderRadius: '4px', width: '45%' }} />
+                  <div style={{ height: '10px', background: '#1A1A1A', borderRadius: '99px' }} />
+                </div>
+              ))}
+            </div>
           ) : markets.length === 0 ? (
             <div style={{ marginTop: '16px', color: '#8A8A8A', fontWeight: 700 }}>No markets yet. Start the first one.</div>
           ) : (

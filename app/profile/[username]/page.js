@@ -475,7 +475,7 @@ export default function ProfilePage() {
           </h1>
           <p style={{ color: '#666', fontSize: '16px' }}>This vibe has left the building. User not found.</p>
           <Link href="/" style={{ background: '#C8FF00', color: '#000', padding: '12px 24px', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', textDecoration: 'none' }}>
-            Back to Auction
+            Back to Live Feed
           </Link>
         </div>
       </div>
@@ -538,7 +538,7 @@ export default function ProfilePage() {
       {/* Stats bar */}
       <div style={{
         ...S.statsBar,
-        flexDirection: isMobile ? 'row' : 'row',
+        flexDirection: 'row',
         flexWrap: isMobile ? 'wrap' : 'nowrap',
       }}>
         {[

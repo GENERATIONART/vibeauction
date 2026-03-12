@@ -307,6 +307,7 @@ const customStyles = {
 const LeaderRow = ({ rank, username, vibesWon, totalSpent, isMobile }) => {
   const [hovered, setHovered] = useState(false);
   const badgeLabel = rank <= 3 ? PLACE_BADGES[rank - 1] : 'TOP BIDDER';
+  const profileHref = `/profile/${encodeURIComponent(String(username || '').replace(/^@/, ''))}`;
 
   return (
     <tr
@@ -317,19 +318,24 @@ const LeaderRow = ({ rank, username, vibesWon, totalSpent, isMobile }) => {
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => { window.location.href = profileHref; }}
     >
       <td style={{ ...customStyles.leaderCellRank, padding: isMobile ? '12px 10px' : undefined }}>
         {rank}
       </td>
       <td style={{ ...customStyles.leaderCellMain, padding: isMobile ? '12px 10px' : undefined }}>
         <div style={customStyles.userInfoCell}>
-          <span style={{ ...customStyles.username, fontSize: isMobile ? '14px' : undefined }}>
+          <Link
+            href={profileHref}
+            style={{ ...customStyles.username, fontSize: isMobile ? '14px' : undefined, textDecoration: 'none' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {username}
-          </span>
+          </Link>
           <div style={customStyles.userBadges}>
             <span style={customStyles.badge}>{badgeLabel}</span>
             <span style={{ ...customStyles.badge, borderColor: '#555', color: '#888' }}>
-              {vibesWon} bid{vibesWon !== 1 ? 's' : ''} placed
+              {vibesWon} vibe{vibesWon !== 1 ? 's' : ''} won
             </span>
           </div>
         </div>
@@ -404,6 +410,7 @@ export default function LeaderboardPage() {
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
       @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+      @keyframes skeletonPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { background-color: #0D0D0D; overflow-x: hidden; }
     `;
@@ -531,8 +538,10 @@ export default function LeaderboardPage() {
 
         {/* Podium */}
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#444', fontWeight: 700, textTransform: 'uppercase', fontSize: '13px', marginBottom: '64px', padding: '60px 0' }}>
-            Loading...
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '16px', marginBottom: '64px', padding: '20px 0' }}>
+            {[180, 240, 160].map((h, i) => (
+              <div key={i} style={{ width: isMobile ? '80px' : '180px', height: `${isMobile ? Math.round(h * 0.55) : h}px`, background: '#1A1A1A', borderRadius: '4px', animation: 'skeletonPulse 1.6s ease-in-out infinite', animationDelay: `${i * 0.15}s` }} />
+            ))}
           </div>
         ) : topSpenders.length === 0 ? (
           <section

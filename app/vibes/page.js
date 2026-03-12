@@ -536,7 +536,7 @@ export default function VibesPage() {
     const mintedCount = allItems.filter((item) => item.source === 'Minted').length;
     const confessionCount = allItems.filter((item) => item.source === 'Confessions').length;
     return {
-      searchable: mintedCount,
+      total: allItems.length,
       vault: vaultCount,
       minted: mintedCount,
       confessions: confessionCount,
@@ -634,8 +634,8 @@ export default function VibesPage() {
           }}
         >
           <div style={customStyles.statCard}>
-            <div style={customStyles.statLabel}>Searchable Listings</div>
-            <div style={customStyles.statValue}>{stats.searchable}</div>
+            <div style={customStyles.statLabel}>Total Items</div>
+            <div style={customStyles.statValue}>{stats.total}</div>
           </div>
           <div style={customStyles.statCard}>
             <div style={customStyles.statLabel}>Vault Items</div>
@@ -678,7 +678,11 @@ export default function VibesPage() {
         </div>
 
         {filteredItems.length === 0 ? (
-          <div style={customStyles.emptyState}>No vibes match this filter yet</div>
+          <div style={customStyles.emptyState}>
+            {search
+              ? `No vibes match "${search}" — try a different search`
+              : 'No vibes match this filter yet'}
+          </div>
         ) : (
           <div
             style={{
@@ -694,16 +698,16 @@ export default function VibesPage() {
                 ref={setLoadMoreTrigger}
                 style={{
                   gridColumn: '1 / -1',
-                  color: '#787878',
+                  color: '#555',
                   fontSize: '11px',
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   textAlign: 'center',
-                  padding: isMobile ? '6px 0 2px' : '8px 0 4px',
+                  padding: isMobile ? '12px 0 4px' : '16px 0 8px',
                 }}
               >
-                Loading more vibes...
+                {filteredItems.length - visibleCount} more — scroll to load
               </div>
             )}
           </div>
