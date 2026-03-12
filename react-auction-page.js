@@ -844,10 +844,13 @@ const App = ({ vibe }) => {
 
   const loadBidHistory = useCallback(async () => {
     const vibeId = selectedVibe?.slug;
+    const vibeIdAlt = selectedVibe?.id;
     if (!vibeId) return;
 
     try {
-      const response = await fetch(`/api/auction/bids?vibeId=${encodeURIComponent(vibeId)}`, { cache: 'no-store' });
+      const params = new URLSearchParams({ vibeId });
+      if (vibeIdAlt) params.set('vibeIdAlt', vibeIdAlt);
+      const response = await fetch(`/api/auction/bids?${params.toString()}`, { cache: 'no-store' });
       const payload = await response.json();
       const incomingBids = Array.isArray(payload?.bids) ? payload.bids : [];
       setBids(incomingBids);
@@ -862,7 +865,7 @@ const App = ({ vibe }) => {
     } catch {
       // Keep the existing UI state when bid-history refresh fails.
     }
-  }, [selectedVibe?.slug]);
+  }, [selectedVibe?.slug, selectedVibe?.id]);
 
   const vibeMarketId = getVibeMarketId(selectedVibe);
 

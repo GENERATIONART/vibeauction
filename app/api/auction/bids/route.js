@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const vibeId = searchParams.get('vibeId');
+  const vibeIdAlt = searchParams.get('vibeIdAlt');
   if (!vibeId) {
     return NextResponse.json(
       { bids: [], topBid: null },
@@ -14,7 +15,7 @@ export async function GET(request) {
   }
 
   try {
-    const { bids, topBid } = await getRecentBidsForVibe(vibeId);
+    const { bids, topBid } = await getRecentBidsForVibe(vibeId, 10, vibeIdAlt);
     return NextResponse.json(
       { bids, topBid },
       { headers: { 'Cache-Control': 'no-store' } },
