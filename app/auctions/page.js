@@ -12,9 +12,9 @@ const FILTERS = [
 ];
 
 const STATUS_COLORS = {
-  live: { bg: 'rgba(200,255,0,0.18)', border: 'rgba(200,255,0,0.55)', text: '#E9FF9A' },
-  ended: { bg: 'rgba(255,190,80,0.15)', border: 'rgba(255,190,80,0.45)', text: '#FFD7A1' },
-  settled: { bg: 'rgba(80,200,255,0.15)', border: 'rgba(80,200,255,0.4)', text: '#AAE7FF' },
+  live: { bg: '#000000', border: '#C8FF00', text: '#C8FF00' },
+  ended: { bg: '#000000', border: '#FFB84D', text: '#FFCF8A' },
+  settled: { bg: '#000000', border: '#5BD3FF', text: '#AAE7FF' },
 };
 
 const numberFormat = (value) => {
@@ -172,15 +172,17 @@ export default function AuctionsPage() {
                   key={auction.id || auction.slug}
                   href={auction.slug ? `/auction/${auction.slug}` : '/'}
                   style={{
-                    border: '1px solid #2A2A2A',
-                    background: '#111111',
+                    border: '2px solid #C8FF00',
+                    background: '#FFFFFF',
+                    boxShadow: '6px 6px 0px rgba(200, 255, 0, 0.3)',
                     textDecoration: 'none',
-                    color: '#FFFFFF',
+                    color: '#000000',
                     display: 'block',
                     overflow: 'hidden',
+                    borderRadius: '8px',
                   }}
                 >
-                  <div style={{ position: 'relative', height: '160px', background: '#0A0A0A' }}>
+                  <div style={{ position: 'relative', height: '160px', background: '#F0F0F0', borderBottom: '2px solid #000000' }}>
                     {auction.imageUrl ? (
                       <img
                         src={auction.imageUrl}
@@ -188,8 +190,8 @@ export default function AuctionsPage() {
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: '#555555', fontWeight: 800 }}>
-                        NO IMAGE
+                      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: '#222222', fontWeight: 800 }}>
+                        IMAGE PENDING
                       </div>
                     )}
                     <span
@@ -200,40 +202,48 @@ export default function AuctionsPage() {
                         background: statusColor.bg,
                         border: `1px solid ${statusColor.border}`,
                         color: statusColor.text,
-                        fontSize: '11px',
-                        padding: '3px 7px',
+                        fontSize: '10px',
+                        padding: '4px 8px',
                         textTransform: 'uppercase',
                         fontWeight: 800,
+                        transform: 'rotate(2deg)',
                       }}
                     >
                       {statusKey}
                     </span>
                   </div>
-                  <div style={{ padding: '12px' }}>
-                    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', lineHeight: 0.95, textTransform: 'uppercase' }}>
+                  <div style={{ padding: '14px', color: '#000000' }}>
+                    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', lineHeight: 1.05, textTransform: 'uppercase' }}>
                       {auction.name || 'Unknown Vibe'}
                     </div>
-                    <div style={{ marginTop: '10px', fontSize: '12px', color: '#A4A4A4', textTransform: 'uppercase', fontWeight: 700 }}>
-                      Category: {auction.category || 'Vibes'}
+                    <div style={{ marginTop: '8px', fontSize: '10px', color: '#777777', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      Category
                     </div>
-                    <div style={{ marginTop: '6px', fontSize: '12px', color: '#A4A4A4', textTransform: 'uppercase', fontWeight: 700 }}>
-                      Start: {numberFormat(auction.startingPrice)} AURA
+                    <div style={{ marginTop: '2px', fontSize: '14px', color: '#333333', textTransform: 'uppercase', fontWeight: 800 }}>
+                      {auction.category || 'Vibes'}
+                    </div>
+                    <div style={{ marginTop: '10px', borderTop: '1px solid #DDDDDD', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#888888', textTransform: 'uppercase', fontWeight: 700 }}>Start</div>
+                        <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', lineHeight: 1 }}>{numberFormat(auction.startingPrice)}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '10px', color: '#888888', textTransform: 'uppercase', fontWeight: 700 }}>
+                          {statusKey === 'settled' ? 'Settled' : 'End Time'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#444444', fontWeight: 700, maxWidth: '150px' }}>
+                          {statusKey === 'settled' ? `${numberFormat(auction.settledPrice)} AURA` : formatDate(auction.endTime)}
+                        </div>
+                      </div>
                     </div>
                     {statusKey === 'settled' && (
-                      <>
-                        <div style={{ marginTop: '6px', fontSize: '12px', color: '#AAE7FF', textTransform: 'uppercase', fontWeight: 700 }}>
-                          Settled: {numberFormat(auction.settledPrice)} AURA
-                        </div>
-                        <div style={{ marginTop: '6px', fontSize: '12px', color: '#A4A4A4', fontWeight: 700 }}>
-                          Winner: {auction.winner || 'Unknown'}
-                        </div>
-                      </>
-                    )}
-                    {statusKey !== 'settled' && (
-                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#A4A4A4', fontWeight: 700 }}>
-                        End Time: {formatDate(auction.endTime)}
+                      <div style={{ marginTop: '8px', fontSize: '12px', color: '#0A6A87', fontWeight: 800 }}>
+                        Winner: {auction.winner || 'Unknown'}
                       </div>
                     )}
+                  </div>
+                  <div style={{ background: '#000000', color: '#C8FF00', fontFamily: "'Anton', sans-serif", fontSize: '16px', textTransform: 'uppercase', textAlign: 'center', padding: '11px 10px' }}>
+                    Open Auction
                   </div>
                 </Link>
               );
