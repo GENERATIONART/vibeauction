@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import NavBar from './app/components/NavBar';
-import { auctionItems } from './lib/auction-items';
 
 const HOME_BATCH_SIZE = 12;
 
@@ -756,24 +755,8 @@ const App = () => {
       byKey.set(key, item);
     });
 
-    const merged = Array.from(byKey.values());
-    if (merged.length > 0) {
-      return merged;
-    }
-    return auctionItems.map((item) => ({
-      id: String(item.id),
-      slug: item.slug,
-      title: item.title,
-      bid: item.bid || 0,
-      timer: item.timer || 'Live',
-      badge: item.badge || 'Live',
-      category: item.category || 'Vibes',
-      imageUrl: null,
-      createdAtMs: Number(item.id) || 0,
-      endingSoonMs: parseCountdownToMs(item.timer),
-      absurdityScore: String(item.title || '').length + String(item.description || '').length,
-    }));
-  }, [mintedVibes, activeBids]);
+    return Array.from(byKey.values());
+  }, [mintedVibes]);
 
   const categories = useMemo(() => {
     const catMap = {};

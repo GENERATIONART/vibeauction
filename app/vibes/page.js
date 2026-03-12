@@ -38,6 +38,9 @@ const toTimestampMs = (value) => {
   return 0;
 };
 
+const hasNonBlankImageUrl = (value) =>
+  typeof value === 'string' && value.trim().length > 0;
+
 const customStyles = {
   page: {
     background: '#0D0D0D',
@@ -418,7 +421,7 @@ const TokenCard = ({ item, isMobile }) => {
 };
 
 export default function VibesPage() {
-  const { vaultItems, mintedVibes, confessions, refreshState } = useVibeStore();
+  const { vaultItems, mintedVibes, refreshState } = useVibeStore();
 
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -485,7 +488,9 @@ export default function VibesPage() {
   }, [syncLatestVibes]);
 
   const allItems = useMemo(() => {
-    const vaultList = (Array.isArray(vaultItems) ? vaultItems : []).map((item) => {
+    const vaultList = (Array.isArray(vaultItems) ? vaultItems : [])
+      .filter((item) => hasNonBlankImageUrl(item?.imageUrl))
+      .map((item) => {
       const createdAtMs = toTimestampMs(item.createdAt);
       return {
         id: `vault-${item.id || normalize(item.name)}`,
@@ -502,7 +507,9 @@ export default function VibesPage() {
       };
     });
 
-    const mintedList = (Array.isArray(mintedVibes) ? mintedVibes : []).map((item) => {
+    const mintedList = (Array.isArray(mintedVibes) ? mintedVibes : [])
+      .filter((item) => hasNonBlankImageUrl(item?.imageUrl))
+      .map((item) => {
       const isConfession = normalize(item.category) === 'confessions';
       const createdAtMs = toTimestampMs(item.createdAt);
       return {
@@ -521,29 +528,8 @@ export default function VibesPage() {
       };
     });
 
-    const mintedSignatures = new Set(mintedList.map((item) => item.signature));
-
-    const confessionFallback = (Array.isArray(confessions) ? confessions : [])
-      .map((item) => {
-        const createdAtMs = toTimestampMs(item.createdAt);
-        return {
-          id: `conf-${item.id || normalize(item.title)}`,
-          name: item.title || 'Untitled Confession',
-          category: 'Confessions',
-          source: 'Confessions',
-          owner: item.isAnonymous ? 'Anonymous' : item.author || '@VibeMinter',
-          description: item.confession || 'No confession text.',
-          valueLabel: 'Soulbound',
-          imageUrl: null,
-          createdAt: createdAtMs,
-          dateLabel: createdAtMs > 0 ? formatDate(createdAtMs) : 'Recently minted',
-          signature: normalize(`${item.title}-${item.confession}-confessions`),
-        };
-      })
-      .filter((item) => !mintedSignatures.has(item.signature));
-
-    return [...mintedList, ...confessionFallback, ...vaultList].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  }, [vaultItems, mintedVibes, confessions]);
+    return [...mintedList, ...vaultList].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [vaultItems, mintedVibes]);
 
   const stats = useMemo(() => {
     const vaultCount = allItems.filter((item) => item.source === 'Vault').length;
