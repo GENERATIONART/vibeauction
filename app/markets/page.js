@@ -6,32 +6,32 @@ import { useAuth } from '../state/auth-store';
 import { getSupabaseClient } from '../../lib/supabase-client.js';
 
 const TYPE_OPTIONS = [
-  { value: 'binary', label: 'Binary Event', helper: 'Yes/No outcome like elections or launches.' },
-  { value: 'price_target', label: 'Price Target', helper: 'Will value be above/below a target by deadline?' },
-  { value: 'timing', label: 'Timing', helper: 'Will an event happen before a specific timestamp?' },
-  { value: 'engagement', label: 'Engagement', helper: 'Will a social metric cross a threshold?' },
+  { value: 'binary', label: 'Binary Event', helper: 'Yes/No outcome tied to a vibe auction result.' },
+  { value: 'price_target', label: 'Price Target', helper: 'Will a vibe settle above/below a target by close?' },
+  { value: 'timing', label: 'Timing', helper: 'Will a vibe milestone happen before a specific timestamp?' },
+  { value: 'engagement', label: 'Engagement', helper: 'Will vibe bids/watchers cross a threshold?' },
 ];
 
 const STARTER_MARKETS = [
   {
     type: 'binary',
-    category: 'Crypto',
-    title: 'Will BTC close above 100K this week?',
-    description: 'Resolves to YES if BTC weekly close is above 100,000 USD.',
-    yesLabel: 'Above 100K',
-    noLabel: 'Below 100K',
+    category: 'Vibes',
+    title: 'Will this vibe sell before auction close?',
+    description: 'Resolves YES if this vibe has a winning bid before the close time.',
+    yesLabel: 'Sells',
+    noLabel: "Doesn't sell",
   },
   {
     type: 'timing',
-    category: 'Culture',
+    category: 'Vibes',
     title: 'Will this vibe hit 50 bids by Friday?',
     description: 'Resolves YES if total bids reach 50 before Friday 6PM ET.',
     yesLabel: 'Hits 50',
-    noLabel: 'Doesn’t hit 50',
+    noLabel: "Doesn't hit 50",
   },
   {
     type: 'price_target',
-    category: 'Auctions',
+    category: 'Vibes',
     title: 'Will Neon Ghost Hoodie settle above 9,000 AURA?',
     description: 'Resolves YES if final auction settlement is strictly above 9,000 AURA.',
     yesLabel: 'Above 9,000',
@@ -583,7 +583,7 @@ export default function MarketsPage() {
 
   const onClaim = async (marketId) => {
     if (!user) {
-      setError('Sign in to claim payouts.');
+      setError('Sign in to claim AURA rewards.');
       return;
     }
 
@@ -604,7 +604,7 @@ export default function MarketsPage() {
 
       if (!result?.claimed) {
         if (result?.reason === 'already_claimed') {
-          setError('Payout already claimed.');
+          setError('AURA reward already claimed.');
         } else if (result?.reason === 'no_position') {
           setError('No position found on this market.');
         } else if (result?.reason === 'market_not_resolved') {
@@ -615,7 +615,7 @@ export default function MarketsPage() {
         return;
       }
 
-      setSuccess(`Payout claimed: ${safeNumber(result.amount, 0).toLocaleString()} AURA.`);
+      setSuccess(`AURA reward claimed: ${safeNumber(result.amount, 0).toLocaleString()} AURA.`);
       await loadMarkets();
     } catch (claimError) {
       setError(claimError instanceof Error ? claimError.message : 'Claim failed');
@@ -639,8 +639,8 @@ export default function MarketsPage() {
         <section style={{ ...styles.panel, padding: isPhone ? '14px' : styles.panel.padding }}>
           <h1 style={{ ...styles.title, fontSize: isPhone ? '23px' : styles.title.fontSize }}>Prediction Markets</h1>
           <p style={styles.sub}>
-            Create real-money-style AURA markets with trader-driven odds.
-            Opening probability is set by the first trade and payouts are distributed from the market pool.
+            Create vibe-native, AURA-only markets with trader-driven odds.
+            Opening probability is set by the first trade and rewards are distributed from the AURA market pool.
           </p>
 
           <div style={styles.pillRow}>
@@ -662,7 +662,7 @@ export default function MarketsPage() {
               style={styles.input}
               value={form.title}
               onChange={(event) => setFormField('title', event.target.value)}
-              placeholder="Will ETH ETF inflows stay positive this week?"
+              placeholder="Will this vibe settle above 3,000 AURA?"
             />
 
             <label style={styles.label}>Description</label>
@@ -692,7 +692,7 @@ export default function MarketsPage() {
                   style={styles.input}
                   value={form.category}
                   onChange={(event) => setFormField('category', event.target.value)}
-                  placeholder="Crypto"
+                  placeholder="Vibes"
                 />
               </div>
             </div>
@@ -969,7 +969,7 @@ export default function MarketsPage() {
                           disabled={busy || Boolean(market.myClaim)}
                           onClick={() => onClaim(market.id)}
                         >
-                          {market.myClaim ? 'Claimed' : 'Claim Payout'}
+                          {market.myClaim ? 'Claimed' : 'Claim AURA'}
                         </button>
                         <span style={{ ...styles.miniText, alignSelf: 'center' }}>
                           Outcome: {(market.resolvedOutcome || market.state).toUpperCase()}

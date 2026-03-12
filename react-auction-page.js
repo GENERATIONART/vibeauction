@@ -1177,7 +1177,7 @@ const App = ({ vibe }) => {
     setPredictionSuccess('');
 
     if (!user) {
-      setPredictionError('Sign in to claim payouts.');
+      setPredictionError('Sign in to claim AURA rewards.');
       return;
     }
     if (!vibeMarket?.id) return;
@@ -1196,7 +1196,7 @@ const App = ({ vibe }) => {
 
       if (!result?.claimed) {
         if (result?.reason === 'already_claimed') {
-          setPredictionError('Payout already claimed.');
+          setPredictionError('AURA reward already claimed.');
         } else if (result?.reason === 'no_position') {
           setPredictionError('No position found on this market.');
         } else if (result?.reason === 'market_not_resolved') {
@@ -1207,7 +1207,7 @@ const App = ({ vibe }) => {
         return;
       }
 
-      setPredictionSuccess(`Payout claimed: ${safeBid(result?.amount, 0).toLocaleString()} AURA.`);
+      setPredictionSuccess(`AURA reward claimed: ${safeBid(result?.amount, 0).toLocaleString()} AURA.`);
       await Promise.all([loadVibeMarket(), refreshState()]);
     } catch (claimError) {
       setPredictionError(claimError instanceof Error ? claimError.message : 'Claim failed.');
@@ -1677,12 +1677,12 @@ const App = ({ vibe }) => {
               Vibe Prediction Market
             </div>
             <div style={customStyles.predictionHelp}>
-              This is the live market for this vibe. Trade YES/NO shares; first trade sets opening probability and winners claim AURA payouts.
+              This is the live market for this vibe. Trade YES/NO shares; first trade sets opening probability and winners claim AURA rewards (no cash payouts).
             </div>
 
             <div style={customStyles.predictionBadgeRow}>
               <span style={customStyles.predictionBadge}>Vibe Market</span>
-              <span style={customStyles.predictionBadge}>Real Payouts</span>
+              <span style={customStyles.predictionBadge}>AURA Rewards</span>
               <span
                 style={{
                   ...customStyles.predictionBadge,
@@ -1854,7 +1854,7 @@ const App = ({ vibe }) => {
                       disabled={predictionSaving || Boolean(vibeMarket.myClaim)}
                       onClick={onClaimVibeMarket}
                     >
-                      {vibeMarket.myClaim ? 'Claimed' : 'Claim Payout'}
+                      {vibeMarket.myClaim ? 'Claimed' : 'Claim AURA'}
                     </button>
                     <span style={{ ...customStyles.predictionStats, marginTop: 0, alignSelf: 'center' }}>
                       Outcome: {(vibeMarket.resolvedOutcome || vibeMarket.state).toUpperCase()}

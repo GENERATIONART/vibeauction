@@ -127,6 +127,12 @@ const customStyles = {
     maxWidth: '1400px',
     margin: '0 auto',
   },
+  heroGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 420px)',
+    gap: '24px',
+    alignItems: 'end',
+  },
   heroTitle: {
     fontFamily: "'Anton', sans-serif",
     fontSize: '82px',
@@ -148,6 +154,91 @@ const customStyles = {
     marginLeft: '10px',
     verticalAlign: 'middle',
     boxShadow: '4px 4px 0px rgba(200, 255, 0, 0.2)',
+  },
+  heroPulse: {
+    background: 'linear-gradient(165deg, rgba(22,22,22,0.95) 0%, rgba(12,12,12,0.95) 100%)',
+    border: '1px solid #2E2E2E',
+    borderRadius: '12px',
+    padding: '16px',
+    minHeight: '172px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    boxShadow: '6px 6px 0px rgba(0, 0, 0, 0.4)',
+  },
+  pulseHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+  },
+  pulseTitle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '28px',
+    lineHeight: 1,
+    letterSpacing: '0.4px',
+    textTransform: 'uppercase',
+    color: '#FFFFFF',
+  },
+  pulseTag: {
+    background: '#C8FF00',
+    color: '#000000',
+    border: '1px solid #000000',
+    padding: '4px 8px',
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  pulseStatsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '8px',
+  },
+  pulseStat: {
+    background: '#0B0B0B',
+    border: '1px solid #242424',
+    borderRadius: '8px',
+    padding: '8px 10px',
+    minWidth: 0,
+  },
+  pulseStatLabel: {
+    color: '#8C8C8C',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    fontWeight: 700,
+    marginBottom: '2px',
+  },
+  pulseStatValue: {
+    color: '#FFFFFF',
+    fontWeight: 800,
+    fontSize: '16px',
+    lineHeight: 1.2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  pulseLatest: {
+    borderTop: '1px solid #232323',
+    paddingTop: '10px',
+    minWidth: 0,
+  },
+  pulseLatestLabel: {
+    color: '#8C8C8C',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    fontWeight: 700,
+    marginBottom: '4px',
+  },
+  pulseLatestValue: {
+    color: '#C8FF00',
+    fontWeight: 800,
+    fontSize: '14px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   layoutGrid: {
     display: 'grid',
@@ -713,6 +804,36 @@ const App = () => {
     ];
   }, [liveVibes]);
 
+  const topCategory = useMemo(() => {
+    const categoryRows = categories.filter((row) => row.label !== 'All Vibes');
+    if (categoryRows.length === 0) return null;
+    return [...categoryRows].sort((a, b) => b.count - a.count)[0] || null;
+  }, [categories]);
+
+  const activeBidVibesCount = useMemo(
+    () => Object.values(bidActivityLookup).reduce((sum, entry) => sum + (safeNumber(entry?.amount, 0) > 0 ? 1 : 0), 0),
+    [bidActivityLookup],
+  );
+
+  const highestCurrentBid = useMemo(
+    () =>
+      liveVibes.reduce((highest, item) => {
+        const key = normalize(item.slug || item.title);
+        const liveAmount = safeNumber(bidActivityLookup[key]?.amount, Number.NaN);
+        const amount = Number.isFinite(liveAmount) ? liveAmount : safeNumber(item.bid, 0);
+        return Math.max(highest, amount);
+      }, 0),
+    [liveVibes, bidActivityLookup],
+  );
+
+  const latestBidSummary = useMemo(() => {
+    if (!latestBidActivity.key) return 'Waiting for first bid';
+    const matched = liveVibes.find((item) => normalize(item.slug || item.title) === latestBidActivity.key);
+    const amountFromFeed = safeNumber(bidActivityLookup[latestBidActivity.key]?.amount, Number.NaN);
+    const amount = Number.isFinite(amountFromFeed) ? amountFromFeed : safeNumber(matched?.bid, 0);
+    return `${matched?.title || 'A vibe'} · ${amount.toLocaleString()} AURA`;
+  }, [latestBidActivity, liveVibes, bidActivityLookup]);
+
   const filteredItems = useMemo(() =>
     activeCategory === 'All Vibes'
       ? liveVibes
@@ -904,91 +1025,133 @@ const App = () => {
       <section
         style={{
           ...customStyles.hero,
-          padding: isMobile ? `20px ${sidePadding}px 16px` : isTablet ? `24px ${sidePadding}px 24px` : '32px 24px 32px',
+          padding: isMobile ? `20px ${sidePadding}px 14px` : isTablet ? `24px ${sidePadding}px 20px` : '24px 24px 18px',
         }}
       >
-        <h1
-          className="va-hero-title"
-          style={{
-            ...customStyles.heroTitle,
-            fontSize: isSmallMobile
-              ? 'clamp(36px, 11vw, 42px)'
-              : isMobile
-                ? 'clamp(42px, 10vw, 50px)'
-                : isTablet
-                  ? 'clamp(52px, 8vw, 62px)'
-                  : viewportWidth <= 1440
-                    ? '70px'
-                    : customStyles.heroTitle.fontSize,
-            lineHeight: isSmallMobile ? 0.95 : customStyles.heroTitle.lineHeight,
-            maxWidth: isMobile ? '100%' : customStyles.heroTitle.maxWidth,
-          }}
-        >
-          {isSmallMobile ? (
-            <>Browse Auction </>
-          ) : (
-            <>
-              Browse <br />
-              Auction{' '}
-            </>
-          )}
-          <span
-            style={{
-              ...customStyles.highlightTag,
-              fontSize: isSmallMobile ? '12px' : isMobile ? '14px' : customStyles.highlightTag.fontSize,
-              marginLeft: isMobile ? 0 : customStyles.highlightTag.marginLeft,
-              marginTop: isMobile ? '8px' : 0,
-              display: isMobile ? 'inline-flex' : customStyles.highlightTag.display,
-              padding: isSmallMobile ? '3px 8px' : isMobile ? '3px 10px' : customStyles.highlightTag.padding,
-            }}
-          >
-            VIBES
-          </span>
-        </h1>
-
         <div
           style={{
-            marginTop: isMobile ? '12px' : '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            flexWrap: 'wrap',
+            ...customStyles.heroGrid,
+            gridTemplateColumns: isTablet ? '1fr' : customStyles.heroGrid.gridTemplateColumns,
+            gap: isMobile ? '12px' : isTablet ? '16px' : customStyles.heroGrid.gap,
           }}
         >
-          <button
-            type="button"
-            onClick={handleSurpriseMe}
-            style={{
-              background: '#C8FF00',
-              color: '#000000',
-              border: '2px solid #000000',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              fontSize: isMobile ? '12px' : '13px',
-              letterSpacing: '0.5px',
-              padding: isMobile ? '9px 12px' : '10px 14px',
-              cursor: 'pointer',
-              boxShadow: surprisePressed ? '1px 1px 0 #000000' : '3px 3px 0 #000000',
-              transform: surprisePressed ? 'translate(2px, 2px)' : 'none',
-            }}
-          >
-            Surprise Me
-          </button>
-          <div
-            style={{
-              border: '1px solid #2D2D2D',
-              background: '#121212',
-              color: '#A9A9A9',
-              fontSize: isMobile ? '11px' : '12px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              padding: isMobile ? '8px 10px' : '8px 12px',
-              letterSpacing: '0.3px',
-            }}
-          >
-            {secondsSinceSync === null ? 'Syncing live feed...' : `Live feed synced ${secondsSinceSync}s ago`}
+          <div>
+            <h1
+              className="va-hero-title"
+              style={{
+                ...customStyles.heroTitle,
+                fontSize: isSmallMobile
+                  ? 'clamp(36px, 11vw, 42px)'
+                  : isMobile
+                    ? 'clamp(42px, 10vw, 50px)'
+                    : isTablet
+                      ? 'clamp(52px, 8vw, 62px)'
+                      : viewportWidth <= 1440
+                        ? '70px'
+                        : customStyles.heroTitle.fontSize,
+                lineHeight: isSmallMobile ? 0.95 : customStyles.heroTitle.lineHeight,
+                maxWidth: isMobile ? '100%' : customStyles.heroTitle.maxWidth,
+              }}
+            >
+              {isSmallMobile ? (
+                <>Browse Auction </>
+              ) : (
+                <>
+                  Browse <br />
+                  Auction{' '}
+                </>
+              )}
+              <span
+                style={{
+                  ...customStyles.highlightTag,
+                  fontSize: isSmallMobile ? '12px' : isMobile ? '14px' : customStyles.highlightTag.fontSize,
+                  marginLeft: isMobile ? 0 : customStyles.highlightTag.marginLeft,
+                  marginTop: isMobile ? '8px' : 0,
+                  display: isMobile ? 'inline-flex' : customStyles.highlightTag.display,
+                  padding: isSmallMobile ? '3px 8px' : isMobile ? '3px 10px' : customStyles.highlightTag.padding,
+                }}
+              >
+                VIBES
+              </span>
+            </h1>
+
+            <div
+              style={{
+                marginTop: isMobile ? '12px' : '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleSurpriseMe}
+                style={{
+                  background: '#C8FF00',
+                  color: '#000000',
+                  border: '2px solid #000000',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  fontSize: isMobile ? '12px' : '13px',
+                  letterSpacing: '0.5px',
+                  padding: isMobile ? '9px 12px' : '10px 14px',
+                  cursor: 'pointer',
+                  boxShadow: surprisePressed ? '1px 1px 0 #000000' : '3px 3px 0 #000000',
+                  transform: surprisePressed ? 'translate(2px, 2px)' : 'none',
+                }}
+              >
+                Surprise Me
+              </button>
+              <div
+                style={{
+                  border: '1px solid #2D2D2D',
+                  background: '#121212',
+                  color: '#A9A9A9',
+                  fontSize: isMobile ? '11px' : '12px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  padding: isMobile ? '8px 10px' : '8px 12px',
+                  letterSpacing: '0.3px',
+                }}
+              >
+                {secondsSinceSync === null ? 'Syncing live feed...' : `Live feed synced ${secondsSinceSync}s ago`}
+              </div>
+            </div>
           </div>
+
+          {!isTablet && (
+            <aside style={customStyles.heroPulse}>
+              <div style={customStyles.pulseHeader}>
+                <div style={customStyles.pulseTitle}>Market Pulse</div>
+                <span style={customStyles.pulseTag}>Live</span>
+              </div>
+              <div style={customStyles.pulseStatsGrid}>
+                <div style={customStyles.pulseStat}>
+                  <div style={customStyles.pulseStatLabel}>Total Vibes</div>
+                  <div style={customStyles.pulseStatValue}>{liveVibes.length.toLocaleString()}</div>
+                </div>
+                <div style={customStyles.pulseStat}>
+                  <div style={customStyles.pulseStatLabel}>Vibes With Bids</div>
+                  <div style={customStyles.pulseStatValue}>{activeBidVibesCount.toLocaleString()}</div>
+                </div>
+                <div style={customStyles.pulseStat}>
+                  <div style={customStyles.pulseStatLabel}>Top Category</div>
+                  <div style={customStyles.pulseStatValue}>{topCategory ? `${topCategory.label} (${topCategory.count})` : 'None'}</div>
+                </div>
+                <div style={customStyles.pulseStat}>
+                  <div style={customStyles.pulseStatLabel}>Highest Bid</div>
+                  <div style={customStyles.pulseStatValue}>{highestCurrentBid.toLocaleString()} AURA</div>
+                </div>
+              </div>
+              <div style={customStyles.pulseLatest}>
+                <div style={customStyles.pulseLatestLabel}>Latest Bid Event</div>
+                <div style={customStyles.pulseLatestValue}>{latestBidSummary}</div>
+              </div>
+            </aside>
+          )}
         </div>
+
       </section>
 
       <div
