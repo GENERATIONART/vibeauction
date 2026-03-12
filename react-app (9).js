@@ -51,6 +51,18 @@ const toTimestampMs = (value) => {
   return 0;
 };
 
+const getItemKeys = (item) => {
+  const keys = [];
+  const seen = new Set();
+  [item?.slug, item?.id, item?.title].forEach((value) => {
+    const key = normalize(value);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    keys.push(key);
+  });
+  return keys;
+};
+
 const customStyles = {
   body: {
     backgroundColor: '#0D0D0D',
@@ -783,8 +795,10 @@ const App = () => {
   const highestCurrentBid = useMemo(
     () =>
       liveVibes.reduce((highest, item) => {
-        const key = normalize(item.slug || item.title);
-        const liveAmount = safeNumber(bidActivityLookup[key]?.amount, Number.NaN);
+        const liveAmount = getItemKeys(item).reduce((best, key) => {
+          const value = safeNumber(bidActivityLookup[key]?.amount, Number.NaN);
+          return Number.isFinite(value) ? Math.max(best, value) : best;
+        }, Number.NaN);
         const amount = Number.isFinite(liveAmount) ? liveAmount : safeNumber(item.bid, 0);
         return Math.max(highest, amount);
       }, 0),
@@ -793,7 +807,7 @@ const App = () => {
 
   const latestBidSummary = useMemo(() => {
     if (!latestBidActivity.key) return 'Waiting for first bid';
-    const matched = liveVibes.find((item) => normalize(item.slug || item.title) === latestBidActivity.key);
+    const matched = liveVibes.find((item) => getItemKeys(item).includes(latestBidActivity.key));
     const amountFromFeed = safeNumber(bidActivityLookup[latestBidActivity.key]?.amount, Number.NaN);
     const amount = Number.isFinite(amountFromFeed) ? amountFromFeed : safeNumber(matched?.bid, 0);
     return `${matched?.title || 'A vibe'} · ${amount.toLocaleString()} AURA`;
@@ -808,18 +822,22 @@ const App = () => {
 
   const sortedItems = useMemo(() => {
     const resolveLiveBid = (item) => {
-      const key = normalize(item.slug || item.title);
-      const live = bidActivityLookup[key]?.amount;
-      if (Number.isFinite(live)) return live;
+      for (const key of getItemKeys(item)) {
+        const live = bidActivityLookup[key]?.amount;
+        if (Number.isFinite(live)) return live;
+      }
       const fallback = Number(item.bid);
       return Number.isFinite(fallback) ? fallback : 0;
     };
 
     const resolveRecentActivity = (item) => {
-      const key = normalize(item.slug || item.title);
-      const clientBump = safeNumber(bumpedAtById[key], 0);
-      const serverBidAt = safeNumber(bidActivityLookup[key]?.updatedAtMs, 0);
-      return Math.max(clientBump, serverBidAt);
+      let latest = 0;
+      for (const key of getItemKeys(item)) {
+        const clientBump = safeNumber(bumpedAtById[key], 0);
+        const serverBidAt = safeNumber(bidActivityLookup[key]?.updatedAtMs, 0);
+        latest = Math.max(latest, clientBump, serverBidAt);
+      }
+      return latest;
     };
 
     const compareByRecentActivity = (a, b) => resolveRecentActivity(b) - resolveRecentActivity(a);
@@ -928,9 +946,10 @@ const App = () => {
   }, [liveVibes]);
 
   const getBidDisplay = (item) => {
-    const key = normalize(item.slug || item.title);
-    const live = bidActivityLookup[key]?.amount;
-    if (Number.isFinite(live)) return live.toLocaleString();
+    for (const key of getItemKeys(item)) {
+      const live = bidActivityLookup[key]?.amount;
+      if (Number.isFinite(live)) return live.toLocaleString();
+    }
     const fallback = Number(item.bid);
     return Number.isFinite(fallback) ? fallback.toLocaleString() : '0';
   };
@@ -1241,7 +1260,7 @@ const App = () => {
                 onOpenAuction={handleOpenAuction}
                 isMobile={isMobile}
                 isSmallMobile={isSmallMobile}
-                shakeToken={shakeTokensById[normalize(item.slug || item.title)] || 0}
+                shakeToken={getItemKeys(item).reduce((max, key) => Math.max(max, safeNumber(shakeTokensById[key], 0)), 0)}
               />
             ))
           )}

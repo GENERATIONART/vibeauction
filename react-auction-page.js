@@ -105,6 +105,13 @@ const getTimerFromVibe = (vibe) => {
   return parseTimer(vibe?.timer);
 };
 
+const getHydrationSafeInitialTimer = (vibe) => {
+  // Avoid Date.now() during initial render so server/client HTML stays identical.
+  const parsed = parseTimer(vibe?.timer);
+  if (parsed.hours || parsed.mins || parsed.secs) return parsed;
+  return { hours: 0, mins: 12, secs: 30 };
+};
+
 const getVibeMarketId = (vibe) => {
   const identity = vibe?.slug || vibe?.id || vibe?.title || defaultAuctionSlug;
   return normalize(`vibe-market-${identity}`);
@@ -801,7 +808,7 @@ const App = ({ vibe }) => {
   const [showBuySuccess, setShowBuySuccess] = useState(false);
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
   const [increment, setIncrement] = useState(0);
-  const [timer, setTimer] = useState(() => getTimerFromVibe(selectedVibe));
+  const [timer, setTimer] = useState(() => getHydrationSafeInitialTimer(selectedVibe));
   const [error, setError] = useState('');
   const [bids, setBids] = useState(() => makeInitialBidHistory(baseBid));
   const [topBid, setTopBid] = useState(null);

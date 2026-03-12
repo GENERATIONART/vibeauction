@@ -127,7 +127,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const reservedHandles = new Set(['api', 'auction', 'leaderboard', 'login', 'mint', 'profile', 'signup', 'top-up', 'vault', 'vibes', 'won']);
+  const reservedHandles = new Set(['api', 'auction', 'auctions', 'leaderboard', 'login', 'mint', 'profile', 'signup', 'top-up', 'vault', 'vibes', 'won']);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
