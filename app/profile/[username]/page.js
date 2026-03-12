@@ -556,7 +556,6 @@ export default function ProfilePage() {
   const repScore = 0;
   const memberYear = profile?.created_at ? new Date(profile.created_at).getFullYear() : '—';
   const auraBalance = profile?.aura_balance ?? 0;
-  const predictionPoints = profile?.prediction_points ?? 0;
   const avatarMonogram = String(profile?.username || username || 'U').charAt(0).toUpperCase();
   const avatarUrl = typeof profile?.avatar_url === 'string' ? profile.avatar_url.trim() : '';
   const walletRows = useMemo(
@@ -730,7 +729,6 @@ export default function ProfilePage() {
         {[
           { label: 'Vibes Listed', value: loading ? '—' : (listings.length + pastAuctions.length) || '0' },
           { label: 'Aura Balance', value: loading ? '—' : auraBalance.toLocaleString() },
-          { label: 'Prediction Pts', value: loading ? '—' : predictionPoints.toLocaleString() },
           { label: 'Member Since', value: loading ? '—' : memberYear },
         ].map((stat, i, arr) => (
           <div

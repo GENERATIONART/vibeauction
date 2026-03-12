@@ -393,7 +393,6 @@ export default function LeaderboardPage() {
   const [period, setPeriod] = useState('all');
   const [topSpenders, setTopSpenders] = useState([]);
   const [topVibes, setTopVibes] = useState([]);
-  const [predictionLeaderboard, setPredictionLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const isMobile = viewportWidth <= 768;
@@ -429,7 +428,6 @@ export default function LeaderboardPage() {
       .then((data) => {
         setTopSpenders(data.topSpenders || []);
         setTopVibes(data.topVibes || []);
-        setPredictionLeaderboard(data.predictionLeaderboard || []);
       })
       .catch(() => {
         setTopSpenders([]);
@@ -650,55 +648,6 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '32px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '10px',
-            }}
-          >
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '24px' : '32px', margin: 0 }}>
-              Prediction Leaderboard
-            </h2>
-            <span style={{ color: '#C8FF00', fontWeight: 700, fontSize: '12px', letterSpacing: '0.5px' }}>
-              by prediction_points
-            </span>
-          </div>
-          {predictionLeaderboard.length === 0 ? (
-            <div style={{ color: '#777777', fontSize: '14px' }}>No prediction points yet.</div>
-          ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))',
-                gap: '12px',
-              }}
-            >
-              {predictionLeaderboard.map((entry) => (
-                <div
-                  key={`${entry.username}-${entry.rank}`}
-                  style={{
-                    background: '#111111',
-                    border: '1px solid #1F1F1F',
-                    padding: '12px 14px',
-                    borderRadius: '10px',
-                    minHeight: '80px',
-                  }}
-                >
-                  <div style={{ fontSize: '10px', color: '#888888', letterSpacing: '0.4px', fontWeight: 700 }}>
-                    Rank {entry.rank}
-                  </div>
-                  <div style={{ fontWeight: 800, fontSize: '18px', margin: '6px 0 4px' }}>{entry.username}</div>
-                  <div style={{ color: '#C8FF00', fontSize: '16px', fontWeight: 700 }}>
-                    {entry.points.toLocaleString()} points
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -1374,6 +1374,7 @@ const App = ({ vibe }) => {
     String(user?.id) === String(vibeMarket?.creatorId) &&
     vibeMarket?.state === 'open' &&
     marketIsClosed;
+  const SHOW_PREDICTION_MARKET = false;
 
   return (
     <div style={customStyles.body}>
@@ -1700,7 +1701,8 @@ const App = ({ vibe }) => {
             </div>
           )}
 
-          <div style={{ ...customStyles.predictionPanel, padding: isMobile ? '12px' : customStyles.predictionPanel.padding }}>
+          {SHOW_PREDICTION_MARKET && (
+            <div style={{ ...customStyles.predictionPanel, padding: isMobile ? '12px' : customStyles.predictionPanel.padding }}>
             <div style={{ ...customStyles.predictionTitle, fontSize: isMobile ? '20px' : customStyles.predictionTitle.fontSize }}>
               Vibe Prediction Market
             </div>
@@ -1906,9 +1908,10 @@ const App = ({ vibe }) => {
               </>
             )}
 
-            {predictionSuccess && <div style={customStyles.predictionSuccess}>{predictionSuccess}</div>}
-            {predictionError && <div style={customStyles.predictionError}>{predictionError}</div>}
-          </div>
+              {predictionSuccess && <div style={customStyles.predictionSuccess}>{predictionSuccess}</div>}
+              {predictionError && <div style={customStyles.predictionError}>{predictionError}</div>}
+            </div>
+          )}
 
           <BidHistory bids={bids} />
         </aside>

@@ -9,7 +9,6 @@ import { useAuth } from '../state/auth-store';
 const NAV_ITEMS = [
   { label: 'Live Feed', href: '/' },
   { label: 'All Auctions', href: '/auctions' },
-  { label: 'Markets', href: '/markets' },
   { label: 'Drop Vibe', href: '/mint' },
   { label: 'Leaderboard', href: '/leaderboard' },
   { label: 'Vibe Vault', href: '/vault' },
