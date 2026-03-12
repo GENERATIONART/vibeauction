@@ -684,6 +684,11 @@ const App = () => {
   useEffect(() => {
     const previous = prevBidActivityRef.current;
     if (!bidBaselineReadyRef.current) {
+      // Wait until we have real bid data before locking in the baseline.
+      // If we baseline against an empty lookup, every subsequent entry looks
+      // like a "new bid" and all timestamps collapse to Date.now(), destroying
+      // the real bid-time ordering.
+      if (Object.keys(bidActivityLookup).length === 0) return;
       prevBidActivityRef.current = bidActivityLookup;
       bidBaselineReadyRef.current = true;
       latestBidSeenRef.current = safeNumber(latestBidActivity.updatedAtMs, 0);
