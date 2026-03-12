@@ -281,7 +281,8 @@ const customStyles = {
   },
   auctionGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    alignItems: 'start',
     gap: '24px',
   },
   card: {

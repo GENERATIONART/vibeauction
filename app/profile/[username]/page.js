@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../state/auth-store';
+import { useVibeStore } from '../../state/vibe-store';
 import NavBar from '../../components/NavBar';
 import { getSupabaseClient } from '../../../lib/supabase-client';
 
@@ -400,6 +401,34 @@ const S = {
     justifyContent: 'center',
     gap: '8px',
   },
+  accountTabs: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    padding: '14px 16px',
+    background: '#101010',
+    borderBottom: '1px solid #1E1E1E',
+  },
+  accountTab: {
+    background: '#0D0D0D',
+    color: '#BDBDBD',
+    border: '1px solid #2D2D2D',
+    padding: '8px 12px',
+    fontWeight: 800,
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
+  accountTabActive: {
+    background: '#C8FF00',
+    color: '#000000',
+    border: '1px solid #C8FF00',
+    padding: '8px 12px',
+    fontWeight: 800,
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
 };
 
 const STARS = (score) => {
@@ -411,7 +440,9 @@ const MOCK_REVIEWS = [];
 
 export default function ProfilePage() {
   const { username } = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { balance: privateBalance, activeBids, walletLog, vaultItems } = useVibeStore();
 
   const [profile, setProfile] = useState(null);
   const [listings, setListings] = useState([]);
@@ -420,6 +451,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [accountTab, setAccountTab] = useState('overview');
   const [avatarInput, setAvatarInput] = useState('');
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState('');
@@ -429,6 +461,7 @@ export default function ProfilePage() {
   const isTablet = viewportWidth <= 1024;
 
   const isOwnProfile = Boolean(user && profile && user.id === profile.id);
+  const requestedTab = String(searchParams.get('tab') || '').toLowerCase();
 
   useEffect(() => {
     const update = () => setViewportWidth(window.innerWidth);
@@ -513,12 +546,35 @@ export default function ProfilePage() {
     fetchProfile();
   }, [username]);
 
+  useEffect(() => {
+    if (!isOwnProfile) return;
+    if (['overview', 'vault', 'bids', 'wallet'].includes(requestedTab)) {
+      setAccountTab(requestedTab);
+    }
+  }, [isOwnProfile, requestedTab]);
+
   const repScore = 0;
   const memberYear = profile?.created_at ? new Date(profile.created_at).getFullYear() : '—';
   const auraBalance = profile?.aura_balance ?? 0;
   const predictionPoints = profile?.prediction_points ?? 0;
   const avatarMonogram = String(profile?.username || username || 'U').charAt(0).toUpperCase();
   const avatarUrl = typeof profile?.avatar_url === 'string' ? profile.avatar_url.trim() : '';
+  const walletRows = useMemo(
+    () => [...(Array.isArray(walletLog) ? walletLog : [])].sort((a, b) => Number(b?.createdAt || 0) - Number(a?.createdAt || 0)),
+    [walletLog],
+  );
+  const profileVaultItems = useMemo(() => {
+    if (isOwnProfile && Array.isArray(vaultItems) && vaultItems.length > 0) {
+      return vaultItems.map((item, index) => ({
+        id: item.id || `vault-${index}`,
+        name: item.name || 'Unknown Vibe',
+        category: item.category || 'Vibes',
+        price: Number(item.price || 0),
+        image_url: item.imageUrl || null,
+      }));
+    }
+    return wonVibes;
+  }, [isOwnProfile, vaultItems, wonVibes]);
 
   const saveAvatar = async () => {
     if (!isOwnProfile || !profile?.id || avatarSaving) return;
@@ -582,7 +638,7 @@ export default function ProfilePage() {
       {/* Own profile banner */}
       {isOwnProfile && (
         <div style={S.ownProfileBanner}>
-          This is your public profile — <Link href="/vault" style={{ color: '#C8FF00', textDecoration: 'underline' }}>go to your vault</Link>
+          This is your account page — <Link href={`/profile/${encodeURIComponent(profile?.username || username)}?tab=vault`} style={{ color: '#C8FF00', textDecoration: 'underline' }}>open your vault tab</Link>
         </div>
       )}
 
@@ -693,6 +749,26 @@ export default function ProfilePage() {
         ))}
       </div>
 
+      {isOwnProfile && (
+        <div style={S.accountTabs}>
+          {[
+            { id: 'overview', label: 'Overview' },
+            { id: 'vault', label: 'Vault' },
+            { id: 'bids', label: 'Active Bids' },
+            { id: 'wallet', label: 'Wallet' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setAccountTab(tab.id)}
+              style={accountTab === tab.id ? S.accountTabActive : S.accountTab}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Bio on mobile (hidden in hero) */}
       {isMobile && !loading && auraBalance > 0 && (
         <div style={{ padding: '16px', background: '#111', borderBottom: '1px solid #1A1A1A', fontSize: '13px', color: '#AAAAAA', lineHeight: 1.6 }}>
@@ -701,6 +777,7 @@ export default function ProfilePage() {
       )}
 
       {/* Main content */}
+      {( !isOwnProfile || accountTab === 'overview') && (
       <div style={{
         ...S.body,
         gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr',
@@ -877,6 +954,100 @@ export default function ProfilePage() {
         </section>
 
       </div>
+      )}
+
+      {isOwnProfile && accountTab === 'vault' && (
+        <div style={{ ...S.body, gridTemplateColumns: '1fr', padding: isMobile ? '20px 14px 48px' : '32px 32px 64px', gap: '24px' }}>
+          <section>
+            <div style={S.sectionTitle}>
+              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Vibe Vault</span>
+            </div>
+            <div style={S.card}>
+              {profileVaultItems.length === 0 ? (
+                <div style={S.emptyState}>No vibes collected yet</div>
+              ) : (
+                <div style={{ ...S.wonGrid, gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', padding: '14px' }}>
+                  {profileVaultItems.map((entry, i) => (
+                    <div key={entry.id || i} style={S.wonCard}>
+                      {entry.image_url ? (
+                        <img src={entry.image_url} alt={entry.name || 'Vibe'} style={S.wonThumb} />
+                      ) : (
+                        <span style={S.wonThumbFallback}>IMG</span>
+                      )}
+                      <span style={S.wonName}>{entry.name || 'Unknown Vibe'}</span>
+                      <span style={S.wonPrice}>{Number(entry.price || 0).toLocaleString()} AURA</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {isOwnProfile && accountTab === 'bids' && (
+        <div style={{ ...S.body, gridTemplateColumns: '1fr', padding: isMobile ? '20px 14px 48px' : '32px 32px 64px', gap: '24px' }}>
+          <section>
+            <div style={S.sectionTitle}>
+              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Active Bids</span>
+            </div>
+            <div style={S.card}>
+              {!Array.isArray(activeBids) || activeBids.length === 0 ? (
+                <div style={S.emptyState}>No active bids right now</div>
+              ) : (
+                activeBids.map((bid, index) => (
+                  <Link
+                    key={bid.id || `${bid.name}-${index}`}
+                    href={`/auction/${encodeURIComponent(String(bid.slug || bid.id || '').replace(/^bid-/, ''))}`}
+                    style={{ ...S.listingRow, textDecoration: 'none' }}
+                  >
+                    {bid.imageUrl ? (
+                      <img src={bid.imageUrl} alt={bid.name || 'Vibe'} style={S.listingThumb} />
+                    ) : (
+                      <span style={S.listingThumbFallback}>IMG</span>
+                    )}
+                    <span style={S.listingName}>{bid.name || 'Unknown Vibe'}</span>
+                    <div style={S.listingMeta}>
+                      <div style={S.listingBid}>{Number(bid.amount || 0).toLocaleString()} AURA</div>
+                      <div style={S.listingTimer}>{bid.status || 'LIVE'}</div>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {isOwnProfile && accountTab === 'wallet' && (
+        <div style={{ ...S.body, gridTemplateColumns: '1fr', padding: isMobile ? '20px 14px 48px' : '32px 32px 64px', gap: '24px' }}>
+          <section>
+            <div style={S.sectionTitle}>
+              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Wallet Activity</span>
+            </div>
+            <div style={S.card}>
+              {walletRows.length === 0 ? (
+                <div style={S.emptyState}>No wallet activity yet</div>
+              ) : (
+                walletRows.map((entry) => (
+                  <div key={entry.id || `${entry.label}-${entry.createdAt}`} style={S.listingRow}>
+                    <span style={S.listingName}>{entry.label || 'Transaction'}</span>
+                    <div style={S.listingMeta}>
+                      <div style={S.listingBid}>{Number(entry.amount || 0).toLocaleString()} AURA</div>
+                      <div style={S.listingTimer}>
+                        {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div style={{ padding: '14px 18px', borderTop: '1px solid #1A1A1A', fontWeight: 800, color: '#C8FF00' }}>
+                Current Balance: {Number(privateBalance || 0).toLocaleString()} AURA
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
