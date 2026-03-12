@@ -852,11 +852,13 @@ const App = ({ vibe }) => {
   const loadBidHistory = useCallback(async () => {
     const vibeId = selectedVibe?.slug;
     const vibeIdAlt = selectedVibe?.id;
+    const vibeName = selectedVibe?.title || selectedVibe?.name;
     if (!vibeId) return;
 
     try {
       const params = new URLSearchParams({ vibeId });
       if (vibeIdAlt) params.set('vibeIdAlt', vibeIdAlt);
+      if (vibeName) params.set('vibeName', vibeName);
       const response = await fetch(`/api/auction/bids?${params.toString()}`, { cache: 'no-store' });
       const payload = await response.json();
       const incomingBids = Array.isArray(payload?.bids) ? payload.bids : [];

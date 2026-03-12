@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
     try {
       const { data, error } = await sb
         .from('profiles')
-        .select('aura_balance, username, prediction_points')
+        .select('aura_balance, username, prediction_points, avatar_url')
         .eq('id', userId)
         .single();
       if (requestId !== profileRequestRef.current) return;

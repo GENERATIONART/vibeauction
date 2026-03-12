@@ -77,6 +77,54 @@ const S = {
     flexShrink: 0,
     transform: 'rotate(-3deg)',
     boxShadow: '8px 8px 0px rgba(0,0,0,0.4)',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  avatarEditor: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '10px',
+    flexWrap: 'wrap',
+  },
+  avatarInput: {
+    background: '#101010',
+    border: '1px solid #2C2C2C',
+    color: '#FFFFFF',
+    padding: '8px 10px',
+    minWidth: '240px',
+    fontSize: '12px',
+    outline: 'none',
+  },
+  avatarBtn: {
+    background: '#C8FF00',
+    color: '#000000',
+    border: 'none',
+    padding: '8px 12px',
+    fontWeight: 800,
+    fontSize: '11px',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
+  avatarClearBtn: {
+    background: '#111111',
+    color: '#CCCCCC',
+    border: '1px solid #333333',
+    padding: '8px 10px',
+    fontWeight: 800,
+    fontSize: '11px',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
+  avatarStatus: {
+    fontSize: '11px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
   },
   heroText: { display: 'flex', flexDirection: 'column', gap: '4px' },
   handle: {
@@ -372,6 +420,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [avatarInput, setAvatarInput] = useState('');
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState('');
+  const [avatarError, setAvatarError] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
@@ -424,6 +476,9 @@ export default function ProfilePage() {
         }
 
         setProfile(profileData);
+        setAvatarInput(profileData?.avatar_url || '');
+        setAvatarMessage('');
+        setAvatarError('');
 
         // Fetch vibes listed by this user (by UUID stored in listed_by)
         const { data: vibeData } = await sb
@@ -463,6 +518,41 @@ export default function ProfilePage() {
   const auraBalance = profile?.aura_balance ?? 0;
   const predictionPoints = profile?.prediction_points ?? 0;
   const avatarMonogram = String(profile?.username || username || 'U').charAt(0).toUpperCase();
+  const avatarUrl = typeof profile?.avatar_url === 'string' ? profile.avatar_url.trim() : '';
+
+  const saveAvatar = async () => {
+    if (!isOwnProfile || !profile?.id || avatarSaving) return;
+    const nextUrl = String(avatarInput || '').trim();
+    if (nextUrl && !/^https?:\/\//i.test(nextUrl)) {
+      setAvatarError('Avatar must be a valid http(s) URL.');
+      setAvatarMessage('');
+      return;
+    }
+
+    const sb = getSupabaseClient();
+    if (!sb) {
+      setAvatarError('Supabase is not configured.');
+      setAvatarMessage('');
+      return;
+    }
+
+    setAvatarSaving(true);
+    setAvatarError('');
+    setAvatarMessage('');
+    try {
+      const { error } = await sb
+        .from('profiles')
+        .update({ avatar_url: nextUrl || null })
+        .eq('id', profile.id);
+      if (error) throw error;
+      setProfile((previous) => ({ ...(previous || {}), avatar_url: nextUrl || null }));
+      setAvatarMessage(nextUrl ? 'Profile photo updated.' : 'Profile photo removed.');
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : 'Failed to update profile photo.');
+    } finally {
+      setAvatarSaving(false);
+    }
+  };
 
   if (!loading && notFound) {
     return (
@@ -508,7 +598,11 @@ export default function ProfilePage() {
             <div style={{ ...S.avatar, width: isMobile ? '72px' : '110px', height: isMobile ? '72px' : '110px', fontSize: isMobile ? '36px' : '58px', background: '#222', border: '4px solid #333' }} />
           ) : (
             <div style={{ ...S.avatar, width: isMobile ? '72px' : '110px', height: isMobile ? '72px' : '110px', fontSize: isMobile ? '36px' : '58px' }}>
-              {avatarMonogram}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={`${profile?.username || username} profile`} style={S.avatarImage} />
+              ) : (
+                avatarMonogram
+              )}
             </div>
           )}
           <div style={S.heroText}>
@@ -528,6 +622,42 @@ export default function ProfilePage() {
                   <span style={{ ...S.repBadge, fontSize: isMobile ? '10px' : '12px' }}>
                     ★ {repScore.toFixed(1)} Rep
                   </span>
+                )}
+                {isOwnProfile && !loading && (
+                  <div style={S.avatarEditor}>
+                    <input
+                      type="url"
+                      value={avatarInput}
+                      onChange={(event) => {
+                        setAvatarInput(event.target.value);
+                        if (avatarError) setAvatarError('');
+                        if (avatarMessage) setAvatarMessage('');
+                      }}
+                      placeholder="https://your-image-url.com/pfp.jpg"
+                      style={{ ...S.avatarInput, minWidth: isMobile ? '100%' : S.avatarInput.minWidth }}
+                    />
+                    <button
+                      type="button"
+                      onClick={saveAvatar}
+                      style={{ ...S.avatarBtn, opacity: avatarSaving ? 0.7 : 1, cursor: avatarSaving ? 'not-allowed' : 'pointer' }}
+                      disabled={avatarSaving}
+                    >
+                      {avatarSaving ? 'Saving...' : 'Update Photo'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAvatarInput('')}
+                      style={S.avatarClearBtn}
+                      disabled={avatarSaving}
+                    >
+                      Clear
+                    </button>
+                    {(avatarError || avatarMessage) && (
+                      <span style={{ ...S.avatarStatus, color: avatarError ? '#FF8A8A' : '#C8FF00' }}>
+                        {avatarError || avatarMessage}
+                      </span>
+                    )}
+                  </div>
                 )}
               </>
             )}
