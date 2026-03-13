@@ -1,8 +1,9 @@
 import React from 'react';
 import Providers from './providers';
 import './globals.css';
+import { getSiteUrl, toAbsoluteUrl } from '../lib/site-url.js';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vibeauction.com';
+const SITE_URL = getSiteUrl();
 const SITE_NAME = 'Vibe Auction';
 const DEFAULT_DESCRIPTION = "The world's first auction house for things that don't exist. Buy and sell rare feelings, cursed moments, and intangible vibes.";
 
@@ -13,16 +14,20 @@ export const metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
+  alternates: {
+    canonical: '/',
+  },
   keywords: ['vibe auction', 'nft', 'feelings', 'abstract', 'auction', 'aura'],
   authors: [{ name: 'Vibe Auction' }],
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
+    url: SITE_URL,
     title: SITE_NAME,
     description: DEFAULT_DESCRIPTION,
     images: [
       {
-        url: '/api/og',
+        url: toAbsoluteUrl('/api/og'),
         width: 1200,
         height: 630,
         alt: 'Vibe Auction — bid on vibes',
@@ -34,7 +39,7 @@ export const metadata = {
     site: '@vibeauction',
     title: SITE_NAME,
     description: DEFAULT_DESCRIPTION,
-    images: ['/api/og'],
+    images: [toAbsoluteUrl('/api/og')],
   },
   appleWebApp: {
     capable: true,

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import AuctionPage from '../../../react-auction-page.js';
 import { auctionItems, getAuctionItemBySlug } from '../../../lib/auction-items.js';
 import { getMintedVibeBySlug } from '../../../lib/server/state-db.js';
+import { toAbsoluteUrl } from '../../../lib/site-url.js';
 
 // Pre-build the hardcoded static items at build time
 export function generateStaticParams() {
@@ -23,12 +24,18 @@ export async function generateMetadata({ params }) {
   const title = staticVibe ? staticVibe.title : vibe.name;
   const bid = staticVibe ? staticVibe.bid : vibe.startingPrice;
   const description = `Bid now on "${title}" — current bid ${Number(bid || 0).toLocaleString()} AURA. Live on Vibe Auction.`;
-  const ogImage = `/api/og/auction?slug=${encodeURIComponent(slug)}`;
+  const canonical = toAbsoluteUrl(`/auction/${encodeURIComponent(String(slug || ''))}`);
+  const ogImage = toAbsoluteUrl(`/api/og/auction?slug=${encodeURIComponent(String(slug || ''))}`);
 
   return {
     title,
     description,
+    alternates: {
+      canonical,
+    },
     openGraph: {
+      type: 'website',
+      url: canonical,
       title: `${title} — Live Auction`,
       description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: title }],

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { toAbsoluteUrl } from '../../../lib/site-url.js';
 
 export async function generateMetadata({ params }) {
   const rawUsername = params?.username || 'unknown';
@@ -30,12 +31,18 @@ export async function generateMetadata({ params }) {
   const description = repScore
     ? `${bio} Wallet: ${Number(repScore).toLocaleString()} AURA.`
     : bio;
-  const ogImage = `/api/og/profile?username=${encodeURIComponent(username)}`;
+  const canonical = toAbsoluteUrl(`/profile/${encodeURIComponent(username)}`);
+  const ogImage = toAbsoluteUrl(`/api/og/profile?username=${encodeURIComponent(username)}`);
 
   return {
     title,
     description,
+    alternates: {
+      canonical,
+    },
     openGraph: {
+      type: 'profile',
+      url: canonical,
       title: `@${username} on Vibe Auction`,
       description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: `@${username}` }],
