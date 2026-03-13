@@ -34,16 +34,6 @@ export async function GET(request) {
           opacity: 0.06,
         }} />
 
-        {/* Dot pattern */}
-        <div style={{
-          position: 'absolute',
-          top: 0, left: 0,
-          width: '100%', height: '630px',
-          backgroundImage: 'radial-gradient(rgba(200,255,0,0.08) 1px, transparent 1px)',
-          backgroundSize: '30px 30px',
-          display: 'flex',
-        }} />
-
         {/* Main content */}
         <div style={{ display: 'flex', flex: 1, alignItems: 'center', padding: '60px 80px', gap: '56px' }}>
           {/* Avatar */}
@@ -88,7 +78,7 @@ export async function GET(request) {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '1px',
-              width: 'fit-content',
+              alignSelf: 'flex-start',
               display: 'flex',
             }}>
               View Profile & Vibes
