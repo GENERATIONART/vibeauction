@@ -10,20 +10,22 @@ export async function GET(request) {
 
   let title = 'Vibe Auction';
   let bid = 0;
+  let imageUrl = null;
 
   try {
     const staticVibe = getAuctionItemBySlug(slug);
     const minted = staticVibe ? null : await getMintedVibeBySlug(slug);
     const vibe = staticVibe ?? minted;
     if (vibe) {
-      title = staticVibe ? staticVibe.title : (vibe.name || vibe.title || 'Vibe Auction');
+      title = staticVibe ? staticVibe.title : (vibe.name || vibe.title || title);
       bid = staticVibe ? staticVibe.bid : (vibe.startingPrice || 0);
+      imageUrl = staticVibe ? null : (vibe.imageUrl ?? null);
     }
   } catch {
     // use defaults
   }
 
-  const fs = title.length > 60 ? '56px' : title.length > 40 ? '72px' : title.length > 24 ? '88px' : '110px';
+  const fs = title.length > 60 ? '44px' : title.length > 40 ? '54px' : title.length > 24 ? '66px' : '80px';
 
   return new ImageResponse(
     (
@@ -31,55 +33,105 @@ export async function GET(request) {
         style={{
           width: '1200px',
           height: '630px',
-          background: '#C8FF00',
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          background: '#000',
           fontFamily: 'sans-serif',
-          padding: '60px 80px',
         }}
       >
+        {/* Full-bleed vibe image */}
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            style={{
+              position: 'absolute',
+              top: 0, left: 0,
+              width: '1200px',
+              height: '630px',
+              objectFit: 'cover',
+              display: 'flex',
+            }}
+          />
+        )}
+
+        {/* Gradient overlay so text is always readable */}
         <div style={{
-          fontSize: fs,
-          fontWeight: 900,
-          color: '#000000',
-          textTransform: 'uppercase',
-          letterSpacing: '-2px',
-          lineHeight: 1.0,
+          position: 'absolute',
+          bottom: 0, left: 0,
+          width: '1200px',
+          height: imageUrl ? '320px' : '630px',
+          background: imageUrl
+            ? 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 60%, transparent 100%)'
+            : '#000000',
           display: 'flex',
-          textAlign: 'center',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
+        }} />
+
+        {/* Text block pinned to bottom */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0, left: 0,
+          width: '1200px',
+          padding: '0 64px 48px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
         }}>
-          {title}
+          <div style={{
+            fontSize: fs,
+            fontWeight: 900,
+            color: '#FFFFFF',
+            textTransform: 'uppercase',
+            letterSpacing: '-1px',
+            lineHeight: 1.05,
+            display: 'flex',
+            flexWrap: 'wrap',
+          }}>
+            {title}
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <div style={{
+              background: '#C8FF00',
+              color: '#000',
+              padding: '6px 16px',
+              fontSize: '18px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              display: 'flex',
+            }}>
+              PLACE BID
+            </div>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 700,
+              color: '#C8FF00',
+              display: 'flex',
+            }}>
+              {Number(bid || 0).toLocaleString()} AURA
+            </div>
+          </div>
         </div>
 
+        {/* Top-left brand badge */}
         <div style={{
+          position: 'absolute',
+          top: '28px',
+          left: '40px',
+          background: '#C8FF00',
+          color: '#000',
+          padding: '6px 14px',
+          fontSize: '16px',
+          fontWeight: 900,
+          textTransform: 'uppercase',
+          letterSpacing: '2px',
           display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          marginTop: '32px',
         }}>
-          <div style={{
-            fontSize: '20px',
-            color: '#444444',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '4px',
-            display: 'flex',
-          }}>
-            opening bid
-          </div>
-          <div style={{
-            fontSize: '44px',
-            fontWeight: 900,
-            color: '#000000',
-            letterSpacing: '-1px',
-            display: 'flex',
-          }}>
-            {Number(bid || 0).toLocaleString()} AURA
-          </div>
+          VIBE AUCTION
         </div>
       </div>
     ),
