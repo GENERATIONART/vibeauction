@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
@@ -496,16 +496,12 @@ export default function MintPage() {
     anonymous: true,
     alias: '',
   });
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const [uploadHover, setUploadHover] = useState(false);
   const [focusedField, setFocusedField] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [mintStage, setMintStage] = useState('vibing');
-
-  const fileInputRef = useRef(null);
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
@@ -535,30 +531,6 @@ export default function MintPage() {
       document.head.removeChild(style);
     };
   }, []);
-
-  const handleImageUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (fileEvent) => {
-      setUploadedImage(fileEvent.target?.result || null);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const removeImage = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setUploadedImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const getUploadZoneStyle = () => {
-    if (uploadedImage) return customStyles.uploadZoneHasImage;
-    if (uploadHover) return customStyles.uploadZoneHover;
-    return customStyles.uploadZone;
-  };
 
   const getInputStyle = (fieldName) => (
     focusedField === fieldName ? customStyles.inputFieldFocus : customStyles.inputField
@@ -700,7 +672,6 @@ export default function MintPage() {
         buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
         duration: formData.duration,
         manifesto: cleanedDetails,
-        hasImage: Boolean(uploadedImage),
         author: profile?.username ?? null,
         listedBy: user?.id ?? null,
       }, {
@@ -801,47 +772,6 @@ export default function MintPage() {
                 onFocus={() => setFocusedField('itemName')}
                 onBlur={() => setFocusedField('')}
               />
-            </div>
-
-            <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
-              <label style={customStyles.label}>
-                Cover Image{' '}
-                <span style={{ fontSize: '12px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 700, textTransform: 'none' }}>
-                  — optional
-                </span>
-              </label>
-              <div
-                style={getUploadZoneStyle()}
-                onMouseEnter={() => setUploadHover(true)}
-                onMouseLeave={() => setUploadHover(false)}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%', zIndex: 2 }}
-                />
-                {!uploadedImage && (
-                  <>
-                    <span style={customStyles.uploadIcon}>IMG</span>
-                    <span style={customStyles.uploadText}>Drop an image or click to browse</span>
-                    <span style={customStyles.uploadSubtext}>PNG, JPG, GIF · Max 5MB</span>
-                  </>
-                )}
-                {uploadedImage && (
-                  <img
-                    src={uploadedImage}
-                    alt="Cover preview"
-                    style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
-                  />
-                )}
-                {uploadedImage && (
-                  <button style={customStyles.uploadRemove} onClick={removeImage}>
-                    ✕ Remove
-                  </button>
-                )}
-              </div>
             </div>
 
             <div style={customStyles.inputGroup}>
@@ -1062,16 +992,8 @@ export default function MintPage() {
             <article style={customStyles.card}>
               <div style={customStyles.liveBadge}>{isConfession ? 'Confessions' : 'AI Category'}</div>
               <div style={customStyles.cardImageArea}>
-                {!uploadedImage && <div style={customStyles.patternDots}></div>}
-                {uploadedImage ? (
-                  <img
-                    src={uploadedImage}
-                    alt=""
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
-                  />
-                ) : (
-                  <div style={customStyles.cardFallback}>IMAGE PREVIEW</div>
-                )}
+                <div style={customStyles.patternDots}></div>
+                <div style={customStyles.cardFallback}>AI IMAGE PREVIEW</div>
               </div>
               <div style={customStyles.cardContent}>
                 <h2 style={{ ...customStyles.cardTitle, fontSize: isMobile ? '22px' : customStyles.cardTitle.fontSize }}>

@@ -9,123 +9,118 @@ export async function GET() {
         style={{
           width: '1200px',
           height: '630px',
-          background: '#0A0A0A',
+          background: '#080808',
           display: 'flex',
-          flexDirection: 'column',
-          fontFamily: 'sans-serif',
+          fontFamily: 'serif',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Yellow diagonal slash background accent */}
+        {/* Left neon stripe */}
         <div style={{
           position: 'absolute',
-          top: '-60px',
-          right: '-40px',
-          width: '420px',
-          height: '760px',
+          top: 0, left: 0,
+          width: '6px', height: '100%',
           background: '#C8FF00',
-          transform: 'rotate(12deg)',
           display: 'flex',
-          opacity: 0.07,
         }} />
 
-        {/* Top warning bar */}
+        {/* Fine diagonal rule */}
         <div style={{
+          position: 'absolute',
+          top: 0, right: 0,
+          width: '500px', height: '100%',
+          background: 'linear-gradient(135deg, transparent 60%, #141414 60%)',
           display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          padding: '18px 56px',
-          background: '#C8FF00',
-          flexShrink: 0,
-        }}>
-          <div style={{
-            background: '#000',
-            color: '#C8FF00',
-            fontWeight: 900,
-            fontSize: '13px',
-            textTransform: 'uppercase',
-            letterSpacing: '3px',
-            padding: '4px 12px',
-            display: 'flex',
-          }}>
-            ⚠ BREAKING
-          </div>
-          <div style={{
-            fontWeight: 900,
-            fontSize: '14px',
-            color: '#000',
-            textTransform: 'uppercase',
-            letterSpacing: '2px',
-            display: 'flex',
-          }}>
-            Live bidding now open — feelings are going fast
-          </div>
-        </div>
+        }} />
 
-        {/* Main content */}
+        {/* Content */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          flex: 1,
-          padding: '48px 56px 40px',
           justifyContent: 'space-between',
+          flex: 1,
+          padding: '64px 80px 64px 86px',
         }}>
-          {/* Headline */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{
-              fontSize: '92px',
-              fontWeight: 900,
-              color: '#FFFFFF',
-              lineHeight: 0.88,
-              textTransform: 'uppercase',
-              letterSpacing: '-3px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}>
-              <span style={{ display: 'flex' }}>WE ARE</span>
-              <span style={{ color: '#C8FF00', display: 'flex' }}>SELLING</span>
-              <span style={{ display: 'flex' }}>FEELINGS.</span>
-            </div>
 
+          {/* Top: house name + established */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{
-              fontSize: '22px',
-              color: '#666',
-              fontWeight: 500,
+              fontSize: '13px',
+              fontWeight: 400,
+              color: '#C8FF00',
+              textTransform: 'uppercase',
+              letterSpacing: '6px',
               display: 'flex',
-              marginTop: '8px',
             }}>
-              You can bid on "the specific relief of taking off pants after a long day."
+              Vibe Auction House
+            </div>
+            <div style={{
+              fontSize: '12px',
+              color: '#333',
+              letterSpacing: '4px',
+              textTransform: 'uppercase',
+              display: 'flex',
+            }}>
+              Est. 2024
             </div>
           </div>
 
-          {/* Bottom row */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
+          {/* Centre: headline */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{
-              fontSize: '18px',
-              fontWeight: 800,
-              color: '#333',
-              textTransform: 'uppercase',
+              width: '48px',
+              height: '1px',
+              background: '#C8FF00',
+              display: 'flex',
+            }} />
+            <div style={{
+              fontSize: '84px',
+              fontWeight: 700,
+              color: '#FFFFFF',
+              lineHeight: 0.92,
+              letterSpacing: '-2px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              <span style={{ display: 'flex' }}>Selling</span>
+              <span style={{ display: 'flex' }}>feelings</span>
+              <span style={{ color: '#C8FF00', fontStyle: 'italic', display: 'flex' }}>seriously.</span>
+            </div>
+            <div style={{
+              fontSize: '20px',
+              color: '#555',
+              fontWeight: 400,
+              fontStyle: 'italic',
+              display: 'flex',
+              marginTop: '4px',
+            }}>
+              The world's first auction house for things that don't exist.
+            </div>
+          </div>
+
+          {/* Bottom: domain + cta */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{
+              fontSize: '14px',
+              color: '#2A2A2A',
               letterSpacing: '3px',
+              textTransform: 'uppercase',
               display: 'flex',
             }}>
               vibeauction.vercel.app
             </div>
             <div style={{
-              background: '#C8FF00',
-              color: '#000',
-              padding: '14px 32px',
-              fontSize: '18px',
-              fontWeight: 900,
+              border: '1px solid #C8FF00',
+              color: '#C8FF00',
+              padding: '12px 36px',
+              fontSize: '13px',
+              fontWeight: 400,
               textTransform: 'uppercase',
-              letterSpacing: '2px',
+              letterSpacing: '4px',
               display: 'flex',
             }}>
-              BID NOW →
+              Bid Now
             </div>
           </div>
         </div>
