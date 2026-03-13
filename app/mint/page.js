@@ -31,14 +31,38 @@ const durationMap = {
   '7 Days': '6d 23h',
 };
 
-const MINT_STAGE_ORDER = ['vibing', 'construction', 'generating', 'finalizing'];
+const MINT_STAGE_ORDER = ['uploading', 'vibing', 'construction', 'generating', 'finalizing'];
 
 const MINT_STAGE_LABELS = {
+  uploading: 'Uploading Image',
   vibing: 'Vibing',
   construction: 'Construction Humor',
   generating: 'Generating Image',
   finalizing: 'Packaging Auction Card',
 };
+
+const IMAGE_STYLE_OPTIONS = [
+  { value: '', label: 'AI Picks Style' },
+  { value: 'surreal editorial collage with layered paper cutout textures', label: 'Surreal Collage' },
+  { value: 'bold mid-century poster design with geometric forms and dramatic silhouettes', label: 'Mid-Century Poster' },
+  { value: 'stop-motion clay diorama aesthetic with tactile handmade objects', label: 'Clay Stop-Motion' },
+  { value: 'expressionist digital painting with thick brush textures and playful distortion', label: 'Expressionist Painting' },
+  { value: 'retro halftone comic look with dynamic action framing', label: 'Retro Halftone Comic' },
+  { value: 'dreamy 3D toy-world render with exaggerated proportions and tiny details', label: '3D Toy World' },
+  { value: 'neo-dada photomontage style with unexpected object combinations', label: 'Neo-Dada Montage' },
+  { value: 'street-art mural energy with stylized characters and punchy shapes', label: 'Street Art Mural' },
+  { value: 'vintage pulp cover composition with dramatic perspective', label: 'Vintage Pulp' },
+  { value: 'minimalist vector scene with absurd props and high-contrast staging', label: 'Minimalist Vector' },
+];
+
+const IMAGE_HUMOR_OPTIONS = [
+  { value: '', label: 'AI Picks Humor Style' },
+  { value: 'visual irony where a serious setup has an obviously ridiculous payoff', label: 'Visual Irony' },
+  { value: 'physical comedy through exaggerated motion and over-the-top reactions', label: 'Physical Comedy' },
+  { value: 'awkward social tension played as a silent visual joke', label: 'Awkward Tension' },
+  { value: 'unexpected scale mismatch (tiny thing acting powerful or huge thing acting delicate)', label: 'Scale Mismatch' },
+  { value: 'deadpan absurdism: everything is composed seriously except one impossible detail', label: 'Deadpan Absurdism' },
+];
 
 const customStyles = {
   root: {
@@ -502,6 +526,19 @@ export default function MintPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [mintStage, setMintStage] = useState('vibing');
+  const [uploadedImageUrl, setUploadedImageUrl] = useState('');
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadPreviewUrl, setUploadPreviewUrl] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [advancedOptions, setAdvancedOptions] = useState({
+    imagePromptText: '',
+    imageStyle: '',
+    imageComposition: '',
+    imageColor: '',
+    imageHumor: '',
+  });
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
@@ -556,6 +593,53 @@ export default function MintPage() {
 
     setError('');
     setSuccess('');
+  };
+
+  const handleFileSelect = async (file) => {
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Unsupported type. Use JPEG, PNG, WebP, or GIF.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File too large (max 10 MB).');
+      return;
+    }
+    setUploadError('');
+    setUploadedFile(file);
+    setUploadPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleImageUpload = async () => {
+    if (!uploadedFile) return null;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const form = new FormData();
+      form.append('file', uploadedFile);
+      const res = await fetch('/api/upload/vibe-image', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setUploadError(data.error || 'Upload failed.');
+        return null;
+      }
+      setUploadedImageUrl(data.url);
+      return data.url;
+    } catch (err) {
+      setUploadError('Upload failed. Please try again.');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const clearUploadedImage = () => {
+    if (uploadPreviewUrl) URL.revokeObjectURL(uploadPreviewUrl);
+    setUploadedFile(null);
+    setUploadPreviewUrl('');
+    setUploadedImageUrl('');
+    setUploadError('');
   };
 
   const handleSubmit = async (event) => {
@@ -665,6 +749,17 @@ export default function MintPage() {
           if (generationEscalationTimeout) clearTimeout(generationEscalationTimeout);
         }
       };
+      // Upload image if user selected one but it hasn't been uploaded yet
+      let finalImageUrl = uploadedImageUrl;
+      if (uploadedFile && !uploadedImageUrl) {
+        setMintStage('uploading');
+        finalImageUrl = await handleImageUpload();
+        if (!finalImageUrl && uploadedFile) {
+          // upload failed but we already set the error in handleImageUpload
+          return;
+        }
+      }
+
       const mintResult = await mintVibe({
         name: cleanedName,
         category: isConfession ? 'Confessions' : 'Auto',
@@ -674,6 +769,13 @@ export default function MintPage() {
         manifesto: cleanedDetails,
         author: profile?.username ?? null,
         listedBy: user?.id ?? null,
+        // Image and advanced options
+        uploadedImageUrl: finalImageUrl || null,
+        imagePromptText: advancedOptions.imagePromptText || null,
+        imageStyle: advancedOptions.imageStyle || null,
+        imageComposition: advancedOptions.imageComposition || null,
+        imageColor: advancedOptions.imageColor || null,
+        imageHumor: advancedOptions.imageHumor || null,
       }, {
         onStage: updateMintStageFromEvent,
       });
@@ -877,6 +979,154 @@ export default function MintPage() {
               </>
             )}
 
+            {!isConfession && (
+              <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
+                <label style={customStyles.label}>
+                  Your Image{' '}
+                  <span style={{ fontSize: '12px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 700, textTransform: 'none' }}>
+                    — optional, skips AI generation
+                  </span>
+                </label>
+                <div
+                  style={uploadPreviewUrl ? customStyles.uploadZoneHasImage : customStyles.uploadZone}
+                  onClick={() => !uploadPreviewUrl && document.getElementById('vibe-image-input').click()}
+                  onDragOver={(e) => { e.preventDefault(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFileSelect(file);
+                  }}
+                >
+                  {uploadPreviewUrl ? (
+                    <>
+                      <img
+                        src={uploadPreviewUrl}
+                        alt="Upload preview"
+                        style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block' }}
+                      />
+                      <button
+                        type="button"
+                        style={customStyles.uploadRemove}
+                        onClick={(e) => { e.stopPropagation(); clearUploadedImage(); }}
+                      >
+                        Remove
+                      </button>
+                      {uploadedImageUrl && (
+                        <div style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(0,0,0,0.8)', color: '#C8FF00', fontSize: '10px', fontWeight: 800, padding: '2px 6px', textTransform: 'uppercase' }}>
+                          Uploaded ✓
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div style={customStyles.uploadIcon}>📷</div>
+                      <div style={customStyles.uploadText}>Upload Your Own Image</div>
+                      <div style={customStyles.uploadSubtext}>JPEG · PNG · WebP · GIF · Max 10 MB</div>
+                    </>
+                  )}
+                </div>
+                <input
+                  id="vibe-image-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  style={{ display: 'none' }}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
+                />
+                {uploadError && <div style={{ ...customStyles.statusError, marginTop: '6px' }}>{uploadError}</div>}
+              </div>
+            )}
+
+            {!isConfession && (
+              <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
+                <button
+                  type="button"
+                  style={{
+                    background: showAdvanced ? '#1A1A1A' : 'transparent',
+                    border: `2px solid ${showAdvanced ? '#C8FF00' : '#333333'}`,
+                    color: showAdvanced ? '#C8FF00' : '#555555',
+                    padding: '10px 16px',
+                    fontFamily: "'Anton', sans-serif",
+                    fontSize: '14px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    justifyContent: 'space-between',
+                  }}
+                  onClick={() => setShowAdvanced((v) => !v)}
+                >
+                  <span>Advanced Image Options</span>
+                  <span style={{ fontSize: '18px', lineHeight: 1 }}>{showAdvanced ? '▲' : '▼'}</span>
+                </button>
+
+                {showAdvanced && (
+                  <div style={{
+                    border: '1px solid #2A2A2A',
+                    background: '#0A0A0A',
+                    padding: '20px',
+                    display: 'grid',
+                    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                    gap: '16px',
+                    marginTop: '0px',
+                  }}>
+                    <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
+                      <label style={{ ...customStyles.label, fontSize: '13px' }}>Image Prompt / Direction</label>
+                      <textarea
+                        style={{ ...getInputStyle('imagePromptText'), height: '80px', resize: 'none', fontSize: '14px' }}
+                        placeholder="e.g. A chaotic office scene with flying papers and a man screaming into a tiny phone..."
+                        value={advancedOptions.imagePromptText}
+                        onChange={(e) => setAdvancedOptions((p) => ({ ...p, imagePromptText: e.target.value }))}
+                        onFocus={() => setFocusedField('imagePromptText')}
+                        onBlur={() => setFocusedField('')}
+                        maxLength={400}
+                        disabled={!!uploadPreviewUrl}
+                      />
+                      <span style={customStyles.helperText}>
+                        {uploadPreviewUrl ? 'Disabled — using uploaded image.' : `${400 - advancedOptions.imagePromptText.length} chars left`}
+                      </span>
+                    </div>
+
+                    <div style={customStyles.inputGroup}>
+                      <label style={{ ...customStyles.label, fontSize: '13px' }}>Art Style</label>
+                      <select
+                        style={customStyles.selectField}
+                        value={advancedOptions.imageStyle}
+                        onChange={(e) => setAdvancedOptions((p) => ({ ...p, imageStyle: e.target.value }))}
+                        disabled={!!uploadPreviewUrl}
+                      >
+                        {IMAGE_STYLE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={customStyles.inputGroup}>
+                      <label style={{ ...customStyles.label, fontSize: '13px' }}>Humor Style</label>
+                      <select
+                        style={customStyles.selectField}
+                        value={advancedOptions.imageHumor}
+                        onChange={(e) => setAdvancedOptions((p) => ({ ...p, imageHumor: e.target.value }))}
+                        disabled={!!uploadPreviewUrl}
+                      >
+                        {IMAGE_HUMOR_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {uploadPreviewUrl && (
+                      <div style={{ gridColumn: isMobile ? 'auto' : 'span 2', fontSize: '12px', color: '#555555', fontWeight: 700, textTransform: 'uppercase' }}>
+                        Image generation options are disabled when you upload your own image.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
               <label style={customStyles.label}>{isConfession ? 'Confession' : 'Manifesto (Optional)'}</label>
               <textarea
@@ -993,7 +1243,13 @@ export default function MintPage() {
               <div style={customStyles.liveBadge}>{isConfession ? 'Confessions' : 'AI Category'}</div>
               <div style={customStyles.cardImageArea}>
                 <div style={customStyles.patternDots}></div>
-                <div style={customStyles.cardFallback}>AI IMAGE PREVIEW</div>
+                {uploadPreviewUrl ? (
+                  <img src={uploadPreviewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }} />
+                ) : (
+                  <div style={customStyles.cardFallback}>
+                    {advancedOptions.imageStyle ? advancedOptions.imageStyle.split(' ').slice(0, 3).join(' ').toUpperCase() + '...' : 'AI IMAGE PREVIEW'}
+                  </div>
+                )}
               </div>
               <div style={customStyles.cardContent}>
                 <h2 style={{ ...customStyles.cardTitle, fontSize: isMobile ? '22px' : customStyles.cardTitle.fontSize }}>
