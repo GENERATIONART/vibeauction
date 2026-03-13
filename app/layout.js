@@ -1,7 +1,7 @@
 import React from 'react';
 import Providers from './providers';
 import './globals.css';
-import { getSiteUrl, toAbsoluteUrl } from '../lib/site-url.js';
+import { getSiteUrl, toAbsoluteUrl, SOCIAL_IMAGE_VERSION } from '../lib/site-url.js';
 
 const SITE_URL = getSiteUrl();
 const SITE_NAME = 'Vibe Auction';
@@ -27,7 +27,7 @@ export const metadata = {
     description: DEFAULT_DESCRIPTION,
     images: [
       {
-        url: toAbsoluteUrl('/api/og'),
+        url: toAbsoluteUrl(`/api/og?v=${SOCIAL_IMAGE_VERSION}`),
         width: 1200,
         height: 630,
         alt: 'Vibe Auction — bid on vibes',
@@ -37,9 +37,10 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     site: '@vibeauction',
+    creator: '@vibeauction',
     title: SITE_NAME,
     description: DEFAULT_DESCRIPTION,
-    images: [toAbsoluteUrl('/api/og')],
+    images: [{ url: toAbsoluteUrl(`/api/og?v=${SOCIAL_IMAGE_VERSION}`), alt: 'Vibe Auction — bid on vibes' }],
   },
   appleWebApp: {
     capable: true,

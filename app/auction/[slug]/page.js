@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import AuctionPage from '../../../react-auction-page.js';
 import { auctionItems, getAuctionItemBySlug } from '../../../lib/auction-items.js';
 import { getMintedVibeBySlug } from '../../../lib/server/state-db.js';
-import { toAbsoluteUrl } from '../../../lib/site-url.js';
+import { toAbsoluteUrl, SOCIAL_IMAGE_VERSION } from '../../../lib/site-url.js';
 
 // Pre-build the hardcoded static items at build time
 export function generateStaticParams() {
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
   const bid = staticVibe ? staticVibe.bid : vibe.startingPrice;
   const description = `Bid now on "${title}" — current bid ${Number(bid || 0).toLocaleString()} AURA. Live on Vibe Auction.`;
   const canonical = toAbsoluteUrl(`/auction/${encodeURIComponent(String(slug || ''))}`);
-  const ogImage = toAbsoluteUrl(`/api/og/auction?slug=${encodeURIComponent(String(slug || ''))}`);
+  const ogImage = toAbsoluteUrl(`/api/og/auction?slug=${encodeURIComponent(String(slug || ''))}&v=${SOCIAL_IMAGE_VERSION}`);
 
   return {
     title,
@@ -35,6 +35,7 @@ export async function generateMetadata({ params }) {
     },
     openGraph: {
       type: 'website',
+      siteName: 'Vibe Auction',
       url: canonical,
       title: `${title} — Live Auction`,
       description,
@@ -42,9 +43,11 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: 'summary_large_image',
+      site: '@vibeauction',
+      creator: '@vibeauction',
       title: `${title} — Live Auction`,
       description,
-      images: [ogImage],
+      images: [{ url: ogImage, alt: title }],
     },
   };
 }

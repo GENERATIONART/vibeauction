@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { toAbsoluteUrl } from '../../../lib/site-url.js';
+import { toAbsoluteUrl, SOCIAL_IMAGE_VERSION } from '../../../lib/site-url.js';
 
 export async function generateMetadata({ params }) {
   const rawUsername = params?.username || 'unknown';
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }) {
     ? `${bio} Wallet: ${Number(repScore).toLocaleString()} AURA.`
     : bio;
   const canonical = toAbsoluteUrl(`/profile/${encodeURIComponent(username)}`);
-  const ogImage = toAbsoluteUrl(`/api/og/profile?username=${encodeURIComponent(username)}`);
+  const ogImage = toAbsoluteUrl(`/api/og/profile?username=${encodeURIComponent(username)}&v=${SOCIAL_IMAGE_VERSION}`);
 
   return {
     title,
@@ -42,6 +42,7 @@ export async function generateMetadata({ params }) {
     },
     openGraph: {
       type: 'profile',
+      siteName: 'Vibe Auction',
       url: canonical,
       title: `@${username} on Vibe Auction`,
       description,
@@ -49,9 +50,11 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: 'summary_large_image',
+      site: '@vibeauction',
+      creator: '@vibeauction',
       title: `@${username} on Vibe Auction`,
       description,
-      images: [ogImage],
+      images: [{ url: ogImage, alt: `@${username}` }],
     },
   };
 }
