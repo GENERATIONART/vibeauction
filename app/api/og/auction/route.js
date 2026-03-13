@@ -14,10 +14,9 @@ export async function GET(request) {
 
   const title = vibe ? (staticVibe ? staticVibe.title : vibe.name) : 'Unknown Vibe';
   const bid = vibe ? (staticVibe ? staticVibe.bid : vibe.startingPrice) : 0;
-  const category = vibe ? (staticVibe ? staticVibe.category : vibe.category) : 'Vibes';
 
-  // Fake lot numbers make it feel like a real auction house
-  const lotNum = String(Math.abs(slug.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 899 + 100);
+  // Pick font size based on title length so it always fills the space
+  const fs = title.length > 60 ? '52px' : title.length > 40 ? '66px' : title.length > 24 ? '82px' : '100px';
 
   try {
     return new ImageResponse(
@@ -26,158 +25,66 @@ export async function GET(request) {
           style={{
             width: '1200px',
             height: '630px',
-            background: '#0A0A0A',
-            display: 'flex',
-            fontFamily: 'sans-serif',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Left yellow panel */}
-          <div style={{
-            width: '320px',
-            height: '100%',
-            background: '#C8FF00',
+            background: '#000000',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            flexShrink: 0,
-            gap: '8px',
-            padding: '40px 32px',
+            fontFamily: 'sans-serif',
+            padding: '60px 80px',
+            gap: '0px',
+          }}
+        >
+          {/* The vibe name — hero */}
+          <div style={{
+            fontSize: fs,
+            fontWeight: 900,
+            color: '#FFFFFF',
+            textTransform: 'uppercase',
+            letterSpacing: '-2px',
+            lineHeight: 1.0,
+            display: 'flex',
+            textAlign: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}>
+            {title}
+          </div>
+
+          {/* Divider */}
+          <div style={{
+            width: '80px',
+            height: '4px',
+            background: '#C8FF00',
+            marginTop: '36px',
+            marginBottom: '28px',
+            display: 'flex',
+          }} />
+
+          {/* Bid line */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '12px',
           }}>
             <div style={{
-              fontSize: '13px',
-              fontWeight: 900,
-              color: '#000',
+              fontSize: '22px',
+              color: '#444',
+              fontWeight: 500,
               textTransform: 'uppercase',
               letterSpacing: '4px',
               display: 'flex',
             }}>
-              Lot
+              opening bid
             </div>
             <div style={{
-              fontSize: '120px',
+              fontSize: '48px',
               fontWeight: 900,
-              color: '#000',
-              lineHeight: 0.85,
-              letterSpacing: '-4px',
+              color: '#C8FF00',
+              letterSpacing: '-1px',
               display: 'flex',
             }}>
-              {lotNum}
-            </div>
-            <div style={{
-              width: '60px',
-              height: '4px',
-              background: '#000',
-              display: 'flex',
-              marginTop: '12px',
-            }} />
-            <div style={{
-              fontSize: '12px',
-              fontWeight: 900,
-              color: '#000',
-              textTransform: 'uppercase',
-              letterSpacing: '3px',
-              marginTop: '12px',
-              display: 'flex',
-              textAlign: 'center',
-            }}>
-              {category}
-            </div>
-          </div>
-
-          {/* Right content */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '48px 52px',
-            justifyContent: 'space-between',
-          }}>
-            {/* Category + "LIVE AUCTION" label */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{
-                fontSize: '13px',
-                fontWeight: 900,
-                color: '#444',
-                textTransform: 'uppercase',
-                letterSpacing: '4px',
-                display: 'flex',
-              }}>
-                VIBE AUCTION HOUSE
-              </div>
-              <div style={{
-                background: '#FF3B3B',
-                color: '#fff',
-                fontSize: '12px',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                letterSpacing: '3px',
-                padding: '5px 14px',
-                display: 'flex',
-              }}>
-                ● LIVE
-              </div>
-            </div>
-
-            {/* Vibe title — the hero */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0px',
-            }}>
-              <div style={{
-                fontSize: title.length > 50 ? '38px' : title.length > 35 ? '46px' : title.length > 22 ? '56px' : '68px',
-                fontWeight: 900,
-                color: '#FFFFFF',
-                lineHeight: 1.0,
-                textTransform: 'uppercase',
-                letterSpacing: '-1px',
-                display: 'flex',
-                flexWrap: 'wrap',
-              }}>
-                {title}
-              </div>
-            </div>
-
-            {/* Bid + CTA */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#555',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '3px',
-                  display: 'flex',
-                }}>
-                  Opening bid
-                </div>
-                <div style={{
-                  fontSize: '52px',
-                  fontWeight: 900,
-                  color: '#C8FF00',
-                  lineHeight: 1,
-                  display: 'flex',
-                }}>
-                  {Number(bid || 0).toLocaleString()}
-                  <span style={{ fontSize: '28px', color: '#666', marginLeft: '10px', alignSelf: 'flex-end', marginBottom: '6px', display: 'flex' }}>AURA</span>
-                </div>
-              </div>
-
-              <div style={{
-                background: '#C8FF00',
-                color: '#000',
-                padding: '16px 32px',
-                fontSize: '16px',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                letterSpacing: '2px',
-                display: 'flex',
-              }}>
-                PLACE BID
-              </div>
+              {Number(bid || 0).toLocaleString()} AURA
             </div>
           </div>
         </div>
