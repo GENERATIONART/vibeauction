@@ -9,91 +9,125 @@ export async function GET() {
         style={{
           width: '1200px',
           height: '630px',
-          background: '#0D0D0D',
+          background: '#0A0A0A',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-          padding: '80px',
           fontFamily: 'sans-serif',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Accent stripe */}
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '8px', background: '#C8FF00', display: 'flex' }} />
-
-        {/* Dot pattern */}
+        {/* Yellow diagonal slash background accent */}
         <div style={{
           position: 'absolute',
-          top: 0, right: 0,
-          width: '500px', height: '630px',
-          backgroundImage: 'radial-gradient(rgba(200,255,0,0.12) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
+          top: '-60px',
+          right: '-40px',
+          width: '420px',
+          height: '760px',
+          background: '#C8FF00',
+          transform: 'rotate(12deg)',
           display: 'flex',
+          opacity: 0.07,
         }} />
 
-        <div style={{ marginBottom: '32px', display: 'flex' }}>
-          <div
-            style={{
-              width: '130px',
-              height: '130px',
-              border: '6px solid #C8FF00',
-              color: '#C8FF00',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '30px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '2px',
-            }}
-          >
-            VIBE
+        {/* Top warning bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '18px 56px',
+          background: '#C8FF00',
+          flexShrink: 0,
+        }}>
+          <div style={{
+            background: '#000',
+            color: '#C8FF00',
+            fontWeight: 900,
+            fontSize: '13px',
+            textTransform: 'uppercase',
+            letterSpacing: '3px',
+            padding: '4px 12px',
+            display: 'flex',
+          }}>
+            ⚠ BREAKING
+          </div>
+          <div style={{
+            fontWeight: 900,
+            fontSize: '14px',
+            color: '#000',
+            textTransform: 'uppercase',
+            letterSpacing: '2px',
+            display: 'flex',
+          }}>
+            Live bidding now open — feelings are going fast
           </div>
         </div>
 
-        {/* Title */}
+        {/* Main content */}
         <div style={{
-          fontSize: '88px',
-          fontWeight: 900,
-          color: '#FFFFFF',
-          lineHeight: 0.95,
-          textTransform: 'uppercase',
-          letterSpacing: '-2px',
-          marginBottom: '24px',
           display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          padding: '48px 56px 40px',
+          justifyContent: 'space-between',
         }}>
-          VIBE<br />AUCTION
-        </div>
+          {/* Headline */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{
+              fontSize: '92px',
+              fontWeight: 900,
+              color: '#FFFFFF',
+              lineHeight: 0.88,
+              textTransform: 'uppercase',
+              letterSpacing: '-3px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              <span style={{ display: 'flex' }}>WE ARE</span>
+              <span style={{ color: '#C8FF00', display: 'flex' }}>SELLING</span>
+              <span style={{ display: 'flex' }}>FEELINGS.</span>
+            </div>
 
-        {/* Tagline */}
-        <div style={{
-          fontSize: '28px',
-          color: '#888888',
-          fontWeight: 600,
-          maxWidth: '600px',
-          lineHeight: 1.4,
-          display: 'flex',
-        }}>
-          The world&apos;s first auction house for things that don&apos;t exist.
-        </div>
+            <div style={{
+              fontSize: '22px',
+              color: '#666',
+              fontWeight: 500,
+              display: 'flex',
+              marginTop: '8px',
+            }}>
+              You can bid on "the specific relief of taking off pants after a long day."
+            </div>
+          </div>
 
-        {/* Badge */}
-        <div style={{
-          position: 'absolute',
-          bottom: '60px',
-          right: '80px',
-          background: '#C8FF00',
-          color: '#000000',
-          padding: '12px 28px',
-          fontSize: '20px',
-          fontWeight: 900,
-          textTransform: 'uppercase',
-          letterSpacing: '2px',
-          display: 'flex',
-        }}>
-          BID NOW
+          {/* Bottom row */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{
+              fontSize: '18px',
+              fontWeight: 800,
+              color: '#333',
+              textTransform: 'uppercase',
+              letterSpacing: '3px',
+              display: 'flex',
+            }}>
+              vibeauction.vercel.app
+            </div>
+            <div style={{
+              background: '#C8FF00',
+              color: '#000',
+              padding: '14px 32px',
+              fontSize: '18px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              display: 'flex',
+            }}>
+              BID NOW →
+            </div>
+          </div>
         </div>
       </div>
     ),
