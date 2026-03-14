@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import NavBar from '../components/NavBar';
 
@@ -11,12 +11,14 @@ const STATUS_META = {
 };
 
 const SORT_OPTIONS = [
-  { key: 'newest',      label: 'Newest First'   },
-  { key: 'oldest',      label: 'Oldest First'   },
+  { key: 'newest',      label: 'Newest First'      },
+  { key: 'oldest',      label: 'Oldest First'      },
   { key: 'price_hi',    label: 'Price: High → Low' },
   { key: 'price_lo',    label: 'Price: Low → High' },
-  { key: 'ending_soon', label: 'Ending Soon'    },
+  { key: 'ending_soon', label: 'Ending Soon'        },
 ];
+
+const PAGE_SIZE = 48;
 
 const fmt = (v) => {
   const n = Number(v);
@@ -41,10 +43,7 @@ const fmtCountdown = (ms) => {
   return `${d}d ${h % 24}h`;
 };
 
-const normalizeStr = (v) =>
-  String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-
-// ─── Skeleton card ────────────────────────────────────────────────────────────
+// ─── Skeleton card ─────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
     <div
@@ -67,14 +66,14 @@ function SkeletonCard() {
   );
 }
 
-// ─── Auction card ─────────────────────────────────────────────────────────────
+// ─── Auction card ──────────────────────────────────────────────────────────────
 function AuctionCard({ auction }) {
   const [now, setNow] = useState(() => Date.now());
   const [hovered, setHovered] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
 
-  const meta = STATUS_META[auction.status] || STATUS_META.ended;
-  const endMs = useMemo(() => new Date(auction.endTime || '').getTime(), [auction.endTime]);
+  const meta      = STATUS_META[auction.status] || STATUS_META.ended;
+  const endMs     = new Date(auction.endTime || '').getTime();
   const remaining = endMs - now;
 
   useEffect(() => {
@@ -84,8 +83,6 @@ function AuctionCard({ auction }) {
   }, [auction.status]);
 
   useEffect(() => { setImgFailed(false); }, [auction.imageUrl]);
-
-  const ctaLabel = auction.status === 'live' ? 'Place Bid →' : 'View Auction →';
 
   return (
     <Link
@@ -109,16 +106,8 @@ function AuctionCard({ auction }) {
           color: '#000000',
         }}
       >
-        {/* Image area */}
-        <div
-          style={{
-            position: 'relative',
-            height: '160px',
-            background: '#F0F0F0',
-            borderBottom: '2px solid #000',
-            flexShrink: 0,
-          }}
-        >
+        {/* Image */}
+        <div style={{ position: 'relative', height: '160px', background: '#F0F0F0', borderBottom: '2px solid #000', flexShrink: 0 }}>
           {auction.imageUrl && !imgFailed ? (
             <img
               src={auction.imageUrl}
@@ -129,86 +118,22 @@ function AuctionCard({ auction }) {
             />
           ) : (
             <>
-              <div
-                style={{
-                  backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-                  backgroundSize: '10px 10px',
-                  opacity: 0.08,
-                  position: 'absolute',
-                  inset: 0,
-                }}
-              />
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%,-50%)',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  border: '2px solid #222',
-                  padding: '8px 12px',
-                  background: 'rgba(255,255,255,0.7)',
-                  letterSpacing: '0.5px',
-                }}
-              >
+              <div style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '10px 10px', opacity: 0.08, position: 'absolute', inset: 0 }} />
+              <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', border: '2px solid #222', padding: '8px 12px', background: 'rgba(255,255,255,0.7)', letterSpacing: '0.5px' }}>
                 Image Pending
               </span>
             </>
           )}
 
           {/* Status badge */}
-          <span
-            style={{
-              position: 'absolute',
-              top: '8px',
-              right: '8px',
-              background: meta.bg,
-              border: `1px solid ${meta.border}`,
-              color: meta.text,
-              fontSize: '10px',
-              padding: '4px 8px',
-              textTransform: 'uppercase',
-              fontWeight: 800,
-              transform: 'rotate(2deg)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            {meta.pulse && (
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: '#C8FF00',
-                  animation: 'pulseDot 1.2s ease-in-out infinite',
-                  flexShrink: 0,
-                }}
-              />
-            )}
+          <span style={{ position: 'absolute', top: '8px', right: '8px', background: meta.bg, border: `1px solid ${meta.border}`, color: meta.text, fontSize: '10px', padding: '4px 8px', textTransform: 'uppercase', fontWeight: 800, transform: 'rotate(2deg)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {meta.pulse && <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#C8FF00', animation: 'pulseDot 1.2s ease-in-out infinite', flexShrink: 0 }} />}
             {meta.label}
           </span>
 
           {/* Category badge */}
           {auction.category && (
-            <span
-              style={{
-                position: 'absolute',
-                bottom: '8px',
-                left: '8px',
-                background: 'rgba(0,0,0,0.78)',
-                color: '#FFFFFF',
-                fontSize: '10px',
-                padding: '3px 7px',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-                letterSpacing: '0.3px',
-              }}
-            >
+            <span style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(0,0,0,0.78)', color: '#FFFFFF', fontSize: '10px', padding: '3px 7px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.3px' }}>
               {auction.category}
             </span>
           )}
@@ -216,15 +141,7 @@ function AuctionCard({ auction }) {
 
         {/* Content */}
         <div style={{ padding: '14px', flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <div
-            style={{
-              fontFamily: "'Anton', sans-serif",
-              fontSize: '21px',
-              lineHeight: 1.05,
-              textTransform: 'uppercase',
-              color: '#000',
-            }}
-          >
+          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '21px', lineHeight: 1.05, textTransform: 'uppercase', color: '#000' }}>
             {auction.name}
           </div>
 
@@ -234,65 +151,30 @@ function AuctionCard({ auction }) {
             </div>
           )}
 
-          <div
-            style={{
-              borderTop: '1px solid #DDD',
-              paddingTop: '8px',
-              marginTop: '4px',
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '8px',
-            }}
-          >
+          <div style={{ borderTop: '1px solid #DDD', paddingTop: '8px', marginTop: '4px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
-              <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>
-                Start Price
-              </div>
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', lineHeight: 1 }}>
-                {fmt(auction.startingPrice)}
-              </div>
+              <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Start Price</div>
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', lineHeight: 1 }}>{fmt(auction.startingPrice)}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               {auction.status === 'live' && (
                 <>
-                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>
-                    Time Left
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Anton', sans-serif",
-                      fontSize: '20px',
-                      lineHeight: 1,
-                      color: remaining < 3_600_000 ? '#D14000' : '#000',
-                    }}
-                  >
+                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Time Left</div>
+                  <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', lineHeight: 1, color: remaining < 3_600_000 ? '#D14000' : '#000' }}>
                     {fmtCountdown(remaining)}
                   </div>
                 </>
               )}
               {auction.status === 'ended' && (
                 <>
-                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>
-                    Ended
-                  </div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#555' }}>
-                    {fmtDate(auction.endTime)}
-                  </div>
+                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Ended</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#555' }}>{fmtDate(auction.endTime)}</div>
                 </>
               )}
               {auction.status === 'settled' && (
                 <>
-                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>
-                    Sold For
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Anton', sans-serif",
-                      fontSize: '20px',
-                      lineHeight: 1,
-                      color: '#0A6A87',
-                    }}
-                  >
+                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Sold For</div>
+                  <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', lineHeight: 1, color: '#0A6A87' }}>
                     {fmt(auction.settledPrice)} AURA
                   </div>
                 </>
@@ -301,73 +183,147 @@ function AuctionCard({ auction }) {
           </div>
 
           {auction.status === 'settled' && auction.winner && (
-            <div
-              style={{
-                marginTop: '4px',
-                fontSize: '12px',
-                fontWeight: 800,
-                color: '#0A6A87',
-                textTransform: 'uppercase',
-              }}
-            >
+            <div style={{ marginTop: '4px', fontSize: '12px', fontWeight: 800, color: '#0A6A87', textTransform: 'uppercase' }}>
               Winner: {auction.winner}
             </div>
           )}
         </div>
 
         {/* CTA bar */}
-        <div
-          style={{
-            background: hovered ? meta.border : '#000000',
-            color: hovered ? '#000000' : meta.text,
-            fontFamily: "'Anton', sans-serif",
-            fontSize: '16px',
-            textTransform: 'uppercase',
-            textAlign: 'center',
-            padding: '11px 10px',
-            transition: 'background 0.15s, color 0.15s',
-            flexShrink: 0,
-          }}
-        >
-          {ctaLabel}
+        <div style={{ background: hovered ? meta.border : '#000000', color: hovered ? '#000000' : meta.text, fontFamily: "'Anton', sans-serif", fontSize: '16px', textTransform: 'uppercase', textAlign: 'center', padding: '11px 10px', transition: 'background 0.15s, color 0.15s', flexShrink: 0 }}>
+          {auction.status === 'live' ? 'Place Bid →' : 'View Auction →'}
         </div>
       </article>
     </Link>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Pagination ────────────────────────────────────────────────────────────────
+function Pagination({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+
+  const range = [];
+  let prev = 0;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+      if (prev && i - prev > 1) range.push('…');
+      range.push(i);
+      prev = i;
+    }
+  }
+
+  const btnBase = { border: '1px solid #2E2E2E', background: '#101010', color: '#BDBDBD', padding: '8px 13px', fontWeight: 800, fontSize: '13px', cursor: 'pointer', minWidth: '40px', fontFamily: "'Inter', sans-serif" };
+  const btnActive = { ...btnBase, border: '1px solid #C8FF00', background: '#C8FF00', color: '#000' };
+  const btnDisabled = { ...btnBase, color: '#444', cursor: 'default' };
+
+  return (
+    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '32px', paddingBottom: '16px' }}>
+      <button type="button" disabled={page === 1} onClick={() => onChange(page - 1)} style={page === 1 ? btnDisabled : btnBase}>
+        ← Prev
+      </button>
+      {range.map((item, i) =>
+        item === '…' ? (
+          <span key={`ellipsis-${i}`} style={{ color: '#555', padding: '8px 4px', display: 'flex', alignItems: 'center' }}>…</span>
+        ) : (
+          <button key={item} type="button" onClick={() => onChange(item)} style={item === page ? btnActive : btnBase}>
+            {item}
+          </button>
+        ),
+      )}
+      <button type="button" disabled={page === totalPages} onClick={() => onChange(page + 1)} style={page === totalPages ? btnDisabled : btnBase}>
+        Next →
+      </button>
+    </div>
+  );
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
 export default function AuctionsPage() {
-  const [allAuctions, setAllAuctions] = useState([]);
-  const [summary, setSummary] = useState({ total: 0, live: 0, ended: 0, settled: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [auctions,   setAuctions]   = useState([]);
+  const [summary,    setSummary]    = useState({ total: 0, live: 0, ended: 0, settled: 0 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0 });
+  const [categories, setCategories] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState('');
 
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter,   setStatusFilter]   = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('newest');
+  const [searchInput,    setSearchInput]    = useState('');
+  const [search,         setSearch]         = useState('');
+  const [sort,           setSort]           = useState('newest');
+  const [page,           setPage]           = useState(1);
 
-  const load = useCallback(async () => {
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const abortRef = useRef(null);
+
+  const fetchAuctions = useCallback(async (params) => {
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auctions/history?status=all&limit=1000', { cache: 'no-store' });
+      const url = new URL('/api/auctions/history', window.location.origin);
+      url.searchParams.set('page',     params.page);
+      url.searchParams.set('pageSize', PAGE_SIZE);
+      url.searchParams.set('status',   params.status);
+      url.searchParams.set('sort',     params.sort);
+      if (params.search)                          url.searchParams.set('search',   params.search);
+      if (params.category && params.category !== 'all') url.searchParams.set('category', params.category);
+
+      const res     = await fetch(url.toString(), { cache: 'no-store', signal: controller.signal });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || 'Failed to load auctions');
-      setAllAuctions(Array.isArray(payload?.auctions) ? payload.auctions : []);
-      setSummary(payload?.summary || { total: 0, live: 0, ended: 0, settled: 0 });
+
+      setAuctions(Array.isArray(payload?.auctions) ? payload.auctions : []);
+      setSummary(payload?.summary   || { total: 0, live: 0, ended: 0, settled: 0 });
+      setPagination(payload?.pagination || { page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0 });
+      if (Array.isArray(payload?.categories) && payload.categories.length > 0) {
+        setCategories(payload.categories);
+      }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setError(err?.message || 'Failed to load auctions');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, []);
 
+  // Track previous filters to reset page to 1 on filter change
+  const prevFilters = useRef({ statusFilter, categoryFilter, search, sort });
+
   useEffect(() => {
-    load();
-    // Refresh data every 60s to pick up new/settled auctions
-    const refreshInterval = setInterval(load, 60_000);
+    const prev = prevFilters.current;
+    const filtersChanged =
+      prev.statusFilter   !== statusFilter   ||
+      prev.categoryFilter !== categoryFilter ||
+      prev.search         !== search         ||
+      prev.sort           !== sort;
+
+    prevFilters.current = { statusFilter, categoryFilter, search, sort };
+
+    const fetchPage = filtersChanged ? 1 : page;
+    if (filtersChanged && page !== 1) setPage(1);
+
+    fetchAuctions({ page: fetchPage, status: statusFilter, category: categoryFilter, search, sort });
+  }, [page, statusFilter, categoryFilter, search, sort, fetchAuctions]);
+
+  // Auto-refresh every 60s
+  useEffect(() => {
+    const id = setInterval(() => {
+      fetchAuctions({ page, status: statusFilter, category: categoryFilter, search, sort });
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [page, statusFilter, categoryFilter, search, sort, fetchAuctions]);
+
+  // Styles
+  useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
@@ -377,72 +333,16 @@ export default function AuctionsPage() {
       @keyframes pulseDot { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:0.4; transform:scale(0.75) } }
     `;
     document.head.appendChild(style);
-    return () => {
-      clearInterval(refreshInterval);
-      document.head.removeChild(style);
-    };
-  }, [load]);
+    return () => document.head.removeChild(style);
+  }, []);
 
-  const categories = useMemo(
-    () => Array.from(new Set(allAuctions.map((a) => a.category).filter(Boolean))).sort(),
-    [allAuctions],
-  );
-
-  const filtered = useMemo(() => {
-    let items = allAuctions;
-
-    if (statusFilter !== 'all') {
-      items = items.filter((a) => a.status === statusFilter);
-    }
-
-    if (categoryFilter !== 'all') {
-      items = items.filter((a) => normalizeStr(a.category) === normalizeStr(categoryFilter));
-    }
-
-    const q = normalizeStr(search);
-    if (q) {
-      items = items.filter((a) =>
-        [a.name, a.category, a.author, a.winner].some((f) => normalizeStr(f).includes(q)),
-      );
-    }
-
-    const result = [...items];
-    switch (sort) {
-      case 'oldest':
-        result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        break;
-      case 'price_hi':
-        result.sort(
-          (a, b) =>
-            (b.settledPrice || b.startingPrice || 0) - (a.settledPrice || a.startingPrice || 0),
-        );
-        break;
-      case 'price_lo':
-        result.sort(
-          (a, b) =>
-            (a.settledPrice || a.startingPrice || 0) - (b.settledPrice || b.startingPrice || 0),
-        );
-        break;
-      case 'ending_soon':
-        result.sort((a, b) => {
-          if (a.status === 'live' && b.status !== 'live') return -1;
-          if (b.status === 'live' && a.status !== 'live') return 1;
-          return new Date(a.endTime).getTime() - new Date(b.endTime).getTime();
-        });
-        break;
-      default:
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-
-    return result;
-  }, [allAuctions, statusFilter, categoryFilter, search, sort]);
-
-  const hasActiveFilters = search || statusFilter !== 'all' || categoryFilter !== 'all';
+  const hasActiveFilters = searchInput || statusFilter !== 'all' || categoryFilter !== 'all';
   const clearFilters = () => {
-    setSearch('');
+    setSearchInput('');
     setStatusFilter('all');
     setCategoryFilter('all');
     setSort('newest');
+    setPage(1);
   };
 
   const statusTabs = [
@@ -453,30 +353,14 @@ export default function AuctionsPage() {
   ];
 
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        background: '#0D0D0D',
-        color: '#FFFFFF',
-        fontFamily: "'Inter', sans-serif",
-        WebkitFontSmoothing: 'antialiased',
-      }}
-    >
+    <div style={{ minHeight: '100dvh', background: '#0D0D0D', color: '#FFFFFF', fontFamily: "'Inter', sans-serif", WebkitFontSmoothing: 'antialiased' }}>
       <NavBar />
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '28px 16px 60px' }}>
 
         {/* Header */}
         <header style={{ marginBottom: '22px' }}>
-          <h1
-            style={{
-              margin: 0,
-              fontFamily: "'Anton', sans-serif",
-              fontSize: 'clamp(38px, 5.5vw, 62px)',
-              lineHeight: 0.9,
-              textTransform: 'uppercase',
-            }}
-          >
+          <h1 style={{ margin: 0, fontFamily: "'Anton', sans-serif", fontSize: 'clamp(38px, 5.5vw, 62px)', lineHeight: 0.9, textTransform: 'uppercase' }}>
             Auction{' '}
             <span style={{ color: '#C8FF00' }}>Explorer</span>
           </h1>
@@ -486,98 +370,35 @@ export default function AuctionsPage() {
         </header>
 
         {/* Summary stats */}
-        <section
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-            gap: '10px',
-            marginBottom: '22px',
-          }}
-        >
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '22px' }}>
           {[
             { label: 'Total',   value: summary.total,   color: '#FFFFFF' },
             { label: 'Live',    value: summary.live,    color: '#C8FF00' },
             { label: 'Ended',   value: summary.ended,   color: '#FFCF8A' },
             { label: 'Settled', value: summary.settled, color: '#AAE7FF' },
           ].map((s) => (
-            <div
-              key={s.label}
-              style={{ border: '1px solid #222', background: '#111', padding: '12px 14px' }}
-            >
-              <div
-                style={{
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '0.4px',
-                }}
-              >
-                {s.label}
-              </div>
-              <div
-                style={{
-                  marginTop: '6px',
-                  fontFamily: "'Anton', sans-serif",
-                  fontSize: '32px',
-                  lineHeight: 1,
-                  color: s.color,
-                }}
-              >
-                {fmt(s.value)}
-              </div>
+            <div key={s.label} style={{ border: '1px solid #222', background: '#111', padding: '12px 14px' }}>
+              <div style={{ color: '#666', textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.4px' }}>{s.label}</div>
+              <div style={{ marginTop: '6px', fontFamily: "'Anton', sans-serif", fontSize: '32px', lineHeight: 1, color: s.color }}>{fmt(s.value)}</div>
             </div>
           ))}
         </section>
 
-        {/* Search + Sort row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            marginBottom: '12px',
-            flexWrap: 'wrap',
-            alignItems: 'stretch',
-          }}
-        >
+        {/* Search + Sort */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'stretch' }}>
           <input
             type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, category, author, winner…"
-            style={{
-              flex: '1 1 280px',
-              background: '#111',
-              border: '2px solid #333',
-              color: '#FFF',
-              fontSize: '14px',
-              fontFamily: "'Inter', sans-serif",
-              padding: '10px 14px',
-              outline: 'none',
-              minHeight: '42px',
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by name…"
+            style={{ flex: '1 1 280px', background: '#111', border: '2px solid #333', color: '#FFF', fontSize: '14px', fontFamily: "'Inter', sans-serif", padding: '10px 14px', outline: 'none', minHeight: '42px' }}
           />
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            style={{
-              background: '#111',
-              border: '2px solid #333',
-              color: '#FFF',
-              fontSize: '13px',
-              fontFamily: "'Inter', sans-serif",
-              padding: '10px 14px',
-              outline: 'none',
-              cursor: 'pointer',
-              fontWeight: 700,
-              minHeight: '42px',
-            }}
+            style={{ background: '#111', border: '2px solid #333', color: '#FFF', fontSize: '13px', fontFamily: "'Inter', sans-serif", padding: '10px 14px', outline: 'none', cursor: 'pointer', fontWeight: 700, minHeight: '42px' }}
           >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
+            {SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
         </div>
 
@@ -586,34 +407,11 @@ export default function AuctionsPage() {
           {statusTabs.map((tab) => {
             const active = tab.key === statusFilter;
             return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setStatusFilter(tab.key)}
-                style={{
-                  border: active ? '1px solid #C8FF00' : '1px solid #2E2E2E',
-                  background: active ? '#C8FF00' : '#101010',
-                  color: active ? '#000' : '#BDBDBD',
-                  padding: '7px 14px',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  letterSpacing: '0.3px',
-                }}
+              <button key={tab.key} type="button" onClick={() => setStatusFilter(tab.key)}
+                style={{ border: active ? '1px solid #C8FF00' : '1px solid #2E2E2E', background: active ? '#C8FF00' : '#101010', color: active ? '#000' : '#BDBDBD', padding: '7px 14px', fontWeight: 800, textTransform: 'uppercase', fontSize: '12px', cursor: 'pointer', letterSpacing: '0.3px' }}
               >
                 {tab.label}
-                <span
-                  style={{
-                    marginLeft: '6px',
-                    background: active ? 'rgba(0,0,0,0.18)' : '#1E1E1E',
-                    color: active ? '#000' : '#777',
-                    fontSize: '11px',
-                    padding: '1px 6px',
-                    borderRadius: '99px',
-                    fontWeight: 700,
-                  }}
-                >
+                <span style={{ marginLeft: '6px', background: active ? 'rgba(0,0,0,0.18)' : '#1E1E1E', color: active ? '#000' : '#777', fontSize: '11px', padding: '1px 6px', borderRadius: '99px', fontWeight: 700 }}>
                   {tab.count}
                 </span>
               </button>
@@ -627,21 +425,8 @@ export default function AuctionsPage() {
             {['all', ...categories].map((cat) => {
               const active = categoryFilter === cat;
               return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCategoryFilter(cat)}
-                  style={{
-                    border: active ? '1px solid #5BD3FF' : '1px solid #262626',
-                    background: active ? '#5BD3FF' : '#0A0A0A',
-                    color: active ? '#000' : '#777',
-                    padding: '5px 10px',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    letterSpacing: '0.3px',
-                  }}
+                <button key={cat} type="button" onClick={() => setCategoryFilter(cat)}
+                  style={{ border: active ? '1px solid #5BD3FF' : '1px solid #262626', background: active ? '#5BD3FF' : '#0A0A0A', color: active ? '#000' : '#777', padding: '5px 10px', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', cursor: 'pointer', letterSpacing: '0.3px' }}
                 >
                   {cat === 'all' ? 'All Categories' : cat}
                 </button>
@@ -651,43 +436,15 @@ export default function AuctionsPage() {
         )}
 
         {/* Results bar */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            marginBottom: '16px',
-            minHeight: '28px',
-          }}
-        >
-          <span
-            style={{
-              color: '#555',
-              fontSize: '12px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.4px',
-            }}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', minHeight: '28px' }}>
+          <span style={{ color: '#555', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             {loading
               ? 'Loading…'
-              : `${filtered.length.toLocaleString()} auction${filtered.length !== 1 ? 's' : ''}`}
+              : `${pagination.total.toLocaleString()} auction${pagination.total !== 1 ? 's' : ''}${pagination.totalPages > 1 ? ` · page ${pagination.page} of ${pagination.totalPages}` : ''}`}
           </span>
           {hasActiveFilters && !loading && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              style={{
-                background: 'transparent',
-                border: '1px solid #333',
-                color: '#777',
-                fontSize: '11px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                padding: '3px 10px',
-                cursor: 'pointer',
-                letterSpacing: '0.3px',
-              }}
+            <button type="button" onClick={clearFilters}
+              style={{ background: 'transparent', border: '1px solid #333', color: '#777', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', padding: '3px 10px', cursor: 'pointer', letterSpacing: '0.3px' }}
             >
               Clear Filters ✕
             </button>
@@ -696,36 +453,10 @@ export default function AuctionsPage() {
 
         {/* Error */}
         {error && (
-          <div
-            style={{
-              marginBottom: '18px',
-              border: '1px solid rgba(255,70,70,0.4)',
-              background: 'rgba(255,70,70,0.1)',
-              padding: '12px 16px',
-              color: '#FF9C9C',
-              fontWeight: 700,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '12px',
-              flexWrap: 'wrap',
-            }}
-          >
+          <div style={{ marginBottom: '18px', border: '1px solid rgba(255,70,70,0.4)', background: 'rgba(255,70,70,0.1)', padding: '12px 16px', color: '#FF9C9C', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span>{error}</span>
-            <button
-              type="button"
-              onClick={load}
-              style={{
-                background: '#FF4D00',
-                color: '#FFF',
-                border: 'none',
-                padding: '6px 14px',
-                fontWeight: 800,
-                fontSize: '12px',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                letterSpacing: '0.3px',
-              }}
+            <button type="button" onClick={() => fetchAuctions({ page, status: statusFilter, category: categoryFilter, search, sort })}
+              style={{ background: '#FF4D00', color: '#FFF', border: 'none', padding: '6px 14px', fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', cursor: 'pointer' }}
             >
               Retry
             </button>
@@ -734,72 +465,38 @@ export default function AuctionsPage() {
 
         {/* Grid */}
         {loading ? (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {Array.from({ length: 12 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '16px' }}>
+            {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
-        ) : filtered.length === 0 ? (
-          <div
-            style={{
-              border: '2px dashed #272727',
-              padding: '56px 24px',
-              textAlign: 'center',
-              color: '#555',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'Anton', sans-serif",
-                fontSize: '34px',
-                textTransform: 'uppercase',
-                marginBottom: '10px',
-                color: '#444',
-              }}
-            >
+        ) : auctions.length === 0 ? (
+          <div style={{ border: '2px dashed #272727', padding: '56px 24px', textAlign: 'center', color: '#555' }}>
+            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '34px', textTransform: 'uppercase', marginBottom: '10px', color: '#444' }}>
               No Auctions Found
             </div>
-            <div style={{ fontSize: '14px', marginBottom: '18px' }}>
-              Try adjusting your filters or search query.
-            </div>
+            <div style={{ fontSize: '14px', marginBottom: '18px' }}>Try adjusting your filters or search query.</div>
             {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                style={{
-                  background: '#C8FF00',
-                  color: '#000',
-                  border: 'none',
-                  padding: '10px 20px',
-                  fontFamily: "'Anton', sans-serif",
-                  fontSize: '16px',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                }}
+              <button type="button" onClick={clearFilters}
+                style={{ background: '#C8FF00', color: '#000', border: 'none', padding: '10px 20px', fontFamily: "'Anton', sans-serif", fontSize: '16px', textTransform: 'uppercase', cursor: 'pointer' }}
               >
                 Clear All Filters
               </button>
             )}
           </div>
         ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {filtered.map((auction) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '16px' }}>
+            {auctions.map((auction) => (
               <AuctionCard key={auction.id || auction.slug} auction={auction} />
             ))}
           </div>
         )}
+
+        {/* Pagination */}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          onChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        />
+
       </main>
     </div>
   );

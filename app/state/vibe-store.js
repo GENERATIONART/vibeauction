@@ -185,7 +185,7 @@ export function VibeStoreProvider({ children }) {
       return cache.vibes;
     }
 
-    const { data, error: fetchError } = await sb.from('vibes').select('*').order('created_at', { ascending: false }).limit(200);
+    const { data, error: fetchError } = await sb.from('vibes').select('*').order('created_at', { ascending: false }).limit(1000);
     if (fetchError || !Array.isArray(data)) {
       return Array.isArray(cache?.vibes) ? cache.vibes : null;
     }

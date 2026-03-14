@@ -21,7 +21,8 @@ export async function GET(request) {
       { bids, topBid },
       { headers: { 'Cache-Control': 'no-store' } },
     );
-  } catch {
+  } catch (err) {
+    console.error('[bids] failed to fetch bids for', vibeId, err?.message ?? err);
     return NextResponse.json(
       { bids: [], topBid: null },
       { headers: { 'Cache-Control': 'no-store' } },
