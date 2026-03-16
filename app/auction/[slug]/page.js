@@ -1,12 +1,11 @@
 import { notFound } from 'next/navigation';
 import AuctionPage from '../../../react-auction-page.js';
-import { auctionItems, getAuctionItemBySlug } from '../../../lib/auction-items.js';
 import { getMintedVibeBySlug } from '../../../lib/server/state-db.js';
 import { toAbsoluteUrl, SOCIAL_IMAGE_VERSION } from '../../../lib/site-url.js';
+import { BRAND_NAME } from '../../../lib/brand.js';
 
-// Pre-build the hardcoded static items at build time
 export function generateStaticParams() {
-  return auctionItems.map((item) => ({ slug: item.slug }));
+  return [];
 }
 
 // Allow slugs beyond the static list (minted vibes)
@@ -14,16 +13,15 @@ export const dynamicParams = true;
 
 export async function generateMetadata({ params }) {
   const slug = params?.slug;
-  const staticVibe = getAuctionItemBySlug(slug);
-  const vibe = staticVibe ?? (await getMintedVibeBySlug(slug));
+  const vibe = await getMintedVibeBySlug(slug);
 
   if (!vibe) {
     return { title: 'Auction Not Found' };
   }
 
-  const title = staticVibe ? staticVibe.title : vibe.name;
-  const bid = staticVibe ? staticVibe.bid : vibe.startingPrice;
-  const description = `Bid now on "${title}" — current bid ${Number(bid || 0).toLocaleString()} AURA. Live on Vibe Auction.`;
+  const title = vibe.name;
+  const bid = vibe.startingPrice;
+  const description = `Bid on "${title}" — a collectible vibe with a live price of ${Number(bid || 0).toLocaleString()} AURA on ${BRAND_NAME}.`;
   const canonical = toAbsoluteUrl(`/auction/${encodeURIComponent(String(slug || ''))}`);
   const ogImage = toAbsoluteUrl(`/api/og/auction?slug=${encodeURIComponent(String(slug || ''))}&v=${SOCIAL_IMAGE_VERSION}`);
 
@@ -35,9 +33,9 @@ export async function generateMetadata({ params }) {
     },
     openGraph: {
       type: 'website',
-      siteName: 'Vibe Auction',
+      siteName: BRAND_NAME,
       url: canonical,
-      title: `${title} — Live Auction`,
+      title: `${title} — Live Market Listing`,
       description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
     },
@@ -45,7 +43,7 @@ export async function generateMetadata({ params }) {
       card: 'summary_large_image',
       site: '@vibeauction',
       creator: '@vibeauction',
-      title: `${title} — Live Auction`,
+      title: `${title} — Live Market Listing`,
       description,
       images: [{ url: ogImage, alt: title }],
     },
@@ -54,12 +52,6 @@ export async function generateMetadata({ params }) {
 
 export default async function Page({ params }) {
   const slug = params?.slug;
-
-  // Check static items first (served from static build)
-  const staticVibe = getAuctionItemBySlug(slug);
-  if (staticVibe) {
-    return <AuctionPage vibe={staticVibe} />;
-  }
 
   // Fall through to minted vibes (server-rendered on demand)
   const minted = await getMintedVibeBySlug(slug);

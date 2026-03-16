@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../state/auth-store';
+import { BRAND_NAME } from '../../lib/brand.js';
 
 const styles = {
   page: {
@@ -170,11 +171,11 @@ export default function SignupPage() {
 
   return (
     <div style={styles.page}>
-      <Link href="/" style={styles.logo}>Vibe Auction</Link>
+      <Link href="/" style={styles.logo}>{BRAND_NAME}</Link>
 
       <div style={styles.card}>
         <h1 style={styles.heading}>Sign Up</h1>
-        <p style={styles.subheading}>Join the auction. Bid on vibes. Drop your own.</p>
+        <p style={styles.subheading}>Join the market. Collect vibes. Create your own.</p>
 
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}

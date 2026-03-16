@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import NavBar from './app/components/NavBar';
+import { HOME_TICKER_ITEMS } from './lib/brand.js';
 
 const HOME_BATCH_SIZE = 12;
 
@@ -62,6 +63,8 @@ const getItemKeys = (item) => {
   });
   return keys;
 };
+
+const formatAura = (value) => `${Number(value || 0).toLocaleString()} AURA`;
 
 const customStyles = {
   body: {
@@ -407,14 +410,7 @@ const customStyles = {
 
 const sortOptions = ['Trending', 'Ending Soon', 'Most Absurd', 'Highest Aura', 'Newest'];
 
-const staticTickerItems = [
-  'The world\'s first auction house for things that don\'t exist',
-  'Mint your feelings and tokenize your vibes',
-  'Place bids in AURA and own what does not exist',
-  'New vibes minted by the community every day',
-  'The world\'s first auction house for things that don\'t exist',
-  'Mint your feelings and tokenize your vibes',
-];
+const staticTickerItems = HOME_TICKER_ITEMS;
 
 const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile, shakeToken = 0 }) => {
   const [hovered, setHovered] = useState(false);
@@ -532,6 +528,7 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile,
 const App = () => {
   const [activeCategory, setActiveCategory] = useState('All Vibes');
   const [activeSort, setActiveSort] = useState('Trending');
+  const [liveAuctions, setLiveAuctions] = useState([]);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [syncNow, setSyncNow] = useState(Date.now());
@@ -546,7 +543,7 @@ const App = () => {
   const bidBaselineReadyRef = useRef(false);
   const latestBidSeenRef = useRef(0);
 
-  const { balance, activeBids, mintedVibes, refreshState } = useVibeStore();
+  const { balance, activeBids, refreshState } = useVibeStore();
   const router = useRouter();
 
   const isMobile = viewportWidth <= 768;
@@ -611,6 +608,15 @@ const App = () => {
   useEffect(() => {
     const syncLatestVibes = async () => {
       try {
+        const response = await fetch('/api/auctions/history?status=live&sort=newest&page=1&pageSize=250', {
+          cache: 'no-store',
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.error || 'Failed to load live auctions');
+        }
+
+        setLiveAuctions(Array.isArray(payload?.auctions) ? payload.auctions : []);
         await refreshState();
         setLastSyncedAt(Date.now());
       } catch {
@@ -757,12 +763,8 @@ const App = () => {
   }, [screenShakeToken]);
 
   const liveVibes = useMemo(() => {
-    const now = Date.now();
-    const minted = (Array.isArray(mintedVibes) ? mintedVibes : [])
-      .filter((v) => {
-        const endTimeMs = v.endTime ? new Date(v.endTime).getTime() : Number.NaN;
-        return !Number.isFinite(endTimeMs) || endTimeMs > now;
-      })
+    const minted = (Array.isArray(liveAuctions) ? liveAuctions : [])
+      .filter((v) => v?.slug || v?.id)
       .map((v) => ({
       id: v.id || v.slug,
       slug: v.slug || v.id,
@@ -776,12 +778,10 @@ const App = () => {
       endTimeMs: v.endTime
         ? new Date(v.endTime).getTime()
         : (() => {
-            const durationMs = parseCountdownToMs(v.duration);
-            if (!Number.isFinite(durationMs)) return Number.MAX_SAFE_INTEGER;
-            const createdAtMs = v.createdAt ? new Date(v.createdAt).getTime() : 0;
-            return createdAtMs > 0 ? createdAtMs + durationMs : durationMs;
+            const fallbackDuration = Number.MAX_SAFE_INTEGER;
+            return fallbackDuration;
           })(),
-      absurdityScore: String(v.name || '').length + String(v.manifesto || '').length,
+      absurdityScore: String(v.name || '').length,
     }));
 
     const byKey = new Map();
@@ -792,7 +792,7 @@ const App = () => {
     });
 
     return Array.from(byKey.values());
-  }, [mintedVibes]);
+  }, [liveAuctions]);
 
   const categories = useMemo(() => {
     const catMap = {};
@@ -895,6 +895,36 @@ const App = () => {
 
   const visibleItems = useMemo(() => sortedItems.slice(0, visibleCount), [sortedItems, visibleCount]);
   const hasMoreItems = visibleCount < sortedItems.length;
+  const featuredVibe = sortedItems[0] || null;
+  const endingSoonVibes = useMemo(
+    () =>
+      [...liveVibes]
+        .sort((a, b) => (a.endTimeMs || Number.MAX_SAFE_INTEGER) - (b.endTimeMs || Number.MAX_SAFE_INTEGER))
+        .slice(0, 3),
+    [liveVibes],
+  );
+  const highestAuraVibes = useMemo(
+    () =>
+      [...liveVibes]
+        .sort((a, b) => {
+          const bidA = Number(a.bid || 0);
+          const bidB = Number(b.bid || 0);
+          return bidB - bidA;
+        })
+        .slice(0, 3),
+    [liveVibes],
+  );
+  const marketStats = useMemo(() => {
+    const totalVolume = liveVibes.reduce((sum, item) => sum + Number(item.bid || 0), 0);
+    const categoryLeaders = categories.filter((entry) => entry.label !== 'All Vibes');
+    const dominantCategory = [...categoryLeaders].sort((a, b) => b.count - a.count)[0] || null;
+    return {
+      totalLive: liveVibes.length,
+      totalVolume,
+      totalBids: activeBids.length,
+      dominantCategory: dominantCategory?.label || 'Open',
+    };
+  }, [liveVibes, categories, activeBids.length]);
 
   useEffect(() => {
     setVisibleCount(HOME_BATCH_SIZE);
@@ -1012,6 +1042,69 @@ const App = () => {
         style={{
           maxWidth: '1400px',
           margin: '0 auto',
+          padding: isMobile ? `18px ${sidePadding}px 12px` : `22px ${sidePadding}px 14px`,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '860px',
+            padding: isMobile ? '2px 0 0' : '4px 0 0',
+          }}
+        >
+          <div style={{ fontSize: '11px', color: '#8A8A8A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+            Curated market for collectible vibes
+          </div>
+          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '40px' : '62px', lineHeight: 0.95, textTransform: 'uppercase', maxWidth: '740px' }}>
+            Collect Internet Taste
+          </div>
+          <p style={{ maxWidth: '700px', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.55, marginTop: '14px', color: '#B5B5B5', fontWeight: 600 }}>
+            Bid on listed vibes, discover strange market objects, and build a vault of rare, internet-native artifacts.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px', alignItems: 'center' }}>
+            <Link
+              href="/auctions"
+              style={{
+                background: '#C8FF00',
+                color: '#000000',
+                border: '2px solid #000000',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                fontSize: '13px',
+                letterSpacing: '0.5px',
+                padding: '11px 14px',
+                textDecoration: 'none',
+              }}
+            >
+              Browse Live Listings
+            </Link>
+            <button
+              type="button"
+              onClick={handleSurpriseMe}
+              style={{
+                background: '#111111',
+                color: '#FFFFFF',
+                border: '1px solid #2C2C2C',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                fontSize: '13px',
+                letterSpacing: '0.5px',
+                padding: '11px 14px',
+                cursor: 'pointer',
+              }}
+            >
+              Surprise Me
+            </button>
+            <div style={{ color: '#7F7F7F', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              {marketStats.totalLive.toLocaleString()} live listings · {marketStats.totalBids.toLocaleString()} tracked bids
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
           padding: isMobile ? `8px ${sidePadding}px 8px` : `10px ${sidePadding}px 10px`,
         }}
       >
@@ -1023,25 +1116,6 @@ const App = () => {
             flexWrap: 'wrap',
           }}
         >
-          <button
-            type="button"
-            onClick={handleSurpriseMe}
-            style={{
-              background: '#C8FF00',
-              color: '#000000',
-              border: '2px solid #000000',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              fontSize: isMobile ? '12px' : '13px',
-              letterSpacing: '0.5px',
-              padding: isMobile ? '9px 12px' : '10px 14px',
-              cursor: 'pointer',
-              boxShadow: surprisePressed ? '1px 1px 0 #000000' : '3px 3px 0 #000000',
-              transform: surprisePressed ? 'translate(2px, 2px)' : 'none',
-            }}
-          >
-            Surprise Me
-          </button>
           <div
             style={{
               border: '1px solid #2D2D2D',
@@ -1053,11 +1127,124 @@ const App = () => {
               padding: isMobile ? '8px 10px' : '8px 12px',
               letterSpacing: '0.3px',
             }}
-          >
-            {secondsSinceSync === null ? 'Syncing live feed...' : `Live feed synced ${secondsSinceSync}s ago`}
+            >
+            {secondsSinceSync === null ? 'Syncing market gallery...' : `Market gallery synced ${secondsSinceSync}s ago`}
           </div>
         </div>
       </section>
+
+      {featuredVibe && (
+        <section
+          style={{
+            maxWidth: '1400px',
+            margin: '0 auto',
+            padding: isMobile ? `0 ${sidePadding}px 18px` : `0 ${sidePadding}px 22px`,
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isTablet ? '1fr' : 'minmax(0, 1.2fr) minmax(320px, 0.8fr)',
+              gap: isMobile ? '14px' : '18px',
+            }}
+          >
+            <Link
+              href={`/auction/${featuredVibe.slug}`}
+              style={{ background: '#111111', border: '2px solid #222222', overflow: 'hidden', textDecoration: 'none', color: 'inherit', display: 'block' }}
+            >
+              <div
+                style={{
+                  position: 'relative',
+                  height: isMobile ? '220px' : '280px',
+                  background: '#1A1A1A',
+                  borderBottom: '1px solid #252525',
+                }}
+              >
+                {featuredVibe.imageUrl ? (
+                  <img
+                    src={featuredVibe.imageUrl}
+                    alt={featuredVibe.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                ) : (
+                  <>
+                    <div style={{ backgroundImage: 'radial-gradient(#C8FF00 1px, transparent 1px)', backgroundSize: '12px 12px', opacity: 0.08, position: 'absolute', inset: 0 }} />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        color: '#D0D0D0',
+                        letterSpacing: '0.8px',
+                      }}
+                    >
+                      Image Pending
+                    </div>
+                  </>
+                )}
+              </div>
+              <div style={{ padding: isMobile ? '16px' : '18px' }}>
+                <div style={{ fontSize: '10px', color: '#8C8C8C', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                  Featured Listing
+                </div>
+                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '28px' : '40px', lineHeight: 1, textTransform: 'uppercase' }}>
+                  {featuredVibe.title}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '14px' }}>
+                  <div style={{ background: '#181818', border: '1px solid #2A2A2A', padding: '8px 10px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Category: {featuredVibe.category}
+                  </div>
+                  <div style={{ background: '#181818', border: '1px solid #2A2A2A', padding: '8px 10px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Current Bid: {getBidDisplay(featuredVibe)} AURA
+                  </div>
+                </div>
+                <div style={{ fontSize: '14px', color: '#9A9A9A', marginTop: '14px', lineHeight: 1.5 }}>
+                  Leading live listing based on current market activity and visibility in the gallery.
+                </div>
+              </div>
+            </Link>
+
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <div style={{ background: '#111111', border: '1px solid #252525', padding: '14px' }}>
+                <div style={{ fontSize: '10px', color: '#8C8C8C', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  Ending Soon
+                </div>
+                {endingSoonVibes.map((item) => (
+                  <div key={item.slug} style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', padding: '8px 0', borderTop: '1px solid #1D1D1D' }}>
+                    <Link href={`/auction/${item.slug}`} style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 700 }}>
+                      {item.title}
+                    </Link>
+                    <span style={{ color: '#C8FF00', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase' }}>
+                      {item.endTimeMs && Number.isFinite(item.endTimeMs) ? `${Math.max(0, Math.floor((item.endTimeMs - Date.now()) / 60000))}m` : 'Live'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ background: '#111111', border: '1px solid #252525', padding: '14px' }}>
+                <div style={{ fontSize: '10px', color: '#8C8C8C', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  High Signal Listings
+                </div>
+                {highestAuraVibes.map((item) => (
+                  <div key={item.slug} style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', padding: '8px 0', borderTop: '1px solid #1D1D1D' }}>
+                    <Link href={`/auction/${item.slug}`} style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 700 }}>
+                      {item.title}
+                    </Link>
+                    <span style={{ color: '#FFFFFF', fontSize: '12px', fontWeight: 800 }}>
+                      {getBidDisplay(item)} AURA
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div
         className="va-layout-grid"
@@ -1163,13 +1350,13 @@ const App = () => {
                 VIBE
               </div>
               <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '24px' : '32px', textTransform: 'uppercase', color: '#444', marginBottom: '8px' }}>
-                No Vibes Listed Yet
+                No Collectible Vibes Yet
               </div>
               <div style={{ fontSize: '14px', color: '#555', marginBottom: '24px' }}>
-                Be the first to drop and auction a vibe.
+                Start the catalog. Create the first collectible vibe in this market.
               </div>
               <Link href="/mint" style={{ background: '#C8FF00', color: '#000', padding: '12px 24px', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', textDecoration: 'none' }}>
-                Drop Vibe →
+                Create Vibe →
               </Link>
             </div>
           ) : (
@@ -1199,7 +1386,7 @@ const App = () => {
                 padding: isMobile ? '6px 0 2px' : '8px 0 4px',
               }}
             >
-              Loading more vibes...
+              Loading more collectibles...
             </div>
           )}
         </main>

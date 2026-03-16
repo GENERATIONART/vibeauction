@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { toAbsoluteUrl, SOCIAL_IMAGE_VERSION } from '../../../lib/site-url.js';
+import { BRAND_NAME } from '../../../lib/brand.js';
 
 export async function generateMetadata({ params }) {
   const rawUsername = params?.username || 'unknown';
   const username = String(rawUsername).replace(/^@/, '').toLowerCase();
 
-  let bio = `View @${username}'s vibe collection, auction history, and reputation on Vibe Auction.`;
+  let bio = `View @${username}'s vibe collection, market history, and reputation on ${BRAND_NAME}.`;
   let repScore = null;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -42,9 +43,9 @@ export async function generateMetadata({ params }) {
     },
     openGraph: {
       type: 'profile',
-      siteName: 'Vibe Auction',
+      siteName: BRAND_NAME,
       url: canonical,
-      title: `@${username} on Vibe Auction`,
+      title: `@${username} on ${BRAND_NAME}`,
       description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: `@${username}` }],
     },
@@ -52,7 +53,7 @@ export async function generateMetadata({ params }) {
       card: 'summary_large_image',
       site: '@vibeauction',
       creator: '@vibeauction',
-      title: `@${username} on Vibe Auction`,
+      title: `@${username} on ${BRAND_NAME}`,
       description,
       images: [{ url: ogImage, alt: `@${username}` }],
     },

@@ -2,10 +2,11 @@ import React from 'react';
 import Providers from './providers';
 import './globals.css';
 import { getSiteUrl, toAbsoluteUrl, SOCIAL_IMAGE_VERSION } from '../lib/site-url.js';
+import { BRAND_DESCRIPTION, BRAND_NAME, BRAND_OG_ALT } from '../lib/brand.js';
 
 const SITE_URL = getSiteUrl();
-const SITE_NAME = 'Vibe Auction';
-const DEFAULT_DESCRIPTION = "The world's first auction house for things that don't exist. Buy and sell rare feelings, cursed moments, and intangible vibes.";
+const SITE_NAME = BRAND_NAME;
+const DEFAULT_DESCRIPTION = BRAND_DESCRIPTION;
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -18,7 +19,7 @@ export const metadata = {
     canonical: '/',
   },
   keywords: ['vibe auction', 'nft', 'feelings', 'abstract', 'auction', 'aura'],
-  authors: [{ name: 'Vibe Auction' }],
+  authors: [{ name: SITE_NAME }],
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
@@ -30,7 +31,7 @@ export const metadata = {
         url: toAbsoluteUrl(`/api/og?v=${SOCIAL_IMAGE_VERSION}`),
         width: 1200,
         height: 630,
-        alt: 'Vibe Auction — bid on vibes',
+        alt: BRAND_OG_ALT,
       },
     ],
   },
@@ -40,7 +41,7 @@ export const metadata = {
     creator: '@vibeauction',
     title: SITE_NAME,
     description: DEFAULT_DESCRIPTION,
-    images: [{ url: toAbsoluteUrl(`/api/og?v=${SOCIAL_IMAGE_VERSION}`), alt: 'Vibe Auction — bid on vibes' }],
+    images: [{ url: toAbsoluteUrl(`/api/og?v=${SOCIAL_IMAGE_VERSION}`), alt: BRAND_OG_ALT }],
   },
   appleWebApp: {
     capable: true,

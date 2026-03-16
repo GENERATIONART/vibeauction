@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
-import { getAuctionItemBySlug } from '../../../../lib/auction-items.js';
 import { getMintedVibeBySlug } from '../../../../lib/server/state-db.js';
+import { BRAND_NAME } from '../../../../lib/brand.js';
 
 export const runtime = 'nodejs';
 
@@ -8,18 +8,16 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug') || '';
 
-  let title = 'Vibe Auction';
+  let title = BRAND_NAME;
   let bid = 0;
   let imageUrl = null;
 
   try {
-    const staticVibe = getAuctionItemBySlug(slug);
-    const minted = staticVibe ? null : await getMintedVibeBySlug(slug);
-    const vibe = staticVibe ?? minted;
+    const vibe = await getMintedVibeBySlug(slug);
     if (vibe) {
-      title = staticVibe ? staticVibe.title : (vibe.name || vibe.title || title);
-      bid = staticVibe ? staticVibe.bid : (vibe.startingPrice || 0);
-      imageUrl = staticVibe ? null : (vibe.imageUrl ?? null);
+      title = vibe.name || vibe.title || title;
+      bid = vibe.startingPrice || 0;
+      imageUrl = vibe.imageUrl ?? null;
     }
   } catch {
     // use defaults

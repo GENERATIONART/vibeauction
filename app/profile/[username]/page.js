@@ -958,7 +958,7 @@ export default function ProfilePage() {
         <div style={{ ...S.body, gridTemplateColumns: '1fr', padding: isMobile ? '20px 14px 48px' : '32px 32px 64px', gap: '24px' }}>
           <section>
             <div style={S.sectionTitle}>
-              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Vibe Vault</span>
+              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Collection Vault</span>
             </div>
             <div style={S.card}>
               {profileVaultItems.length === 0 ? (
