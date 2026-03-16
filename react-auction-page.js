@@ -415,6 +415,51 @@ const customStyles = {
     padding: '24px',
     border: '1px solid #222222',
   },
+  commentsPanel: {
+    background: '#111111',
+    borderRadius: '8px',
+    padding: '24px',
+    border: '1px solid #222222',
+    marginTop: '18px',
+  },
+  commentsList: {
+    listStyle: 'none',
+    display: 'grid',
+    gap: '12px',
+    marginTop: '14px',
+  },
+  commentItem: {
+    background: '#171717',
+    border: '1px solid #262626',
+    padding: '12px',
+  },
+  commentMeta: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '10px',
+    marginBottom: '8px',
+    fontSize: '11px',
+    textTransform: 'uppercase',
+    fontWeight: 800,
+    letterSpacing: '0.5px',
+  },
+  commentBody: {
+    color: '#E4E4E4',
+    fontSize: '14px',
+    lineHeight: 1.55,
+    whiteSpace: 'pre-wrap',
+  },
+  commentInput: {
+    width: '100%',
+    minHeight: '82px',
+    background: '#090909',
+    color: '#FFFFFF',
+    border: '1px solid #2E2E2E',
+    padding: '12px',
+    fontSize: '14px',
+    fontFamily: "'Inter', sans-serif",
+    resize: 'vertical',
+  },
   socialPanel: {
     marginTop: '18px',
     background: '#111111',
@@ -923,6 +968,11 @@ const App = ({ vibe }) => {
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState('');
   const [socialError, setSocialError] = useState('');
+  const [comments, setComments] = useState([]);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentSaving, setCommentSaving] = useState(false);
+  const [commentError, setCommentError] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1120;
@@ -961,6 +1011,11 @@ const App = ({ vibe }) => {
     setSocialLoading(true);
     setSocialSaving('');
     setSocialError('');
+    setComments([]);
+    setCommentDraft('');
+    setCommentsLoading(true);
+    setCommentSaving(false);
+    setCommentError('');
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
 
   const loadBidHistory = useCallback(async () => {
@@ -1074,6 +1129,27 @@ const App = ({ vibe }) => {
     }
   }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title, getAuthToken]);
 
+  const loadComments = useCallback(async () => {
+    if (!selectedVibe?.slug) {
+      setCommentsLoading(false);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({ vibeId: selectedVibe.slug });
+      if (selectedVibe?.id) params.set('vibeIdAlt', selectedVibe.id);
+      if (selectedVibe?.title) params.set('vibeName', selectedVibe.title);
+      const response = await fetch(`/api/state/vibe-comments?${params.toString()}`, { cache: 'no-store' });
+      const payload = await response.json();
+      setComments(Array.isArray(payload?.comments) ? payload.comments : []);
+      setCommentError('');
+    } catch (loadError) {
+      setCommentError(loadError instanceof Error ? loadError.message : 'Failed to load takes.');
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title]);
+
   useEffect(() => {
     const syncAuctionData = async () => {
       try {
@@ -1084,6 +1160,7 @@ const App = ({ vibe }) => {
       await loadBidHistory();
       await loadVibeMarket();
       await loadVibeSocial();
+      await loadComments();
     };
 
     syncAuctionData();
@@ -1114,7 +1191,7 @@ const App = ({ vibe }) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [loadBidHistory, loadVibeMarket, loadVibeSocial, refreshState]);
+  }, [loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, refreshState]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -1453,6 +1530,56 @@ const App = ({ vibe }) => {
     }
   };
 
+  const onPostComment = async () => {
+    const nextBody = String(commentDraft || '').trim();
+    if (!user) {
+      setCommentError('Sign in to post a take.');
+      return;
+    }
+    if (nextBody.length < 2) {
+      setCommentError('Write at least a couple of characters.');
+      return;
+    }
+    if (!selectedVibe?.slug || commentSaving) return;
+
+    setCommentSaving(true);
+    setCommentError('');
+    try {
+      const token = await getAuthToken();
+      const payload = await marketApiRequest(
+        '/api/state/vibe-comments',
+        {
+          method: 'POST',
+          body: {
+            comment: {
+              vibeId: selectedVibe.slug,
+              vibeIdAlt: selectedVibe.id || null,
+              vibeName: selectedVibe.title || 'Unknown Vibe',
+              body: nextBody,
+            },
+          },
+        },
+        token,
+      );
+
+      if (!payload?.accepted) {
+        if (payload?.reason === 'auth_required') {
+          setCommentError('Sign in to post a take.');
+        } else {
+          setCommentError('Could not post take.');
+        }
+        return;
+      }
+
+      setComments(Array.isArray(payload?.comments) ? payload.comments : []);
+      setCommentDraft('');
+    } catch (postError) {
+      setCommentError(postError instanceof Error ? postError.message : 'Could not post take.');
+    } finally {
+      setCommentSaving(false);
+    }
+  };
+
   const onPlaceBid = async () => {
     if (placingBid || auctionEnded) return;
     const bidAmount = currentBid + (increment > 0 ? increment : 50);
@@ -1779,12 +1906,14 @@ const App = ({ vibe }) => {
                     type="button"
                     disabled={isSaving}
                     onClick={() => onToggleReaction(option.id)}
+                    aria-label={option.label}
+                    title={option.label}
                     style={{
                       ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
                       opacity: isSaving ? 0.7 : 1,
                     }}
                   >
-                    {option.label} {count > 0 ? `${count}` : ''}
+                    {option.emoji || option.label} {count > 0 ? `${count}` : ''}
                   </button>
                 );
               })}
@@ -2294,6 +2423,58 @@ const App = ({ vibe }) => {
           )}
 
           <BidHistory bids={bids} />
+
+          <div style={{ ...customStyles.commentsPanel, padding: isMobile ? '18px 16px' : customStyles.commentsPanel.padding }}>
+            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize, marginBottom: '8px' }}>
+              Auction Takes
+            </div>
+            <div style={customStyles.socialHelp}>
+              Drop a short take, call the bidding energy, or explain why this vibe deserves to get remixed into oblivion.
+            </div>
+            <textarea
+              value={commentDraft}
+              onChange={(event) => setCommentDraft(event.target.value)}
+              placeholder={user ? 'Post your take on this vibe...' : 'Sign in to post your take...'}
+              disabled={!user || commentSaving}
+              style={{ ...customStyles.commentInput, opacity: !user ? 0.7 : 1 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+              <div style={{ fontSize: '11px', color: '#7A7A7A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                {commentsLoading ? 'Loading takes...' : `${comments.length} take${comments.length === 1 ? '' : 's'}`}
+              </div>
+              <button
+                type="button"
+                onClick={onPostComment}
+                disabled={!user || commentSaving}
+                style={{ ...customStyles.predictionButton, width: 'auto', marginTop: 0, fontSize: '14px', padding: '10px 14px', opacity: !user || commentSaving ? 0.6 : 1 }}
+              >
+                {commentSaving ? 'Posting...' : 'Post Take'}
+              </button>
+            </div>
+            {commentError && (
+              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
+                {commentError}
+              </div>
+            )}
+            {comments.length > 0 && (
+              <ul style={customStyles.commentsList}>
+                {comments.map((comment) => (
+                  <li key={comment.id} style={customStyles.commentItem}>
+                    <div style={customStyles.commentMeta}>
+                      <span style={{ color: '#C8FF00' }}>{comment.user}</span>
+                      <span style={{ color: '#6F6F6F' }}>{comment.time}</span>
+                    </div>
+                    <div style={customStyles.commentBody}>{comment.body}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!commentsLoading && comments.length === 0 && (
+              <div style={{ paddingTop: '14px', color: '#666666', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                No takes yet. Be the first to call it.
+              </div>
+            )}
+          </div>
         </aside>
       </div>
 
