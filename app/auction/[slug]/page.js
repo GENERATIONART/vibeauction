@@ -73,6 +73,9 @@ export default async function Page({ params }) {
     description: minted.manifesto,
     author: minted.author ?? null,
     listedBy: minted.listedBy ?? null,
+    remixSourceSlug: minted.remixSourceSlug ?? null,
+    remixSourceName: minted.remixSourceName ?? null,
+    remixSourceAuthor: minted.remixSourceAuthor ?? null,
   };
 
   return <AuctionPage vibe={vibe} />;

@@ -539,6 +539,9 @@ export default function MintPage() {
     imageColor: '',
     imageHumor: '',
   });
+  const [remixSlug, setRemixSlug] = useState('');
+  const [remixSource, setRemixSource] = useState(null);
+  const [remixPrefilledSlug, setRemixPrefilledSlug] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1024;
@@ -553,6 +556,7 @@ export default function MintPage() {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
     updateViewportWidth();
     window.addEventListener('resize', updateViewportWidth);
+    setRemixSlug(new URLSearchParams(window.location.search).get('remix') || '');
 
     const style = document.createElement('style');
     style.textContent = `
@@ -568,6 +572,61 @@ export default function MintPage() {
       document.head.removeChild(style);
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateRemixSource = async () => {
+      if (!remixSlug) {
+        setRemixSource(null);
+        setRemixPrefilledSlug('');
+        return;
+      }
+
+      const fromStore = (Array.isArray(mintedVibes) ? mintedVibes : []).find((entry) => entry?.slug === remixSlug) || null;
+      if (fromStore) {
+        if (!cancelled) setRemixSource(fromStore);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/state', { cache: 'no-store' });
+        const payload = await response.json();
+        const source =
+          (Array.isArray(payload?.state?.mintedVibes) ? payload.state.mintedVibes : []).find((entry) => entry?.slug === remixSlug) || null;
+        if (!cancelled) setRemixSource(source);
+      } catch {
+        if (!cancelled) setRemixSource(null);
+      }
+    };
+
+    hydrateRemixSource();
+    return () => {
+      cancelled = true;
+    };
+  }, [remixSlug, mintedVibes]);
+
+  useEffect(() => {
+    if (!remixSource?.slug || remixPrefilledSlug === remixSource.slug) return;
+
+    const sourceTitle = String(remixSource.name || 'Untitled Vibe').trim();
+    const sourceAuthor = remixSource.author ? `@${String(remixSource.author).replace(/^@/, '')}` : 'the original lister';
+    const sourceManifesto = String(remixSource.manifesto || '').trim();
+
+    setFormData((previous) => ({
+      ...previous,
+      itemName: previous.itemName || `${sourceTitle} Remix`,
+      details:
+        previous.details ||
+        `Remix of "${sourceTitle}" by ${sourceAuthor}.\n\n${sourceManifesto ? `Source vibe:\n${sourceManifesto}\n\n` : ''}Remix angle: `,
+      startingPrice: previous.startingPrice === '100' ? String(Math.max(25, Number(remixSource.startingPrice || 100))) : previous.startingPrice,
+      duration: previous.duration || '24 Hours',
+    }));
+    setUploadedImageUrl((previous) => previous || remixSource.imageUrl || '');
+    setUploadPreviewUrl((previous) => previous || remixSource.imageUrl || '');
+    setUploadedFile(null);
+    setRemixPrefilledSlug(remixSource.slug);
+  }, [remixSource, remixPrefilledSlug]);
 
   const getInputStyle = (fieldName) => (
     focusedField === fieldName ? customStyles.inputFieldFocus : customStyles.inputField
@@ -776,6 +835,9 @@ export default function MintPage() {
         imageComposition: advancedOptions.imageComposition || null,
         imageColor: advancedOptions.imageColor || null,
         imageHumor: advancedOptions.imageHumor || null,
+        remixSourceSlug: remixSource?.slug || null,
+        remixSourceName: remixSource?.name || null,
+        remixSourceAuthor: remixSource?.author || null,
       }, {
         onStage: updateMintStageFromEvent,
       });
@@ -834,6 +896,31 @@ export default function MintPage() {
         }}
       >
         <div>
+          {remixSource && (
+            <div
+              style={{
+                marginBottom: isMobile ? '20px' : '24px',
+                border: '1px solid rgba(200,255,0,0.35)',
+                background: 'linear-gradient(135deg, rgba(200,255,0,0.1), rgba(17,17,17,0.95))',
+                padding: '14px 16px',
+              }}
+            >
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '18px' : '22px', textTransform: 'uppercase', color: '#C8FF00' }}>
+                Remixing {remixSource.name || 'this vibe'}
+              </div>
+              <div style={{ marginTop: '6px', fontSize: '13px', color: '#B8B8B8', lineHeight: 1.5 }}>
+                Start from the original listing, then twist the concept into your own collectible variant.
+                {remixSource.author ? ` Original vibe by @${String(remixSource.author).replace(/^@/, '')}.` : ''}
+              </div>
+              <Link
+                href={`/auction/${remixSource.slug}`}
+                style={{ display: 'inline-block', marginTop: '10px', color: '#FFFFFF', fontWeight: 800, textTransform: 'uppercase', fontSize: '12px', textDecoration: 'none' }}
+              >
+                Back to source auction
+              </Link>
+            </div>
+          )}
+
           <h1
             style={{
               ...customStyles.formSectionH1,

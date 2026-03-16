@@ -79,6 +79,7 @@ function sanitizeState(input) {
     walletLog: Array.isArray(input.walletLog) ? input.walletLog : defaults.walletLog,
     confessions: Array.isArray(input.confessions) ? input.confessions : defaults.confessions,
     mintedVibes: Array.isArray(input.mintedVibes) ? input.mintedVibes : defaults.mintedVibes,
+    vibeReactions: Array.isArray(input.vibeReactions) ? input.vibeReactions : defaults.vibeReactions,
     processedStripeSessions:
       input.processedStripeSessions && typeof input.processedStripeSessions === 'object'
         ? input.processedStripeSessions
@@ -137,6 +138,9 @@ const mapSupabaseVibeRow = (row) => ({
   isAnonymous: row.is_anonymous,
   author: row.author,
   listedBy: row.listed_by ?? row.author,
+  remixSourceSlug: row.remix_source_slug ?? null,
+  remixSourceName: row.remix_source_name ?? null,
+  remixSourceAuthor: row.remix_source_author ?? null,
   createdAt: row.created_at,
   endTime: row.end_time ?? null,
 });

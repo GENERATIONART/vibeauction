@@ -6,6 +6,7 @@ import { useVibeStore } from './app/state/vibe-store';
 import { useAuth } from './app/state/auth-store';
 import NavBar from './app/components/NavBar';
 import { getSupabaseClient } from './lib/supabase-client.js';
+import { VIBE_REACTION_OPTIONS } from './lib/vibe-social.js';
 
 const normalize = (value) =>
   String(value || '')
@@ -413,6 +414,91 @@ const customStyles = {
     borderRadius: '8px',
     padding: '24px',
     border: '1px solid #222222',
+  },
+  socialPanel: {
+    marginTop: '18px',
+    background: '#111111',
+    border: '1px solid #252525',
+    borderRadius: '8px',
+    padding: '18px',
+  },
+  socialTitle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '24px',
+    textTransform: 'uppercase',
+    marginBottom: '10px',
+  },
+  socialHelp: {
+    color: '#A2A2A2',
+    fontSize: '14px',
+    lineHeight: 1.6,
+    marginBottom: '14px',
+  },
+  reactionRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+  },
+  reactionButton: {
+    background: '#171717',
+    border: '1px solid #2D2D2D',
+    color: '#F1F1F1',
+    padding: '10px 12px',
+    fontSize: '12px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
+  reactionButtonActive: {
+    background: '#C8FF00',
+    border: '1px solid #C8FF00',
+    color: '#000000',
+    padding: '10px 12px',
+    fontSize: '12px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
+  remixPanel: {
+    background: '#111111',
+    border: '1px solid #252525',
+    borderRadius: '8px',
+    padding: '18px',
+  },
+  remixMiniList: {
+    display: 'grid',
+    gap: '10px',
+    marginTop: '12px',
+  },
+  remixMiniLink: {
+    display: 'grid',
+    gridTemplateColumns: '56px minmax(0, 1fr)',
+    gap: '10px',
+    alignItems: 'center',
+    textDecoration: 'none',
+    color: 'inherit',
+    background: '#171717',
+    border: '1px solid #262626',
+    padding: '8px',
+  },
+  remixMiniThumb: {
+    width: '56px',
+    height: '56px',
+    objectFit: 'cover',
+    display: 'block',
+    background: '#0D0D0D',
+  },
+  remixMiniFallback: {
+    width: '56px',
+    height: '56px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#0D0D0D',
+    color: '#666666',
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
   },
   historyTitle: {
     fontFamily: "'Anton', sans-serif",
@@ -826,6 +912,17 @@ const App = ({ vibe }) => {
   const [predictionCreating, setPredictionCreating] = useState(false);
   const [predictionError, setPredictionError] = useState('');
   const [predictionSuccess, setPredictionSuccess] = useState('');
+  const [vibeSocial, setVibeSocial] = useState({
+    reactionCounts: Object.fromEntries(VIBE_REACTION_OPTIONS.map((option) => [option.id, 0])),
+    viewerReactions: [],
+    totalReactions: 0,
+    remixes: [],
+    remixCount: 0,
+    parentRemix: null,
+  });
+  const [socialLoading, setSocialLoading] = useState(true);
+  const [socialSaving, setSocialSaving] = useState('');
+  const [socialError, setSocialError] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1120;
@@ -853,6 +950,17 @@ const App = ({ vibe }) => {
     setPredictionCreating(false);
     setPredictionError('');
     setPredictionSuccess('');
+    setVibeSocial({
+      reactionCounts: Object.fromEntries(VIBE_REACTION_OPTIONS.map((option) => [option.id, 0])),
+      viewerReactions: [],
+      totalReactions: 0,
+      remixes: [],
+      remixCount: 0,
+      parentRemix: null,
+    });
+    setSocialLoading(true);
+    setSocialSaving('');
+    setSocialError('');
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
 
   const loadBidHistory = useCallback(async () => {
@@ -945,6 +1053,27 @@ const App = ({ vibe }) => {
     }
   }, [vibeMarketId, getAuthToken]);
 
+  const loadVibeSocial = useCallback(async () => {
+    if (!selectedVibe?.slug) {
+      setSocialLoading(false);
+      return;
+    }
+
+    try {
+      const token = await getAuthToken();
+      const params = new URLSearchParams({ vibeId: selectedVibe.slug });
+      if (selectedVibe?.id) params.set('vibeIdAlt', selectedVibe.id);
+      if (selectedVibe?.title) params.set('vibeName', selectedVibe.title);
+      const payload = await marketApiRequest(`/api/state/vibe-social?${params.toString()}`, {}, token);
+      if (payload?.social) setVibeSocial(payload.social);
+      setSocialError('');
+    } catch (loadError) {
+      setSocialError(loadError instanceof Error ? loadError.message : 'Failed to load vibe reactions.');
+    } finally {
+      setSocialLoading(false);
+    }
+  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title, getAuthToken]);
+
   useEffect(() => {
     const syncAuctionData = async () => {
       try {
@@ -954,6 +1083,7 @@ const App = ({ vibe }) => {
       }
       await loadBidHistory();
       await loadVibeMarket();
+      await loadVibeSocial();
     };
 
     syncAuctionData();
@@ -984,7 +1114,7 @@ const App = ({ vibe }) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [loadBidHistory, loadVibeMarket, refreshState]);
+  }, [loadBidHistory, loadVibeMarket, loadVibeSocial, refreshState]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -1279,6 +1409,50 @@ const App = ({ vibe }) => {
     router.push(`/won?${params.toString()}`);
   }, [vibeNormId, selectedVibe, currentBid, topBid, router]);
 
+  const onToggleReaction = async (reactionType) => {
+    if (!user) {
+      setSocialError('Sign in to react to vibes.');
+      return;
+    }
+    if (!selectedVibe?.slug || socialSaving) return;
+
+    setSocialSaving(reactionType);
+    setSocialError('');
+    try {
+      const token = await getAuthToken();
+      const payload = await marketApiRequest(
+        '/api/state/vibe-social',
+        {
+          method: 'POST',
+          body: {
+            reaction: {
+              vibeId: selectedVibe.slug,
+              vibeIdAlt: selectedVibe.id || null,
+              vibeName: selectedVibe.title || 'Unknown Vibe',
+              reactionType,
+            },
+          },
+        },
+        token,
+      );
+
+      if (!payload?.accepted) {
+        if (payload?.reason === 'auth_required') {
+          setSocialError('Sign in to react to vibes.');
+        } else {
+          setSocialError('Could not update reaction.');
+        }
+        return;
+      }
+
+      if (payload?.social) setVibeSocial(payload.social);
+    } catch (reactionError) {
+      setSocialError(reactionError instanceof Error ? reactionError.message : 'Could not update reaction.');
+    } finally {
+      setSocialSaving('');
+    }
+  };
+
   const onPlaceBid = async () => {
     if (placingBid || auctionEnded) return;
     const bidAmount = currentBid + (increment > 0 ? increment : 50);
@@ -1420,6 +1594,15 @@ const App = ({ vibe }) => {
     { label: 'Collector Status', value: auctionEnded ? 'Archived listing' : 'Live for collection' },
   ];
   const marketNarrative = selectedVibe?.description || 'A live collectible vibe with open bidding and public provenance.';
+  const parentRemix =
+    vibeSocial?.parentRemix ||
+    (selectedVibe?.remixSourceSlug
+      ? {
+          slug: selectedVibe.remixSourceSlug,
+          name: selectedVibe.remixSourceName || selectedVibe.remixSourceSlug,
+          author: selectedVibe.remixSourceAuthor || null,
+        }
+      : null);
 
   return (
     <div style={customStyles.body}>
@@ -1507,6 +1690,16 @@ const App = ({ vibe }) => {
                 </div>
               )}
 
+              {parentRemix && (
+                <div style={{ marginTop: '14px', fontSize: '13px', color: '#666666', fontWeight: 700 }}>
+                  Remix of{' '}
+                  <a href={`/auction/${parentRemix.slug}`} style={{ color: '#C8FF00', textDecoration: 'none' }}>
+                    {parentRemix.name}
+                  </a>
+                  {parentRemix.author ? ` by ${parentRemix.author.startsWith('@') ? parentRemix.author : `@${parentRemix.author}`}` : ''}
+                </div>
+              )}
+
               <div
                 style={{
                   marginTop: '18px',
@@ -1566,6 +1759,44 @@ const App = ({ vibe }) => {
                 <div style={{ fontWeight: 800 }}>{buyNowPrice ? `Bid or ${formatAura(buyNowPrice)}` : 'Winning bid only'}</div>
               </div>
             </div>
+          </div>
+
+          <div style={{ ...customStyles.socialPanel, padding: isMobile ? '16px' : customStyles.socialPanel.padding }}>
+            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize }}>
+              Crowd Reactions
+            </div>
+            <div style={customStyles.socialHelp}>
+              Lightweight audience signals make the listing feel alive. React to the vibe, then watch what kinds of remixes it spawns.
+            </div>
+            <div style={customStyles.reactionRow}>
+              {VIBE_REACTION_OPTIONS.map((option) => {
+                const isActive = (vibeSocial?.viewerReactions || []).includes(option.id);
+                const count = Number(vibeSocial?.reactionCounts?.[option.id] || 0);
+                const isSaving = socialSaving === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => onToggleReaction(option.id)}
+                    style={{
+                      ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
+                      opacity: isSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {option.label} {count > 0 ? `${count}` : ''}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#727272', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              {socialLoading ? 'Loading social signal...' : `${Number(vibeSocial?.totalReactions || 0).toLocaleString()} total reactions`}
+            </div>
+            {socialError && (
+              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
+                {socialError}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1697,6 +1928,51 @@ const App = ({ vibe }) => {
                 </button>
 
                 <WatchButton isWatching={isWatching} onClick={() => setIsWatching((watching) => !watching)} />
+              </div>
+            )}
+          </div>
+
+          <div style={{ ...customStyles.remixPanel, padding: isMobile ? '18px 16px' : customStyles.remixPanel.padding }}>
+            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize, marginBottom: '8px' }}>
+              Remix This Vibe
+            </div>
+            <div style={{ color: '#A2A2A2', fontSize: '14px', lineHeight: 1.6 }}>
+              Fork the concept, keep the original as provenance, and mint your own collectible variant from this listing.
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push(`/mint?remix=${encodeURIComponent(selectedVibe?.slug || '')}`)}
+              style={{ ...customStyles.predictionButton, marginTop: '14px' }}
+            >
+              Start Remix Draft
+            </button>
+            {parentRemix && (
+              <div style={{ marginTop: '12px', fontSize: '12px', color: '#B8B8B8', lineHeight: 1.5 }}>
+                This listing already sits inside a remix chain.
+              </div>
+            )}
+            {(vibeSocial?.remixCount || 0) > 0 && (
+              <div style={customStyles.remixMiniList}>
+                {vibeSocial.remixes.map((remix) => (
+                  <a key={remix.slug} href={`/auction/${remix.slug}`} style={customStyles.remixMiniLink}>
+                    {remix.imageUrl ? (
+                      <img src={remix.imageUrl} alt={remix.name || 'Remix'} style={customStyles.remixMiniThumb} />
+                    ) : (
+                      <div style={customStyles.remixMiniFallback}>IMG</div>
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase', fontSize: '12px', lineHeight: 1.3 }}>
+                        {remix.name || 'Untitled Remix'}
+                      </div>
+                      <div style={{ marginTop: '4px', color: '#8B8B8B', fontSize: '11px', fontWeight: 700 }}>
+                        {remix.author ? `by ${remix.author.startsWith('@') ? remix.author : `@${remix.author}`}` : 'Remix listing'}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+                <div style={{ fontSize: '11px', color: '#7A7A7A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                  {Number(vibeSocial.remixCount || 0).toLocaleString()} remix{vibeSocial.remixCount === 1 ? '' : 'es'} total
+                </div>
               </div>
             )}
           </div>
