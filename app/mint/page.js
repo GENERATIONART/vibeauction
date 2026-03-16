@@ -622,8 +622,14 @@ export default function MintPage() {
       startingPrice: previous.startingPrice === '100' ? String(Math.max(25, Number(remixSource.startingPrice || 100))) : previous.startingPrice,
       duration: previous.duration || '24 Hours',
     }));
-    setUploadedImageUrl((previous) => previous || remixSource.imageUrl || '');
-    setUploadPreviewUrl((previous) => previous || remixSource.imageUrl || '');
+    setAdvancedOptions((previous) => ({
+      ...previous,
+      imagePromptText:
+        previous.imagePromptText ||
+        `Create a fresh visual remix of "${sourceTitle}" by ${sourceAuthor}. Keep the emotional premise and collectible energy, but generate a distinctly new composition with different scene framing, details, and visual storytelling.${sourceManifesto ? ` Source vibe context: ${sourceManifesto}` : ''}`,
+    }));
+    setUploadedImageUrl('');
+    setUploadPreviewUrl('');
     setUploadedFile(null);
     setRemixPrefilledSlug(remixSource.slug);
   }, [remixSource, remixPrefilledSlug]);
