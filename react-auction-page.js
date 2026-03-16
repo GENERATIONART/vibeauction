@@ -1888,45 +1888,59 @@ const App = ({ vibe }) => {
             </div>
           </div>
 
-          <div style={{ ...customStyles.socialPanel, padding: isMobile ? '16px' : customStyles.socialPanel.padding }}>
-            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize }}>
-              Crowd Reactions
+          <div style={{ ...customStyles.commentsPanel, padding: isMobile ? '18px 16px' : customStyles.commentsPanel.padding }}>
+            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize, marginBottom: '8px' }}>
+              Auction Takes
             </div>
             <div style={customStyles.socialHelp}>
-              Lightweight audience signals make the listing feel alive. React to the vibe, then watch what kinds of remixes it spawns.
+              Drop a short take, call the bidding energy, or explain why this vibe deserves to get remixed into oblivion.
             </div>
-            <div style={customStyles.reactionRow}>
-              {VIBE_REACTION_OPTIONS.map((option) => {
-                const isActive = (vibeSocial?.viewerReactions || []).includes(option.id);
-                const count = Number(vibeSocial?.reactionCounts?.[option.id] || 0);
-                const isSaving = socialSaving === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => onToggleReaction(option.id)}
-                    aria-label={option.label}
-                    title={option.label}
-                    style={{
-                      ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
-                      opacity: isSaving ? 0.7 : 1,
-                    }}
-                  >
-                    {option.emoji || option.label} {count > 0 ? `${count}` : ''}
-                  </button>
-                );
-              })}
+            <textarea
+              value={commentDraft}
+              onChange={(event) => setCommentDraft(event.target.value)}
+              placeholder={user ? 'Post your take on this vibe...' : 'Sign in to post your take...'}
+              disabled={!user || commentSaving}
+              style={{ ...customStyles.commentInput, opacity: !user ? 0.7 : 1 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+              <div style={{ fontSize: '11px', color: '#7A7A7A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                {commentsLoading ? 'Loading takes...' : `${comments.length} take${comments.length === 1 ? '' : 's'}`}
+              </div>
+              <button
+                type="button"
+                onClick={onPostComment}
+                disabled={!user || commentSaving}
+                style={{ ...customStyles.predictionButton, width: 'auto', marginTop: 0, fontSize: '14px', padding: '10px 14px', opacity: !user || commentSaving ? 0.6 : 1 }}
+              >
+                {commentSaving ? 'Posting...' : 'Post Take'}
+              </button>
             </div>
-            <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#727272', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              {socialLoading ? 'Loading social signal...' : `${Number(vibeSocial?.totalReactions || 0).toLocaleString()} total reactions`}
-            </div>
-            {socialError && (
+            {commentError && (
               <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
-                {socialError}
+                {commentError}
+              </div>
+            )}
+            {comments.length > 0 && (
+              <ul style={customStyles.commentsList}>
+                {comments.map((comment) => (
+                  <li key={comment.id} style={customStyles.commentItem}>
+                    <div style={customStyles.commentMeta}>
+                      <span style={{ color: '#C8FF00' }}>{comment.user}</span>
+                      <span style={{ color: '#6F6F6F' }}>{comment.time}</span>
+                    </div>
+                    <div style={customStyles.commentBody}>{comment.body}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!commentsLoading && comments.length === 0 && (
+              <div style={{ paddingTop: '14px', color: '#666666', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                No takes yet. Be the first to call it.
               </div>
             )}
           </div>
+
+          <BidHistory bids={bids} />
         </div>
 
         <aside style={customStyles.sidebarPanel}>
@@ -2057,6 +2071,46 @@ const App = ({ vibe }) => {
                 </button>
 
                 <WatchButton isWatching={isWatching} onClick={() => setIsWatching((watching) => !watching)} />
+              </div>
+            )}
+          </div>
+
+          <div style={{ ...customStyles.socialPanel, padding: isMobile ? '16px' : customStyles.socialPanel.padding }}>
+            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize }}>
+              Crowd Reactions
+            </div>
+            <div style={customStyles.socialHelp}>
+              Lightweight audience signals make the listing feel alive. React to the vibe, then watch what kinds of remixes it spawns.
+            </div>
+            <div style={customStyles.reactionRow}>
+              {VIBE_REACTION_OPTIONS.map((option) => {
+                const isActive = (vibeSocial?.viewerReactions || []).includes(option.id);
+                const count = Number(vibeSocial?.reactionCounts?.[option.id] || 0);
+                const isSaving = socialSaving === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => onToggleReaction(option.id)}
+                    aria-label={option.label}
+                    title={option.label}
+                    style={{
+                      ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
+                      opacity: isSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {option.emoji || option.label} {count > 0 ? `${count}` : ''}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#727272', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              {socialLoading ? 'Loading social signal...' : `${Number(vibeSocial?.totalReactions || 0).toLocaleString()} total reactions`}
+            </div>
+            {socialError && (
+              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
+                {socialError}
               </div>
             )}
           </div>
@@ -2422,59 +2476,6 @@ const App = ({ vibe }) => {
             </div>
           )}
 
-          <BidHistory bids={bids} />
-
-          <div style={{ ...customStyles.commentsPanel, padding: isMobile ? '18px 16px' : customStyles.commentsPanel.padding }}>
-            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize, marginBottom: '8px' }}>
-              Auction Takes
-            </div>
-            <div style={customStyles.socialHelp}>
-              Drop a short take, call the bidding energy, or explain why this vibe deserves to get remixed into oblivion.
-            </div>
-            <textarea
-              value={commentDraft}
-              onChange={(event) => setCommentDraft(event.target.value)}
-              placeholder={user ? 'Post your take on this vibe...' : 'Sign in to post your take...'}
-              disabled={!user || commentSaving}
-              style={{ ...customStyles.commentInput, opacity: !user ? 0.7 : 1 }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
-              <div style={{ fontSize: '11px', color: '#7A7A7A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                {commentsLoading ? 'Loading takes...' : `${comments.length} take${comments.length === 1 ? '' : 's'}`}
-              </div>
-              <button
-                type="button"
-                onClick={onPostComment}
-                disabled={!user || commentSaving}
-                style={{ ...customStyles.predictionButton, width: 'auto', marginTop: 0, fontSize: '14px', padding: '10px 14px', opacity: !user || commentSaving ? 0.6 : 1 }}
-              >
-                {commentSaving ? 'Posting...' : 'Post Take'}
-              </button>
-            </div>
-            {commentError && (
-              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
-                {commentError}
-              </div>
-            )}
-            {comments.length > 0 && (
-              <ul style={customStyles.commentsList}>
-                {comments.map((comment) => (
-                  <li key={comment.id} style={customStyles.commentItem}>
-                    <div style={customStyles.commentMeta}>
-                      <span style={{ color: '#C8FF00' }}>{comment.user}</span>
-                      <span style={{ color: '#6F6F6F' }}>{comment.time}</span>
-                    </div>
-                    <div style={customStyles.commentBody}>{comment.body}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {!commentsLoading && comments.length === 0 && (
-              <div style={{ paddingTop: '14px', color: '#666666', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                No takes yet. Be the first to call it.
-              </div>
-            )}
-          </div>
         </aside>
       </div>
 
