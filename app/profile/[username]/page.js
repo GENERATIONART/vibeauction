@@ -10,74 +10,63 @@ import { getSupabaseClient } from '../../../lib/supabase-client';
 
 const S = {
   page: {
-    background: '#0D0D0D',
     minHeight: '100dvh',
-    fontFamily: "'Inter', sans-serif",
+    background:
+      'radial-gradient(circle at top, rgba(200,255,0,0.12) 0%, rgba(200,255,0,0.03) 18%, #0A0A0A 50%, #050505 100%)',
     color: '#FFFFFF',
+    fontFamily: "'Inter', sans-serif",
     WebkitFontSmoothing: 'antialiased',
     overflowX: 'hidden',
   },
-  header: {
-    background: '#000000',
-    height: '60px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 24px',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-    borderBottom: '2px solid #C8FF00',
+  shell: {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '0 24px 64px',
   },
-  logo: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '24px',
-    textTransform: 'uppercase',
-    color: '#C8FF00',
-    textDecoration: 'none',
-  },
-  navLinks: { display: 'flex', gap: '24px' },
-  navItem: {
-    fontWeight: 700,
-    fontSize: '14px',
-    color: '#FFFFFF',
-    textDecoration: 'none',
-    textTransform: 'uppercase',
-  },
-  heroBanner: {
+  hero: {
     position: 'relative',
-    height: '220px',
+    marginTop: '18px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background:
+      'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 36%, rgba(200,255,0,0.08) 100%)',
     overflow: 'hidden',
-    background: '#000000',
   },
-  heroDiag: {
+  heroGlow: {
     position: 'absolute',
     inset: 0,
-    background: 'linear-gradient(108deg, #000000 52%, #C8FF00 52.1%)',
+    background:
+      'radial-gradient(circle at 80% 20%, rgba(200,255,0,0.22) 0%, rgba(200,255,0,0) 32%), radial-gradient(circle at 15% 25%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 26%)',
+    pointerEvents: 'none',
   },
   heroInner: {
     position: 'relative',
-    zIndex: 10,
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '0 32px',
-    height: '100%',
+    zIndex: 1,
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1.25fr) minmax(280px, 0.75fr)',
+    gap: '18px',
+    padding: '24px',
+  },
+  heroMain: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '28px',
+    gap: '18px',
+    alignItems: 'flex-start',
+  },
+  avatarWrap: {
+    flexShrink: 0,
   },
   avatar: {
-    width: '110px',
-    height: '110px',
-    background: '#C8FF00',
+    width: '118px',
+    height: '118px',
     border: '4px solid #FFFFFF',
+    background: '#C8FF00',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '58px',
-    flexShrink: 0,
+    color: '#050505',
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '56px',
+    boxShadow: '10px 10px 0 rgba(0,0,0,0.35)',
     transform: 'rotate(-3deg)',
-    boxShadow: '8px 8px 0px rgba(0,0,0,0.4)',
     overflow: 'hidden',
   },
   avatarImage: {
@@ -86,368 +75,521 @@ const S = {
     objectFit: 'cover',
     display: 'block',
   },
+  heroText: {
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  eyebrow: {
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    color: '#A8A8A8',
+  },
+  handle: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '56px',
+    lineHeight: 0.92,
+    textTransform: 'uppercase',
+    margin: 0,
+    textWrap: 'balance',
+  },
+  subhead: {
+    fontSize: '15px',
+    lineHeight: 1.6,
+    color: '#CACACA',
+    maxWidth: '620px',
+  },
+  chipRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    marginTop: '6px',
+  },
+  chip: {
+    border: '1px solid #2A2A2A',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#E5E5E5',
+    padding: '7px 10px',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+  },
+  chipAccent: {
+    border: '1px solid rgba(200,255,0,0.42)',
+    background: 'rgba(200,255,0,0.1)',
+    color: '#DFFF7B',
+    padding: '7px 10px',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+  },
   avatarEditor: {
     display: 'flex',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: '8px',
     marginTop: '10px',
-    flexWrap: 'wrap',
   },
   avatarInput: {
-    background: '#101010',
-    border: '1px solid #2C2C2C',
+    minWidth: '260px',
+    flex: '1 1 260px',
+    background: '#0C0C0C',
+    border: '1px solid #2B2B2B',
     color: '#FFFFFF',
-    padding: '8px 10px',
-    minWidth: '240px',
+    padding: '10px 12px',
     fontSize: '12px',
     outline: 'none',
   },
-  avatarBtn: {
+  actionBtn: {
     background: '#C8FF00',
     color: '#000000',
     border: 'none',
-    padding: '8px 12px',
-    fontWeight: 800,
+    padding: '10px 12px',
     fontSize: '11px',
+    fontWeight: 800,
     textTransform: 'uppercase',
     cursor: 'pointer',
   },
-  avatarClearBtn: {
-    background: '#111111',
-    color: '#CCCCCC',
+  ghostBtn: {
+    background: '#101010',
+    color: '#D0D0D0',
     border: '1px solid #333333',
-    padding: '8px 10px',
-    fontWeight: 800,
+    padding: '10px 12px',
     fontSize: '11px',
+    fontWeight: 800,
     textTransform: 'uppercase',
     cursor: 'pointer',
   },
   avatarStatus: {
     fontSize: '11px',
-    fontWeight: 700,
+    fontWeight: 800,
     textTransform: 'uppercase',
   },
-  heroText: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  handle: {
+  spotlightPanel: {
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.03)',
+    padding: '18px',
+    minHeight: '100%',
+  },
+  panelLabel: {
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    color: '#8C8C8C',
+    marginBottom: '10px',
+  },
+  spotlightGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: '10px',
+  },
+  spotlightCard: {
+    background: '#0C0C0C',
+    border: '1px solid #212121',
+    padding: '8px',
+  },
+  spotlightThumb: {
+    width: '100%',
+    height: '94px',
+    objectFit: 'cover',
+    display: 'block',
+    background: '#111111',
+  },
+  spotlightFallback: {
+    width: '100%',
+    height: '94px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#121212',
+    color: '#666666',
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.7px',
+  },
+  spotlightName: {
+    marginTop: '8px',
+    fontSize: '10px',
+    lineHeight: 1.3,
+    textTransform: 'uppercase',
+    fontWeight: 800,
+    color: '#E0E0E0',
+  },
+  metricGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gap: '12px',
+    marginTop: '18px',
+  },
+  metricCard: {
+    background: '#0C0C0C',
+    border: '1px solid #1D1D1D',
+    padding: '16px',
+  },
+  metricValue: {
     fontFamily: "'Anton', sans-serif",
-    fontSize: '52px',
-    lineHeight: 0.95,
+    fontSize: '32px',
+    lineHeight: 1,
+    color: '#FFFFFF',
+  },
+  metricLabel: {
+    marginTop: '8px',
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.7px',
+    color: '#777777',
+  },
+  digestGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)',
+    gap: '18px',
+    marginTop: '18px',
+  },
+  digestLead: {
+    position: 'relative',
+    overflow: 'hidden',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background:
+      'linear-gradient(145deg, rgba(200,255,0,0.12) 0%, rgba(255,255,255,0.04) 40%, rgba(255,255,255,0.02) 100%)',
+    padding: '20px',
+  },
+  digestGlow: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    background:
+      'radial-gradient(circle at 85% 15%, rgba(200,255,0,0.26) 0%, rgba(200,255,0,0) 28%), radial-gradient(circle at 12% 85%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 24%)',
+  },
+  digestLabel: {
+    position: 'relative',
+    zIndex: 1,
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    color: '#A2A2A2',
+  },
+  digestTitle: {
+    position: 'relative',
+    zIndex: 1,
+    marginTop: '12px',
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '42px',
+    lineHeight: 0.94,
     textTransform: 'uppercase',
     color: '#FFFFFF',
-    textShadow: '3px 3px 0px #000000',
   },
-  bio: {
+  digestText: {
+    position: 'relative',
+    zIndex: 1,
+    marginTop: '12px',
+    maxWidth: '600px',
     fontSize: '14px',
-    color: '#CCCCCC',
-    maxWidth: '420px',
-    marginTop: '6px',
-    lineHeight: 1.5,
+    lineHeight: 1.6,
+    color: '#D0D0D0',
   },
-  repBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '5px',
-    background: '#000000',
-    color: '#C8FF00',
-    border: '1px solid #C8FF00',
-    padding: '3px 10px',
+  digestMetaRow: {
+    position: 'relative',
+    zIndex: 1,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+    marginTop: '18px',
+  },
+  digestMetaChip: {
+    background: '#090909',
+    border: '1px solid rgba(255,255,255,0.1)',
+    color: '#EFEFEF',
+    padding: '9px 11px',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+  },
+  digestSide: {
+    display: 'grid',
+    gap: '12px',
+  },
+  digestMiniCard: {
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    padding: '16px',
+  },
+  digestMiniLabel: {
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    color: '#8A8A8A',
+  },
+  digestMiniValue: {
+    marginTop: '10px',
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '28px',
+    lineHeight: 1,
+    textTransform: 'uppercase',
+    color: '#FFFFFF',
+  },
+  digestMiniText: {
+    marginTop: '8px',
+    fontSize: '12px',
+    lineHeight: 1.55,
+    color: '#B6B6B6',
+  },
+  ownerBanner: {
+    marginTop: '14px',
+    background: 'rgba(200,255,0,0.08)',
+    border: '1px solid rgba(200,255,0,0.28)',
+    color: '#DFFF7B',
+    padding: '12px 16px',
     fontSize: '12px',
     fontWeight: 800,
     textTransform: 'uppercase',
-    marginTop: '6px',
-    width: 'fit-content',
-  },
-  statsBar: {
-    background: '#111111',
-    borderBottom: '2px solid #1E1E1E',
-    display: 'flex',
-  },
-  statCell: {
-    flex: 1,
-    padding: '20px 24px',
-    borderRight: '1px solid #1E1E1E',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  statValue: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '32px',
-    color: '#C8FF00',
-    lineHeight: 1,
-  },
-  statLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    textTransform: 'uppercase',
     letterSpacing: '0.5px',
-    color: '#666666',
+  },
+  tabBar: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    marginTop: '18px',
+  },
+  tab: {
+    background: '#101010',
+    color: '#BFBFBF',
+    border: '1px solid #2A2A2A',
+    padding: '10px 12px',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+  },
+  tabActive: {
+    background: '#C8FF00',
+    color: '#000000',
+    border: '1px solid #C8FF00',
+    padding: '10px 12px',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    cursor: 'pointer',
   },
   body: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '32px 32px 64px',
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '32px',
-    alignItems: 'start',
+    gridTemplateColumns: '1.15fr 0.85fr',
+    gap: '18px',
+    marginTop: '18px',
+  },
+  section: {
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  sectionHead: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    padding: '16px 18px',
+    borderBottom: '1px solid rgba(255,255,255,0.07)',
   },
   sectionTitle: {
     fontFamily: "'Anton', sans-serif",
     fontSize: '28px',
     textTransform: 'uppercase',
-    color: '#C8FF00',
-    marginBottom: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
+    margin: 0,
+    color: '#FFFFFF',
   },
-  card: {
-    background: '#111111',
-    border: '2px solid #1E1E1E',
-    borderRadius: '6px',
-    overflow: 'hidden',
+  sectionMeta: {
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+    color: '#7F7F7F',
   },
-  listingRow: {
-    display: 'flex',
+  stack: {
+    display: 'grid',
+    gap: '0',
+  },
+  rowLink: {
+    display: 'grid',
+    gridTemplateColumns: '64px minmax(0, 1fr) auto',
+    gap: '12px',
     alignItems: 'center',
-    gap: '14px',
-    padding: '14px 16px',
-    borderBottom: '1px solid #1A1A1A',
-    cursor: 'pointer',
-    transition: 'background 0.15s',
+    padding: '14px 18px',
+    borderTop: '1px solid rgba(255,255,255,0.05)',
     textDecoration: 'none',
     color: 'inherit',
   },
-  listingThumb: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '6px',
+  thumb: {
+    width: '64px',
+    height: '64px',
     objectFit: 'cover',
-    border: '1px solid #2A2A2A',
-    flexShrink: 0,
+    display: 'block',
     background: '#111111',
+    border: '1px solid #232323',
   },
-  listingThumbFallback: {
-    width: '44px',
-    height: '44px',
-    border: '1px solid #2A2A2A',
-    borderRadius: '6px',
+  thumbFallback: {
+    width: '64px',
+    height: '64px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#181818',
+    background: '#111111',
+    border: '1px solid #232323',
     color: '#666666',
     fontSize: '10px',
     fontWeight: 800,
     textTransform: 'uppercase',
-    letterSpacing: '0.4px',
-    flexShrink: 0,
+    letterSpacing: '0.7px',
   },
-  listingName: {
+  rowTitle: {
     fontFamily: "'Anton', sans-serif",
-    fontSize: '18px',
+    fontSize: '22px',
+    lineHeight: 1,
     textTransform: 'uppercase',
     color: '#FFFFFF',
-    flex: 1,
-    minWidth: 0,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  listingMeta: {
-    textAlign: 'right',
-    flexShrink: 0,
-  },
-  listingBid: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '16px',
-    color: '#C8FF00',
-  },
-  listingTimer: {
+  rowSub: {
+    marginTop: '6px',
     fontSize: '11px',
-    color: '#666',
-    fontWeight: 700,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+    color: '#7D7D7D',
   },
-  wonGrid: {
+  rowMeta: {
+    textAlign: 'right',
+  },
+  rowPrice: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '20px',
+    color: '#C8FF00',
+    lineHeight: 1,
+  },
+  rowStatus: {
+    marginTop: '6px',
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+    color: '#AFAFAF',
+  },
+  collectionGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
     gap: '12px',
     padding: '16px',
   },
-  wonCard: {
-    background: '#0D0D0D',
-    border: '1px solid #2A2A2A',
-    borderRadius: '6px',
-    padding: '14px',
+  collectibleCard: {
+    background: '#0C0C0C',
+    border: '1px solid #212121',
+    padding: '10px',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    gap: '8px',
-    textAlign: 'center',
+    gap: '10px',
   },
-  wonThumb: {
-    width: '70px',
-    height: '70px',
-    borderRadius: '8px',
-    objectFit: 'cover',
-    border: '1px solid #2A2A2A',
-    background: '#111111',
+  collectibleName: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '14px',
+    lineHeight: 1.05,
+    textTransform: 'uppercase',
+    color: '#FFFFFF',
   },
-  wonThumbFallback: {
-    width: '70px',
-    height: '70px',
-    border: '1px solid #2A2A2A',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#181818',
-    color: '#666666',
+  collectibleValue: {
     fontSize: '11px',
     fontWeight: 800,
     textTransform: 'uppercase',
-    letterSpacing: '0.4px',
-  },
-  wonName: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '13px',
-    textTransform: 'uppercase',
-    color: '#FFFFFF',
-    lineHeight: 1.1,
-  },
-  wonPrice: {
-    fontSize: '11px',
     color: '#C8FF00',
-    fontWeight: 700,
+    letterSpacing: '0.6px',
   },
-  ratingsSection: {
-    gridColumn: '1 / -1',
-  },
-  ratingHeader: {
+  walletRow: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    marginBottom: '16px',
+    justifyContent: 'space-between',
+    gap: '12px',
+    padding: '14px 18px',
+    borderTop: '1px solid rgba(255,255,255,0.05)',
   },
-  bigScore: {
+  walletLabel: {
+    fontWeight: 700,
+    color: '#E2E2E2',
+  },
+  walletDate: {
+    marginTop: '5px',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    color: '#6F6F6F',
+  },
+  walletAmt: {
     fontFamily: "'Anton', sans-serif",
-    fontSize: '64px',
+    fontSize: '22px',
     lineHeight: 1,
     color: '#C8FF00',
   },
-  starRow: {
-    display: 'flex',
-    gap: '4px',
-    fontSize: '24px',
-  },
-  ratingCount: {
-    fontSize: '13px',
-    color: '#666',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-  },
-  reviewCard: {
-    background: '#111111',
-    border: '1px solid #1E1E1E',
-    padding: '16px',
-    borderRadius: '6px',
-  },
-  reviewMeta: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  },
-  reviewHandle: {
-    fontWeight: 700,
-    fontSize: '13px',
-    color: '#C8FF00',
-  },
-  reviewStars: { fontSize: '14px', letterSpacing: '1px' },
-  reviewText: {
-    fontSize: '14px',
-    color: '#CCCCCC',
-    lineHeight: 1.6,
-  },
-  emptyState: {
-    padding: '32px 16px',
+  empty: {
+    padding: '36px 18px',
     textAlign: 'center',
-    color: '#444',
-    fontWeight: 700,
+    fontSize: '12px',
+    fontWeight: 800,
     textTransform: 'uppercase',
-    fontSize: '13px',
+    letterSpacing: '0.7px',
+    color: '#5F5F5F',
   },
   notFound: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '60vh',
-    gap: '16px',
+    maxWidth: '760px',
+    margin: '0 auto',
+    padding: '84px 24px',
     textAlign: 'center',
-    padding: '32px',
-  },
-  ownProfileBanner: {
-    background: 'rgba(200,255,0,0.08)',
-    border: '1px solid rgba(200,255,0,0.3)',
-    color: '#C8FF00',
-    padding: '10px 24px',
-    fontSize: '13px',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-  },
-  accountTabs: {
-    display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap',
-    padding: '14px 16px',
-    background: '#101010',
-    borderBottom: '1px solid #1E1E1E',
-  },
-  accountTab: {
-    background: '#0D0D0D',
-    color: '#BDBDBD',
-    border: '1px solid #2D2D2D',
-    padding: '8px 12px',
-    fontWeight: 800,
-    fontSize: '12px',
-    textTransform: 'uppercase',
-    cursor: 'pointer',
-  },
-  accountTabActive: {
-    background: '#C8FF00',
-    color: '#000000',
-    border: '1px solid #C8FF00',
-    padding: '8px 12px',
-    fontWeight: 800,
-    fontSize: '12px',
-    textTransform: 'uppercase',
-    cursor: 'pointer',
   },
 };
 
-const STARS = (score) => {
-  const full = Math.round(score);
-  return '★'.repeat(full) + '☆'.repeat(5 - full);
+const fmtAura = (value) => `${Number(value || 0).toLocaleString()} AURA`;
+const fmtDate = (value) => {
+  const ms = new Date(value || '').getTime();
+  if (!Number.isFinite(ms)) return 'Unknown';
+  return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const MOCK_REVIEWS = [];
+function MediaThumb({ src, alt, style, fallbackStyle }) {
+  if (src) {
+    return <img src={src} alt={alt} style={style} />;
+  }
+  return <div style={fallbackStyle}>IMG</div>;
+}
+
+function Section({ title, meta, children }) {
+  return (
+    <section style={S.section}>
+      <div style={S.sectionHead}>
+        <h2 style={S.sectionTitle}>{title}</h2>
+        {meta ? <div style={S.sectionMeta}>{meta}</div> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 export default function ProfilePage() {
   const { username } = useParams();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { balance: privateBalance, activeBids, walletLog, vaultItems } = useVibeStore();
+  const { balance: privateBalance, walletLog } = useVibeStore();
 
   const [profile, setProfile] = useState(null);
   const [listings, setListings] = useState([]);
   const [pastAuctions, setPastAuctions] = useState([]);
   const [wonVibes, setWonVibes] = useState([]);
+  const [activeProfileBids, setActiveProfileBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -458,10 +600,9 @@ export default function ProfilePage() {
   const [avatarError, setAvatarError] = useState('');
 
   const isMobile = viewportWidth <= 768;
-  const isTablet = viewportWidth <= 1024;
-
-  const isOwnProfile = Boolean(user && profile && user.id === profile.id);
+  const isTablet = viewportWidth <= 1080;
   const requestedTab = String(searchParams.get('tab') || '').toLowerCase();
+  const isOwnProfile = Boolean(user && profile && user.id === profile.id);
 
   useEffect(() => {
     const update = () => setViewportWidth(window.innerWidth);
@@ -472,7 +613,7 @@ export default function ProfilePage() {
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
       *, *::before, *::after { box-sizing: border-box; }
-      body { margin: 0; background: #0D0D0D; overflow-x: hidden; }
+      body { margin: 0; background: #050505; overflow-x: hidden; }
     `;
     document.head.appendChild(style);
     return () => {
@@ -484,6 +625,12 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!username) return;
     const normalizedUsername = String(username).replace(/^@/, '').toLowerCase();
+    const ownHandleCandidates = [
+      user?.user_metadata?.username,
+      user?.email?.split('@')?.[0],
+    ]
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean);
 
     async function fetchProfile() {
       setLoading(true);
@@ -492,59 +639,140 @@ export default function ProfilePage() {
       setListings([]);
       setPastAuctions([]);
       setWonVibes([]);
-      const sb = getSupabaseClient();
+      setActiveProfileBids([]);
 
-      if (sb) {
-        // Look up in profiles table (created on signup via trigger)
-        const { data: profileData, error } = await sb
+      const sb = getSupabaseClient();
+      if (!sb) {
+        setProfile({ username: normalizedUsername, aura_balance: 0, created_at: new Date().toISOString() });
+        setLoading(false);
+        return;
+      }
+
+      let { data: profileData, error } = await sb
+        .from('profiles')
+        .select('*')
+        .ilike('username', normalizedUsername)
+        .single();
+
+      if ((error || !profileData) && user?.id && ownHandleCandidates.includes(normalizedUsername)) {
+        const fallbackProfile = await sb
           .from('profiles')
           .select('*')
-          .ilike('username', normalizedUsername)
+          .eq('id', user.id)
           .single();
+        profileData = fallbackProfile.data || null;
+        error = fallbackProfile.error || null;
 
-        if (error || !profileData) {
-          setNotFound(true);
-          setLoading(false);
-          return;
+        const resolvedHandle =
+          String(profileData?.username || user?.user_metadata?.username || user?.email?.split('@')?.[0] || '')
+            .trim()
+            .toLowerCase();
+
+        if (profileData && !profileData.username && resolvedHandle) {
+          profileData = { ...profileData, username: resolvedHandle };
+          await sb.from('profiles').update({ username: resolvedHandle }).eq('id', user.id).is('username', null);
         }
+      }
 
-        setProfile(profileData);
-        setAvatarInput(profileData?.avatar_url || '');
-        setAvatarMessage('');
-        setAvatarError('');
+      if (error || !profileData) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
 
-        // Fetch vibes listed by this user (by UUID stored in listed_by)
-        const { data: vibeData } = await sb
+      setProfile(profileData);
+      setAvatarInput(profileData?.avatar_url || '');
+      setAvatarMessage('');
+      setAvatarError('');
+
+      const now = Date.now();
+      const [{ data: vibeData }, { data: vaultData }, { data: ownBidRows }] = await Promise.all([
+        sb
           .from('vibes')
-          .select('id, slug, name, starting_price, created_at, category, image_url')
+          .select('id, slug, name, starting_price, created_at, category, image_url, end_time')
           .or(`listed_by.eq.${profileData.id},listed_by.eq.${profileData.username},author.eq.${profileData.username}`)
           .order('created_at', { ascending: false })
-          .limit(20);
-
-        const allVibes = vibeData || [];
-        setListings(allVibes.slice(0, 6));
-        setPastAuctions(allVibes.slice(6));
-
-        // Fetch won vibes from vault_items
-        const { data: vaultData } = await sb
+          .limit(60),
+        sb
           .from('vault_items')
-          .select('id, name, category, price, won_date, image_url')
+          .select('id, name, category, price, won_date, image_url, created_at')
           .eq('user_id', profileData.id)
           .order('created_at', { ascending: false })
-          .limit(12);
-        setWonVibes(vaultData || []);
-      } else {
-        setProfile({ username: normalizedUsername, aura_balance: 200, created_at: new Date().toISOString() });
-        setListings([]);
-        setPastAuctions([]);
-        setWonVibes([]);
+          .limit(30),
+        sb
+          .from('vibe_bids')
+          .select('vibe_id, amount, created_at')
+          .eq('user_id', profileData.id)
+          .order('created_at', { ascending: false })
+          .limit(300),
+      ]);
+
+      const allVibes = Array.isArray(vibeData) ? vibeData : [];
+      const liveListings = allVibes.filter((vibe) => {
+        const endTimeMs = new Date(vibe?.end_time || '').getTime();
+        return !Number.isFinite(endTimeMs) || endTimeMs > now;
+      });
+      const archiveListings = allVibes.filter((vibe) => {
+        const endTimeMs = new Date(vibe?.end_time || '').getTime();
+        return Number.isFinite(endTimeMs) && endTimeMs <= now;
+      });
+      const collectedVibes = Array.isArray(vaultData) ? vaultData : [];
+
+      setListings(liveListings);
+      setPastAuctions(archiveListings);
+      setWonVibes(collectedVibes);
+
+      const candidateVibeIds = [...new Set((ownBidRows || []).map((row) => String(row?.vibe_id || '').trim()).filter(Boolean))];
+      if (candidateVibeIds.length > 0) {
+        const [{ data: allBidRows }, { data: bidVibeRows }] = await Promise.all([
+          sb
+            .from('vibe_bids')
+            .select('vibe_id, user_id, amount, created_at')
+            .in('vibe_id', candidateVibeIds)
+            .order('amount', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(2500),
+          sb
+            .from('vibes')
+            .select('slug, name, image_url, end_time, category')
+            .in('slug', candidateVibeIds),
+        ]);
+
+        const highestByVibe = new Map();
+        for (const row of allBidRows || []) {
+          const key = String(row?.vibe_id || '').trim();
+          if (!key || highestByVibe.has(key)) continue;
+          highestByVibe.set(key, row);
+        }
+
+        const vibeBySlug = new Map((bidVibeRows || []).map((row) => [String(row.slug), row]));
+        const leadingBids = candidateVibeIds
+          .map((vibeId) => {
+            const highest = highestByVibe.get(vibeId);
+            const vibe = vibeBySlug.get(vibeId);
+            const endTimeMs = new Date(vibe?.end_time || '').getTime();
+            const isLive = !Number.isFinite(endTimeMs) || endTimeMs > now;
+            if (!highest || String(highest.user_id) !== String(profileData.id) || !isLive || !vibe) return null;
+            return {
+              id: vibe.slug,
+              slug: vibe.slug,
+              name: vibe.name || 'Unknown Vibe',
+              imageUrl: vibe.image_url || null,
+              amount: Number(highest.amount || 0),
+              status: 'Leading',
+              category: vibe.category || 'Vibes',
+            };
+          })
+          .filter(Boolean);
+
+        setActiveProfileBids(leadingBids);
       }
 
       setLoading(false);
     }
 
     fetchProfile();
-  }, [username]);
+  }, [username, user]);
 
   useEffect(() => {
     if (!isOwnProfile) return;
@@ -553,27 +781,34 @@ export default function ProfilePage() {
     }
   }, [isOwnProfile, requestedTab]);
 
-  const repScore = 0;
-  const memberYear = profile?.created_at ? new Date(profile.created_at).getFullYear() : '—';
-  const auraBalance = profile?.aura_balance ?? 0;
-  const avatarMonogram = String(profile?.username || username || 'U').charAt(0).toUpperCase();
   const avatarUrl = typeof profile?.avatar_url === 'string' ? profile.avatar_url.trim() : '';
+  const avatarMonogram = String(profile?.username || username || 'V').charAt(0).toUpperCase();
+  const auraBalance = Number(profile?.aura_balance || 0);
+  const memberYear = profile?.created_at ? new Date(profile.created_at).getFullYear() : '—';
+  const collectionValue = useMemo(
+    () => wonVibes.reduce((sum, item) => sum + Number(item?.price || 0), 0),
+    [wonVibes],
+  );
+  const spotlightCollection = useMemo(() => wonVibes.slice(0, 3), [wonVibes]);
+  const topListing = useMemo(
+    () =>
+      [...listings].sort((a, b) => Number(b?.starting_price || 0) - Number(a?.starting_price || 0))[0] || null,
+    [listings],
+  );
+  const latestAcquisition = useMemo(
+    () =>
+      [...wonVibes].sort(
+        (a, b) => new Date(b?.won_date || b?.created_at || 0).getTime() - new Date(a?.won_date || a?.created_at || 0).getTime(),
+      )[0] || null,
+    [wonVibes],
+  );
   const walletRows = useMemo(
     () => [...(Array.isArray(walletLog) ? walletLog : [])].sort((a, b) => Number(b?.createdAt || 0) - Number(a?.createdAt || 0)),
     [walletLog],
   );
-  const profileVaultItems = useMemo(() => {
-    if (isOwnProfile && Array.isArray(vaultItems) && vaultItems.length > 0) {
-      return vaultItems.map((item, index) => ({
-        id: item.id || `vault-${index}`,
-        name: item.name || 'Unknown Vibe',
-        category: item.category || 'Vibes',
-        price: Number(item.price || 0),
-        image_url: item.imageUrl || null,
-      }));
-    }
-    return wonVibes;
-  }, [isOwnProfile, vaultItems, wonVibes]);
+  const collectorLine = isOwnProfile
+    ? 'Your collector showroom: live listings, leading bids, and a vault of won vibes.'
+    : 'A collector profile built from live listings, won artifacts, and visible market activity.';
 
   const saveAvatar = async () => {
     if (!isOwnProfile || !profile?.id || avatarSaving) return;
@@ -595,10 +830,7 @@ export default function ProfilePage() {
     setAvatarError('');
     setAvatarMessage('');
     try {
-      const { error } = await sb
-        .from('profiles')
-        .update({ avatar_url: nextUrl || null })
-        .eq('id', profile.id);
+      const { error } = await sb.from('profiles').update({ avatar_url: nextUrl || null }).eq('id', profile.id);
       if (error) throw error;
       setProfile((previous) => ({ ...(previous || {}), avatar_url: nextUrl || null }));
       setAvatarMessage(nextUrl ? 'Profile photo updated.' : 'Profile photo removed.');
@@ -614,13 +846,15 @@ export default function ProfilePage() {
       <div style={S.page}>
         <NavBar />
         <div style={S.notFound}>
-          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '56px', color: '#2A2A2A' }}>404</div>
-          <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '48px', textTransform: 'uppercase', color: '#C8FF00' }}>
+          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '72px', color: '#242424', lineHeight: 1 }}>404</div>
+          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '46px', textTransform: 'uppercase', lineHeight: 1, marginTop: '6px' }}>
             @{username}
-          </h1>
-          <p style={{ color: '#666', fontSize: '16px' }}>This vibe has left the building. User not found.</p>
-          <Link href="/" style={{ background: '#C8FF00', color: '#000', padding: '12px 24px', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', textDecoration: 'none' }}>
-            Back to Live Feed
+          </div>
+          <div style={{ marginTop: '10px', color: '#878787', fontSize: '16px' }}>
+            This vibe has left the building. User not found.
+          </div>
+          <Link href="/" style={{ display: 'inline-block', marginTop: '20px', background: '#C8FF00', color: '#000000', padding: '12px 16px', textDecoration: 'none', fontWeight: 800, textTransform: 'uppercase' }}>
+            Back To Market
           </Link>
         </div>
       </div>
@@ -629,56 +863,36 @@ export default function ProfilePage() {
 
   return (
     <div style={S.page}>
-      <style>{`*, *::before, *::after { box-sizing: border-box; } html, body { overflow-x: hidden; }`}</style>
-
-      {/* Header */}
       <NavBar />
-
-      {/* Own profile banner */}
-      {isOwnProfile && (
-        <div style={S.ownProfileBanner}>
-          This is your account page — <Link href={`/profile/${encodeURIComponent(profile?.username || username)}?tab=vault`} style={{ color: '#C8FF00', textDecoration: 'underline' }}>open your vault tab</Link>
-        </div>
-      )}
-
-      {/* Hero */}
-      <section style={{ ...S.heroBanner, height: isMobile ? '170px' : '220px' }}>
-        <div style={S.heroDiag} />
-        <div style={{
-          ...S.heroInner,
-          padding: isMobile ? '0 16px' : '0 32px',
-          gap: isMobile ? '16px' : '28px',
-        }}>
-          {loading ? (
-            <div style={{ ...S.avatar, width: isMobile ? '72px' : '110px', height: isMobile ? '72px' : '110px', fontSize: isMobile ? '36px' : '58px', background: '#222', border: '4px solid #333' }} />
-          ) : (
-            <div style={{ ...S.avatar, width: isMobile ? '72px' : '110px', height: isMobile ? '72px' : '110px', fontSize: isMobile ? '36px' : '58px' }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={`${profile?.username || username} profile`} style={S.avatarImage} />
-              ) : (
-                avatarMonogram
-              )}
-            </div>
-          )}
-          <div style={S.heroText}>
-            {loading ? (
-              <div style={{ width: '240px', height: '48px', background: '#222', borderRadius: '4px' }} />
-            ) : (
-              <>
-                <h1 style={{ ...S.handle, fontSize: isMobile ? '28px' : isTablet ? '40px' : '52px' }}>
+      <div style={{ ...S.shell, padding: isMobile ? '0 14px 48px' : S.shell.padding }}>
+        <section style={S.hero}>
+          <div style={S.heroGlow} />
+          <div
+            style={{
+              ...S.heroInner,
+              gridTemplateColumns: isTablet ? '1fr' : S.heroInner.gridTemplateColumns,
+              padding: isMobile ? '18px 16px' : S.heroInner.padding,
+            }}
+          >
+            <div style={{ ...S.heroMain, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '14px' : '18px' }}>
+              <div style={S.avatarWrap}>
+                <div style={{ ...S.avatar, width: isMobile ? '86px' : S.avatar.width, height: isMobile ? '86px' : S.avatar.height, fontSize: isMobile ? '40px' : S.avatar.fontSize }}>
+                  {avatarUrl ? <img src={avatarUrl} alt={`${profile?.username || username} profile`} style={S.avatarImage} /> : avatarMonogram}
+                </div>
+              </div>
+              <div style={S.heroText}>
+                <div style={S.eyebrow}>{isOwnProfile ? 'Your Collector Showroom' : 'Collector Profile'}</div>
+                <h1 style={{ ...S.handle, fontSize: isMobile ? '34px' : isTablet ? '46px' : S.handle.fontSize }}>
                   @{profile?.username ?? username}
                 </h1>
-                {auraBalance > 0 && !loading && (
-                  <p style={{ ...S.bio, fontSize: isMobile ? '12px' : '14px', display: isMobile ? 'none' : 'block' }}>
-                    {auraBalance.toLocaleString()} AURA in wallet
-                  </p>
-                )}
-                {repScore > 0 && (
-                  <span style={{ ...S.repBadge, fontSize: isMobile ? '10px' : '12px' }}>
-                    ★ {repScore.toFixed(1)} Rep
-                  </span>
-                )}
-                {isOwnProfile && !loading && (
+                <div style={S.subhead}>{collectorLine}</div>
+                <div style={S.chipRow}>
+                  <div style={S.chipAccent}>{fmtAura(auraBalance)} Wallet</div>
+                  <div style={S.chip}>{listings.length} Live Listings</div>
+                  <div style={S.chip}>{wonVibes.length} Collected</div>
+                  <div style={S.chip}>Member Since {memberYear}</div>
+                </div>
+                {isOwnProfile && (
                   <div style={S.avatarEditor}>
                     <input
                       type="url"
@@ -691,361 +905,290 @@ export default function ProfilePage() {
                       placeholder="https://your-image-url.com/pfp.jpg"
                       style={{ ...S.avatarInput, minWidth: isMobile ? '100%' : S.avatarInput.minWidth }}
                     />
-                    <button
-                      type="button"
-                      onClick={saveAvatar}
-                      style={{ ...S.avatarBtn, opacity: avatarSaving ? 0.7 : 1, cursor: avatarSaving ? 'not-allowed' : 'pointer' }}
-                      disabled={avatarSaving}
-                    >
+                    <button type="button" onClick={saveAvatar} style={{ ...S.actionBtn, opacity: avatarSaving ? 0.7 : 1 }} disabled={avatarSaving}>
                       {avatarSaving ? 'Saving...' : 'Update Photo'}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setAvatarInput('')}
-                      style={S.avatarClearBtn}
-                      disabled={avatarSaving}
-                    >
+                    <button type="button" onClick={() => setAvatarInput('')} style={S.ghostBtn} disabled={avatarSaving}>
                       Clear
                     </button>
                     {(avatarError || avatarMessage) && (
-                      <span style={{ ...S.avatarStatus, color: avatarError ? '#FF8A8A' : '#C8FF00' }}>
-                        {avatarError || avatarMessage}
-                      </span>
+                      <div style={{ ...S.avatarStatus, color: avatarError ? '#FF9A9A' : '#DFFF7B' }}>{avatarError || avatarMessage}</div>
                     )}
                   </div>
                 )}
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats bar */}
-      <div style={{
-        ...S.statsBar,
-        flexDirection: 'row',
-        flexWrap: isMobile ? 'wrap' : 'nowrap',
-      }}>
-        {[
-          { label: 'Vibes Listed', value: loading ? '—' : (listings.length + pastAuctions.length) || '0' },
-          { label: 'Aura Balance', value: loading ? '—' : auraBalance.toLocaleString() },
-          { label: 'Member Since', value: loading ? '—' : memberYear },
-        ].map((stat, i, arr) => (
-          <div
-            key={stat.label}
-            style={{
-              ...S.statCell,
-              flex: isMobile ? '1 1 50%' : 1,
-              borderRight: isMobile ? (i % 2 === 1 ? 'none' : '1px solid #1E1E1E') : (i === arr.length - 1 ? 'none' : '1px solid #1E1E1E'),
-              borderBottom: isMobile && i < 2 ? '1px solid #1E1E1E' : 'none',
-              padding: isMobile ? '14px 16px' : '20px 24px',
-            }}
-          >
-            <span style={{ ...S.statValue, fontSize: isMobile ? '24px' : '32px' }}>{stat.value}</span>
-            <span style={S.statLabel}>{stat.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {isOwnProfile && (
-        <div style={S.accountTabs}>
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'vault', label: 'Vault' },
-            { id: 'bids', label: 'Active Bids' },
-            { id: 'wallet', label: 'Wallet' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setAccountTab(tab.id)}
-              style={accountTab === tab.id ? S.accountTabActive : S.accountTab}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Bio on mobile (hidden in hero) */}
-      {isMobile && !loading && auraBalance > 0 && (
-        <div style={{ padding: '16px', background: '#111', borderBottom: '1px solid #1A1A1A', fontSize: '13px', color: '#AAAAAA', lineHeight: 1.6 }}>
-          {auraBalance.toLocaleString()} AURA in wallet
-        </div>
-      )}
-
-      {/* Main content */}
-      {( !isOwnProfile || accountTab === 'overview') && (
-      <div style={{
-        ...S.body,
-        gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr',
-        padding: isMobile ? '20px 14px 48px' : isTablet ? '24px 24px 48px' : '32px 32px 64px',
-        gap: isMobile ? '24px' : '32px',
-      }}>
-
-        {/* Active Listings */}
-        <section>
-          <div style={S.sectionTitle}>
-            <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Active Listings</span>
-          </div>
-          <div style={S.card}>
-            {loading ? (
-              <div style={S.emptyState}>Loading...</div>
-            ) : listings.length === 0 ? (
-              <div style={S.emptyState}>No active listings right now</div>
-            ) : (
-              listings.map((listing) => (
-                <Link
-                  key={listing.id}
-                  href={`/auction/${listing.slug || listing.id}`}
-                  style={{ ...S.listingRow, textDecoration: 'none' }}
-                >
-                  {listing.image_url ? (
-                    <img src={listing.image_url} alt={listing.name || 'Vibe'} style={S.listingThumb} />
-                  ) : (
-                    <span style={S.listingThumbFallback}>IMG</span>
-                  )}
-                  <span style={S.listingName}>{listing.name}</span>
-                  <div style={S.listingMeta}>
-                    <div style={S.listingBid}>{Number(listing.starting_price).toLocaleString()} AURA</div>
-                    <div style={S.listingTimer}>{listing.category}</div>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Vibe Collection */}
-        <section>
-          <div style={S.sectionTitle}>
-            <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Vibe Collection</span>
-          </div>
-          <div style={S.card}>
-            {loading ? (
-              <div style={S.emptyState}>Loading...</div>
-            ) : wonVibes.length === 0 ? (
-              <div style={S.emptyState}>No vibes collected yet</div>
-            ) : (
-              <div style={{ ...S.wonGrid, gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr', padding: '14px' }}>
-                {wonVibes.map((entry, i) => (
-                  <div key={entry.id || i} style={S.wonCard}>
-                    {entry.image_url ? (
-                      <img src={entry.image_url} alt={entry.name || 'Vibe'} style={S.wonThumb} />
-                    ) : (
-                      <span style={S.wonThumbFallback}>IMG</span>
-                    )}
-                    <span style={S.wonName}>{entry.name || 'Unknown Vibe'}</span>
-                    <span style={S.wonPrice}>{Number(entry.price || 0).toLocaleString()} AURA</span>
-                  </div>
-                ))}
               </div>
-            )}
-          </div>
-        </section>
+            </div>
 
-        {/* Past Auctions — full width */}
-        <section style={{ gridColumn: isTablet ? 'auto' : '1 / -1' }}>
-          <div style={S.sectionTitle}>
-            <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Past Auctions</span>
-            {!loading && pastAuctions.length > 0 && (
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 700, color: '#555', textTransform: 'none', marginLeft: 'auto' }}>
-                {pastAuctions.length} total
-              </span>
-            )}
-          </div>
-          <div style={S.card}>
-            {loading ? (
-              <div style={S.emptyState}>Loading...</div>
-            ) : pastAuctions.length === 0 ? (
-              <div style={S.emptyState}>No past auctions yet</div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr 1fr', gap: 0 }}>
-                {pastAuctions.map((vibe, i) => {
-                  const listedDate = vibe.created_at ? new Date(vibe.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
-                  return (
-                    <Link
-                      key={vibe.id}
-                      href={`/auction/${vibe.slug || vibe.id}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '12px 16px',
-                        borderBottom: '1px solid #1A1A1A',
-                        borderRight: !isTablet && (i + 1) % 3 !== 0 ? '1px solid #1A1A1A' : 'none',
-                        textDecoration: 'none',
-                        color: 'inherit',
-                      }}
-                    >
-                      {vibe.image_url ? (
-                        <img
-                          src={vibe.image_url}
-                          alt={vibe.name || 'Vibe'}
-                          style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0, border: '1px solid #2A2A2A' }}
-                        />
-                      ) : (
-                        <span style={{ width: '32px', height: '32px', borderRadius: '4px', border: '1px solid #2A2A2A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#666666', fontWeight: 800, textTransform: 'uppercase', flexShrink: 0 }}>
-                          IMG
-                        </span>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', textTransform: 'uppercase', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {vibe.name}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#555', fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>
-                          {listedDate}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '14px', color: '#C8FF00' }}>
-                          {Number(vibe.starting_price).toLocaleString()} AURA
-                        </div>
-                        <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: '#3a5a00', background: 'rgba(200,255,0,0.1)', padding: '1px 6px', borderRadius: '99px', marginTop: '2px' }}>
-                          Listed
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Ratings */}
-        <section style={S.ratingsSection}>
-          <div style={S.sectionTitle}>
-            <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Reputation</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={S.ratingHeader}>
-              <span style={{ ...S.bigScore, fontSize: isMobile ? '48px' : '64px' }}>
-                {repScore > 0 ? repScore.toFixed(1) : '—'}
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ ...S.starRow, fontSize: isMobile ? '18px' : '24px' }}>
-                  {repScore > 0 ? STARS(repScore) : '☆☆☆☆☆'}
+            <aside style={S.spotlightPanel}>
+              <div style={S.panelLabel}>Spotlight Collection</div>
+              {spotlightCollection.length === 0 ? (
+                <div style={{ color: '#5F5F5F', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                  No spotlight pieces yet
                 </div>
-                <span style={S.ratingCount}>
-                  {MOCK_REVIEWS.length} reviews
-                </span>
-              </div>
-            </div>
-
-            {MOCK_REVIEWS.length === 0 ? (
-              <div style={S.emptyState}>No reviews yet</div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr 1fr', gap: '12px' }}>
-                {MOCK_REVIEWS.map((review) => (
-                  <div key={review.id} style={S.reviewCard}>
-                    <div style={S.reviewMeta}>
-                      <span style={S.reviewHandle}>{review.rater}</span>
-                      <span style={S.reviewStars}>{'★'.repeat(review.stars)}{'☆'.repeat(5 - review.stars)}</span>
-                    </div>
-                    <p style={S.reviewText}>{review.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-      </div>
-      )}
-
-      {isOwnProfile && accountTab === 'vault' && (
-        <div style={{ ...S.body, gridTemplateColumns: '1fr', padding: isMobile ? '20px 14px 48px' : '32px 32px 64px', gap: '24px' }}>
-          <section>
-            <div style={S.sectionTitle}>
-              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Collection Vault</span>
-            </div>
-            <div style={S.card}>
-              {profileVaultItems.length === 0 ? (
-                <div style={S.emptyState}>No vibes collected yet</div>
               ) : (
-                <div style={{ ...S.wonGrid, gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', padding: '14px' }}>
-                  {profileVaultItems.map((entry, i) => (
-                    <div key={entry.id || i} style={S.wonCard}>
-                      {entry.image_url ? (
-                        <img src={entry.image_url} alt={entry.name || 'Vibe'} style={S.wonThumb} />
-                      ) : (
-                        <span style={S.wonThumbFallback}>IMG</span>
-                      )}
-                      <span style={S.wonName}>{entry.name || 'Unknown Vibe'}</span>
-                      <span style={S.wonPrice}>{Number(entry.price || 0).toLocaleString()} AURA</span>
+                <div style={{ ...S.spotlightGrid, gridTemplateColumns: isMobile ? 'repeat(3, minmax(0, 1fr))' : S.spotlightGrid.gridTemplateColumns }}>
+                  {spotlightCollection.map((entry, index) => (
+                    <div key={entry.id || index} style={S.spotlightCard}>
+                      <MediaThumb
+                        src={entry.image_url}
+                        alt={entry.name || 'Vibe'}
+                        style={S.spotlightThumb}
+                        fallbackStyle={S.spotlightFallback}
+                      />
+                      <div style={S.spotlightName}>{entry.name || 'Unknown Vibe'}</div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-          </section>
-        </div>
-      )}
+            </aside>
+          </div>
+        </section>
 
-      {isOwnProfile && accountTab === 'bids' && (
-        <div style={{ ...S.body, gridTemplateColumns: '1fr', padding: isMobile ? '20px 14px 48px' : '32px 32px 64px', gap: '24px' }}>
-          <section>
-            <div style={S.sectionTitle}>
-              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Active Bids</span>
-            </div>
-            <div style={S.card}>
-              {!Array.isArray(activeBids) || activeBids.length === 0 ? (
-                <div style={S.emptyState}>No active bids right now</div>
-              ) : (
-                activeBids.map((bid, index) => (
-                  <Link
-                    key={bid.id || `${bid.name}-${index}`}
-                    href={`/auction/${encodeURIComponent(String(bid.slug || bid.id || '').replace(/^bid-/, ''))}`}
-                    style={{ ...S.listingRow, textDecoration: 'none' }}
-                  >
-                    {bid.imageUrl ? (
-                      <img src={bid.imageUrl} alt={bid.name || 'Vibe'} style={S.listingThumb} />
-                    ) : (
-                      <span style={S.listingThumbFallback}>IMG</span>
-                    )}
-                    <span style={S.listingName}>{bid.name || 'Unknown Vibe'}</span>
-                    <div style={S.listingMeta}>
-                      <div style={S.listingBid}>{Number(bid.amount || 0).toLocaleString()} AURA</div>
-                      <div style={S.listingTimer}>{bid.status || 'LIVE'}</div>
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
-      )}
+        {isOwnProfile ? (
+          <div style={S.ownerBanner}>
+            This is your display case. Use the tabs below to move between your overview, collection, leading bids, and wallet activity.
+          </div>
+        ) : null}
 
-      {isOwnProfile && accountTab === 'wallet' && (
-        <div style={{ ...S.body, gridTemplateColumns: '1fr', padding: isMobile ? '20px 14px 48px' : '32px 32px 64px', gap: '24px' }}>
-          <section>
-            <div style={S.sectionTitle}>
-              <span style={{ fontSize: isMobile ? '22px' : '28px' }}>Wallet Activity</span>
+        <div style={{ ...S.metricGrid, gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : S.metricGrid.gridTemplateColumns }}>
+          {[
+            { label: 'Live Listings', value: listings.length, color: '#FFFFFF' },
+            { label: 'Collection Value', value: fmtAura(collectionValue), color: '#C8FF00' },
+            { label: 'Leading Bids', value: activeProfileBids.length, color: '#9DDBFF' },
+            { label: 'Archived Listings', value: pastAuctions.length, color: '#E2E2E2' },
+          ].map((metric) => (
+            <div key={metric.label} style={S.metricCard}>
+              <div style={{ ...S.metricValue, color: metric.color }}>{loading ? '—' : metric.value}</div>
+              <div style={S.metricLabel}>{metric.label}</div>
             </div>
-            <div style={S.card}>
-              {walletRows.length === 0 ? (
-                <div style={S.emptyState}>No wallet activity yet</div>
-              ) : (
-                walletRows.map((entry) => (
-                  <div key={entry.id || `${entry.label}-${entry.createdAt}`} style={S.listingRow}>
-                    <span style={S.listingName}>{entry.label || 'Transaction'}</span>
-                    <div style={S.listingMeta}>
-                      <div style={S.listingBid}>{Number(entry.amount || 0).toLocaleString()} AURA</div>
-                      <div style={S.listingTimer}>
-                        {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'Unknown'}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              <div style={{ padding: '14px 18px', borderTop: '1px solid #1A1A1A', fontWeight: 800, color: '#C8FF00' }}>
-                Current Balance: {Number(privateBalance || 0).toLocaleString()} AURA
+          ))}
+        </div>
+
+        <section style={{ ...S.digestGrid, gridTemplateColumns: isTablet ? '1fr' : S.digestGrid.gridTemplateColumns }}>
+          <div style={S.digestLead}>
+            <div style={S.digestGlow} />
+            <div style={S.digestLabel}>{isOwnProfile ? 'Your Market Snapshot' : 'Collector Snapshot'}</div>
+            <div style={{ ...S.digestTitle, fontSize: isMobile ? '32px' : S.digestTitle.fontSize }}>
+              {topListing ? topListing.name || 'Top Listing' : latestAcquisition ? latestAcquisition.name || 'Fresh Pickup' : `@${profile?.username ?? username}`}
+            </div>
+            <div style={S.digestText}>
+              {topListing
+                ? `Highest priced live listing in this showroom, currently posted at ${fmtAura(topListing.starting_price || 0)}.`
+                : latestAcquisition
+                  ? `Latest piece added to the vault, acquired ${fmtDate(latestAcquisition.won_date || latestAcquisition.created_at)}.`
+                  : 'This profile is set up and ready for its first meaningful market move.'}
+            </div>
+            <div style={S.digestMetaRow}>
+              <div style={S.digestMetaChip}>{fmtAura(auraBalance)} wallet</div>
+              <div style={S.digestMetaChip}>{listings.length} live listings</div>
+              <div style={S.digestMetaChip}>{wonVibes.length} vault pieces</div>
+              <div style={S.digestMetaChip}>{activeProfileBids.length} leading bids</div>
+            </div>
+          </div>
+
+          <div style={S.digestSide}>
+            <div style={S.digestMiniCard}>
+              <div style={S.digestMiniLabel}>Best Live Ask</div>
+              <div style={{ ...S.digestMiniValue, color: '#C8FF00' }}>
+                {topListing ? fmtAura(topListing.starting_price || 0) : 'None'}
+              </div>
+              <div style={S.digestMiniText}>
+                {topListing ? `${topListing.name || 'Unknown Vibe'} is the anchor listing in this profile.` : 'No live listings are posted right now.'}
               </div>
             </div>
-          </section>
-        </div>
-      )}
+
+            <div style={S.digestMiniCard}>
+              <div style={S.digestMiniLabel}>Latest Vault Add</div>
+              <div style={{ ...S.digestMiniValue, fontSize: isMobile ? '22px' : S.digestMiniValue.fontSize }}>
+                {latestAcquisition ? latestAcquisition.name || 'Unknown Vibe' : 'Empty Vault'}
+              </div>
+              <div style={S.digestMiniText}>
+                {latestAcquisition ? `${fmtAura(latestAcquisition.price || 0)} collected on ${fmtDate(latestAcquisition.won_date || latestAcquisition.created_at)}.` : 'No won vibes have been added to the collection yet.'}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {isOwnProfile ? (
+          <div style={S.tabBar}>
+            {[
+              { id: 'overview', label: 'Overview' },
+              { id: 'vault', label: 'Collection' },
+              { id: 'bids', label: 'Leading Bids' },
+              { id: 'wallet', label: 'Wallet' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setAccountTab(tab.id)}
+                style={accountTab === tab.id ? S.tabActive : S.tab}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {(!isOwnProfile || accountTab === 'overview') && (
+          <div style={{ ...S.body, gridTemplateColumns: isTablet ? '1fr' : S.body.gridTemplateColumns }}>
+            <div style={{ display: 'grid', gap: '18px' }}>
+              <Section title="Live Listings" meta={loading ? 'Loading' : `${listings.length} active`}>
+                {loading ? (
+                  <div style={S.empty}>Loading profile...</div>
+                ) : listings.length === 0 ? (
+                  <div style={S.empty}>No live listings right now</div>
+                ) : (
+                  <div style={S.stack}>
+                    {listings.map((listing) => (
+                      <Link key={listing.id} href={`/auction/${listing.slug || listing.id}`} style={S.rowLink}>
+                        <MediaThumb src={listing.image_url} alt={listing.name || 'Vibe'} style={S.thumb} fallbackStyle={S.thumbFallback} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={S.rowTitle}>{listing.name || 'Unknown Vibe'}</div>
+                          <div style={S.rowSub}>{listing.category || 'Vibes'}</div>
+                        </div>
+                        <div style={S.rowMeta}>
+                          <div style={S.rowPrice}>{fmtAura(listing.starting_price || 0)}</div>
+                          <div style={S.rowStatus}>Live</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </Section>
+
+              <Section title="Archive" meta={loading ? 'Loading' : `${pastAuctions.length} archived`}>
+                {loading ? (
+                  <div style={S.empty}>Loading archive...</div>
+                ) : pastAuctions.length === 0 ? (
+                  <div style={S.empty}>No archived listings yet</div>
+                ) : (
+                  <div style={S.stack}>
+                    {pastAuctions.map((listing) => (
+                      <Link key={listing.id} href={`/auction/${listing.slug || listing.id}`} style={S.rowLink}>
+                        <MediaThumb src={listing.image_url} alt={listing.name || 'Vibe'} style={S.thumb} fallbackStyle={S.thumbFallback} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={S.rowTitle}>{listing.name || 'Unknown Vibe'}</div>
+                          <div style={S.rowSub}>{fmtDate(listing.created_at)}</div>
+                        </div>
+                        <div style={S.rowMeta}>
+                          <div style={S.rowPrice}>{fmtAura(listing.starting_price || 0)}</div>
+                          <div style={S.rowStatus}>Archived</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </Section>
+            </div>
+
+            <div style={{ display: 'grid', gap: '18px' }}>
+              <Section title="Collection Vault" meta={loading ? 'Loading' : `${wonVibes.length} owned`}>
+                {loading ? (
+                  <div style={S.empty}>Loading collection...</div>
+                ) : wonVibes.length === 0 ? (
+                  <div style={S.empty}>No collected vibes yet</div>
+                ) : (
+                  <div style={{ ...S.collectionGrid, gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : S.collectionGrid.gridTemplateColumns }}>
+                    {wonVibes.slice(0, 6).map((entry, index) => (
+                      <div key={entry.id || index} style={S.collectibleCard}>
+                        <MediaThumb src={entry.image_url} alt={entry.name || 'Vibe'} style={{ ...S.spotlightThumb, height: isMobile ? '96px' : '120px' }} fallbackStyle={{ ...S.spotlightFallback, height: isMobile ? '96px' : '120px' }} />
+                        <div style={S.collectibleName}>{entry.name || 'Unknown Vibe'}</div>
+                        <div style={S.collectibleValue}>{fmtAura(entry.price || 0)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Section>
+
+              <Section title="Market Position" meta={loading ? 'Loading' : `${activeProfileBids.length} live leads`}>
+                {loading ? (
+                  <div style={S.empty}>Loading bids...</div>
+                ) : activeProfileBids.length === 0 ? (
+                  <div style={S.empty}>No leading bids right now</div>
+                ) : (
+                  <div style={S.stack}>
+                    {activeProfileBids.slice(0, 4).map((bid, index) => (
+                      <Link key={bid.id || index} href={`/auction/${bid.slug || bid.id}`} style={S.rowLink}>
+                        <MediaThumb src={bid.imageUrl} alt={bid.name || 'Vibe'} style={S.thumb} fallbackStyle={S.thumbFallback} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={S.rowTitle}>{bid.name || 'Unknown Vibe'}</div>
+                          <div style={S.rowSub}>{bid.category || 'Vibes'}</div>
+                        </div>
+                        <div style={S.rowMeta}>
+                          <div style={S.rowPrice}>{fmtAura(bid.amount || 0)}</div>
+                          <div style={S.rowStatus}>Leading</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </Section>
+            </div>
+          </div>
+        )}
+
+        {isOwnProfile && accountTab === 'vault' && (
+          <Section title="Collection Vault" meta={`${wonVibes.length} owned`}>
+            {wonVibes.length === 0 ? (
+              <div style={S.empty}>No collected vibes yet</div>
+            ) : (
+              <div style={{ ...S.collectionGrid, gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))' }}>
+                {wonVibes.map((entry, index) => (
+                  <div key={entry.id || index} style={S.collectibleCard}>
+                    <MediaThumb src={entry.image_url} alt={entry.name || 'Vibe'} style={{ ...S.spotlightThumb, height: isMobile ? '110px' : '140px' }} fallbackStyle={{ ...S.spotlightFallback, height: isMobile ? '110px' : '140px' }} />
+                    <div style={S.collectibleName}>{entry.name || 'Unknown Vibe'}</div>
+                    <div style={S.collectibleValue}>{fmtAura(entry.price || 0)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        )}
+
+        {isOwnProfile && accountTab === 'bids' && (
+          <Section title="Leading Bids" meta={`${activeProfileBids.length} live leads`}>
+            {activeProfileBids.length === 0 ? (
+              <div style={S.empty}>You are not leading any live bids right now</div>
+            ) : (
+              <div style={S.stack}>
+                {activeProfileBids.map((bid, index) => (
+                  <Link key={bid.id || index} href={`/auction/${bid.slug || bid.id}`} style={S.rowLink}>
+                    <MediaThumb src={bid.imageUrl} alt={bid.name || 'Vibe'} style={S.thumb} fallbackStyle={S.thumbFallback} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={S.rowTitle}>{bid.name || 'Unknown Vibe'}</div>
+                      <div style={S.rowSub}>{bid.category || 'Vibes'}</div>
+                    </div>
+                    <div style={S.rowMeta}>
+                      <div style={S.rowPrice}>{fmtAura(bid.amount || 0)}</div>
+                      <div style={S.rowStatus}>Leading</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Section>
+        )}
+
+        {isOwnProfile && accountTab === 'wallet' && (
+          <Section title="Wallet Activity" meta={fmtAura(privateBalance || 0)}>
+            {walletRows.length === 0 ? (
+              <div style={S.empty}>No wallet activity yet</div>
+            ) : (
+              <div>
+                {walletRows.map((entry) => (
+                  <div key={entry.id || `${entry.label}-${entry.createdAt}`} style={S.walletRow}>
+                    <div>
+                      <div style={S.walletLabel}>{entry.label || 'Transaction'}</div>
+                      <div style={S.walletDate}>{entry.createdAt ? fmtDate(entry.createdAt) : 'Unknown date'}</div>
+                    </div>
+                    <div style={S.walletAmt}>{fmtAura(entry.amount || 0)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        )}
+      </div>
     </div>
   );
 }
