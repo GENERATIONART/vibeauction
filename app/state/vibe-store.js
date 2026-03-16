@@ -16,6 +16,21 @@ const safeNumber = (value, fallback = 0) => {
   return fallback;
 };
 
+const getBidRowAmount = (row) => safeNumber(row?.amount, Number.NEGATIVE_INFINITY);
+
+const getBidRowTimestamp = (row) => new Date(row?.created_at || row?.updatedAt || '').getTime();
+
+const isHigherBidRow = (candidate, current) => {
+  if (!candidate) return false;
+  if (!current) return true;
+
+  const candidateAmount = getBidRowAmount(candidate);
+  const currentAmount = getBidRowAmount(current);
+  if (candidateAmount !== currentAmount) return candidateAmount > currentAmount;
+
+  return getBidRowTimestamp(candidate) > getBidRowTimestamp(current);
+};
+
 const normalizeKey = (value) =>
   String(value || '')
     .toLowerCase()
@@ -208,8 +223,9 @@ export function VibeStoreProvider({ children }) {
     const { data, error: fetchError } = await sb
       .from('vibe_bids')
       .select('vibe_id, vibe_name, amount, created_at')
+      .order('amount', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(500);
+      .limit(4000);
 
     if (fetchError || !Array.isArray(data)) {
       return Array.isArray(cache?.bids) ? cache.bids : null;
@@ -217,8 +233,10 @@ export function VibeStoreProvider({ children }) {
 
     const highestByVibe = new Map();
     for (const row of data) {
-      const key = normalizeKey(row?.vibe_id);
-      if (!key || highestByVibe.has(key)) continue;
+      const key = normalizeKey(row?.vibe_id || row?.vibe_name);
+      if (!key) continue;
+      const previous = highestByVibe.get(key);
+      if (!isHigherBidRow(row, previous)) continue;
       highestByVibe.set(key, {
         id: row.vibe_id,
         name: row.vibe_name,

@@ -757,21 +757,30 @@ const App = () => {
   }, [screenShakeToken]);
 
   const liveVibes = useMemo(() => {
+    const now = Date.now();
     const minted = (Array.isArray(mintedVibes) ? mintedVibes : [])
-      .filter((v) => Boolean(v.imageUrl))
+      .filter((v) => {
+        const endTimeMs = v.endTime ? new Date(v.endTime).getTime() : Number.NaN;
+        return !Number.isFinite(endTimeMs) || endTimeMs > now;
+      })
       .map((v) => ({
       id: v.id || v.slug,
       slug: v.slug || v.id,
       title: v.name || 'Untitled Vibe',
       bid: v.startingPrice || 0,
       timer: 'Live',
-      badge: v.endTime && new Date(v.endTime).getTime() <= Date.now() ? null : 'Live',
+      badge: 'Live',
       category: v.category || 'Vibes',
       imageUrl: v.imageUrl ?? null,
       createdAtMs: v.createdAt ? new Date(v.createdAt).getTime() : 0,
-      endingSoonMs: v.endTime
-        ? Math.max(0, new Date(v.endTime).getTime() - Date.now())
-        : parseCountdownToMs(v.duration),
+      endTimeMs: v.endTime
+        ? new Date(v.endTime).getTime()
+        : (() => {
+            const durationMs = parseCountdownToMs(v.duration);
+            if (!Number.isFinite(durationMs)) return Number.MAX_SAFE_INTEGER;
+            const createdAtMs = v.createdAt ? new Date(v.createdAt).getTime() : 0;
+            return createdAtMs > 0 ? createdAtMs + durationMs : durationMs;
+          })(),
       absurdityScore: String(v.name || '').length + String(v.manifesto || '').length,
     }));
 
@@ -836,33 +845,43 @@ const App = () => {
     }
     if (activeSort === 'Highest Aura') {
       items.sort((a, b) => {
-        const activityDiff = compareByRecentActivity(a, b);
-        if (activityDiff !== 0) return activityDiff;
-        return resolveLiveBid(b) - resolveLiveBid(a);
-      });
-      return items;
-    }
-    if (activeSort === 'Ending Soon') {
-      items.sort((a, b) => {
-        const activityDiff = compareByRecentActivity(a, b);
-        if (activityDiff !== 0) return activityDiff;
-        return (a.endingSoonMs || Number.MAX_SAFE_INTEGER) - (b.endingSoonMs || Number.MAX_SAFE_INTEGER);
-      });
-      return items;
-    }
-    if (activeSort === 'Newest') {
-      items.sort((a, b) => {
+        const bidDiff = resolveLiveBid(b) - resolveLiveBid(a);
+        if (bidDiff !== 0) return bidDiff;
         const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
         return (b.createdAtMs || 0) - (a.createdAtMs || 0);
       });
       return items;
     }
-    if (activeSort === 'Most Absurd') {
+    if (activeSort === 'Ending Soon') {
       items.sort((a, b) => {
+        const aEnd = Number.isFinite(a.endTimeMs) ? a.endTimeMs : Number.MAX_SAFE_INTEGER;
+        const bEnd = Number.isFinite(b.endTimeMs) ? b.endTimeMs : Number.MAX_SAFE_INTEGER;
+        const endingDiff = aEnd - bEnd;
+        if (endingDiff !== 0) return endingDiff;
         const activityDiff = compareByRecentActivity(a, b);
         if (activityDiff !== 0) return activityDiff;
-        return (b.absurdityScore || 0) - (a.absurdityScore || 0);
+        return (b.createdAtMs || 0) - (a.createdAtMs || 0);
+      });
+      return items;
+    }
+    if (activeSort === 'Newest') {
+      items.sort((a, b) => {
+        const createdDiff = (b.createdAtMs || 0) - (a.createdAtMs || 0);
+        if (createdDiff !== 0) return createdDiff;
+        const activityDiff = compareByRecentActivity(a, b);
+        if (activityDiff !== 0) return activityDiff;
+        return resolveLiveBid(b) - resolveLiveBid(a);
+      });
+      return items;
+    }
+    if (activeSort === 'Most Absurd') {
+      items.sort((a, b) => {
+        const absurdityDiff = (b.absurdityScore || 0) - (a.absurdityScore || 0);
+        if (absurdityDiff !== 0) return absurdityDiff;
+        const activityDiff = compareByRecentActivity(a, b);
+        if (activityDiff !== 0) return activityDiff;
+        return (b.createdAtMs || 0) - (a.createdAtMs || 0);
       });
       return items;
     }
