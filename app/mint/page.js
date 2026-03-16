@@ -646,7 +646,7 @@ export default function MintPage() {
     event.preventDefault();
     if (submitting) return;
     if (!isAuthed) {
-      setError('Sign in to mint and list vibes.');
+      setError('Sign in to create and list collectible vibes.');
       return;
     }
 
@@ -680,7 +680,7 @@ export default function MintPage() {
         });
 
         if (!mintedConfession) {
-          setError('Mint failed. Please try again.');
+          setError('Creation failed. Please try again.');
           return;
         }
 
@@ -841,8 +841,8 @@ export default function MintPage() {
               marginBottom: isMobile ? '24px' : customStyles.formSectionH1.marginBottom,
             }}
           >
-            Mint a New <br />
-            Abstract{' '}
+            Create a New <br />
+            Collectible{' '}
             <span
               style={{
                 ...customStyles.highlightTag,
@@ -877,7 +877,7 @@ export default function MintPage() {
             </div>
 
             <div style={customStyles.inputGroup}>
-              <label style={customStyles.label}>Listing Type</label>
+              <label style={customStyles.label}>Format</label>
               <select style={customStyles.selectField} value={formData.category} onChange={onCategoryChange}>
                 {categoryOptions.map((category) => (
                   <option key={category.value} value={category.value}>
@@ -910,7 +910,7 @@ export default function MintPage() {
 
                 <div style={customStyles.inputGroup}>
                   <label style={customStyles.label}>
-                    Buy It Now{' '}
+                    Buy Now Price{' '}
                     <span style={{ fontSize: '12px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 700, textTransform: 'none' }}>
                       — optional
                     </span>
@@ -928,7 +928,7 @@ export default function MintPage() {
                 </div>
 
                 <div style={customStyles.inputGroup}>
-                  <label style={customStyles.label}>Auction Duration</label>
+                  <label style={customStyles.label}>Drop Duration</label>
                   <select
                     style={customStyles.selectField}
                     value={formData.duration}
@@ -1128,10 +1128,10 @@ export default function MintPage() {
             )}
 
             <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
-              <label style={customStyles.label}>{isConfession ? 'Confession' : 'Manifesto (Optional)'}</label>
+              <label style={customStyles.label}>{isConfession ? 'Confession' : 'Vibe Story (Optional)'}</label>
               <textarea
                 style={{ ...getInputStyle('details'), height: '130px', resize: 'none' }}
-                placeholder={isConfession ? 'Say the thing you normally keep to yourself...' : 'Briefly describe why this vibe is worth bidding on...'}
+                placeholder={isConfession ? 'Say the thing you normally keep to yourself...' : 'Give collectors the origin story, context, or lore behind this vibe...'}
                 value={formData.details}
                 onChange={(event) => setFormData((previous) => ({ ...previous, details: event.target.value }))}
                 onFocus={() => setFocusedField('details')}
@@ -1157,16 +1157,16 @@ export default function MintPage() {
                 disabled={submitting || !isAuthed}
               >
                 {!isAuthed
-                  ? 'Sign In To Mint'
+                  ? 'Sign In To Create'
                   : submitting
                   ? `${MINT_STAGE_LABELS[mintStage] || 'Submitting'}...`
                   : submitted
                   ? isConfession
-                    ? 'Confession Minted ✓'
+                    ? 'Confession Created ✓'
                     : 'Vibe Listed ✓'
                   : isConfession
-                    ? 'Mint Confession'
-                    : 'List Vibe for Auction'}
+                    ? 'Create Confession'
+                    : 'List Vibe in Market'}
               </button>
 
               {submitting && !isConfession && (
@@ -1268,7 +1268,7 @@ export default function MintPage() {
               </div>
               <div style={{ padding: '16px' }}>
                 <button type="button" style={customStyles.placeBidBtn} disabled>
-                  {isConfession ? 'Ready To Mint' : 'Place Bid'}
+                  {isConfession ? 'Ready To Create' : 'Ready For Collectors'}
                 </button>
               </div>
             </article>
@@ -1276,7 +1276,7 @@ export default function MintPage() {
             <p style={{ fontSize: '12px', color: '#444444', textAlign: 'center', marginTop: '20px', lineHeight: 1.5 }}>
               {isConfession
                 ? 'Anonymous confessions hide your handle in feed.'
-                : 'Listing a vibe costs 50 AURA. Proceeds are subject to a 2% vibe tax.'}
+                : 'Listing a vibe turns it into a collectible market object. Listing costs 50 AURA, with a 2% platform fee on sale proceeds.'}
               <br />
               Total minted: {totalMinted} ({confessionCount} confessions)
             </p>

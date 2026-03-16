@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
+import { BRAND_NAME } from '../../lib/brand.js';
 
 const NAV_ITEMS = [
-  { label: 'Live Feed', href: '/' },
-  { label: 'All Auctions', href: '/auctions' },
-  { label: 'Drop Vibe', href: '/mint' },
+  { label: 'Gallery', href: '/' },
+  { label: 'Market', href: '/auctions' },
+  { label: 'Create Vibe', href: '/mint' },
   { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Vibe Vault', href: '/vault' },
   { label: 'Top Up', href: '/top-up' },
 ];
 
@@ -97,7 +97,7 @@ export default function NavBar() {
             textOverflow: 'ellipsis',
           }}
         >
-          Vibe Auction
+          {BRAND_NAME}
         </Link>
 
         {!isMobile && (

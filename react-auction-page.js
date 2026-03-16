@@ -6,11 +6,6 @@ import { useVibeStore } from './app/state/vibe-store';
 import { useAuth } from './app/state/auth-store';
 import NavBar from './app/components/NavBar';
 import { getSupabaseClient } from './lib/supabase-client.js';
-import {
-  defaultAuctionSlug,
-  getAuctionItemBySlug,
-  getCategoryTag,
-} from './lib/auction-items.js';
 
 const normalize = (value) =>
   String(value || '')
@@ -69,6 +64,14 @@ const splitTitle = (title) => {
   return [words.slice(0, midpoint).join(' '), words.slice(midpoint).join(' ')];
 };
 
+const getCategoryTag = (category) => {
+  const normalized = String(category || '').trim();
+  if (!normalized) return 'Vibe';
+  if (normalized.endsWith('ies')) return `${normalized.slice(0, -3)}y`;
+  if (normalized.endsWith('s')) return normalized.slice(0, -1);
+  return normalized;
+};
+
 const makeInitialBidHistory = () => [];
 
 const resolveTopBid = (apiTopBid, bidRows) => {
@@ -113,7 +116,7 @@ const getHydrationSafeInitialTimer = (vibe) => {
 };
 
 const getVibeMarketId = (vibe) => {
-  const identity = vibe?.slug || vibe?.id || vibe?.title || defaultAuctionSlug;
+  const identity = vibe?.slug || vibe?.id || vibe?.title || 'unknown-vibe';
   return normalize(`vibe-market-${identity}`);
 };
 
@@ -129,6 +132,8 @@ const getVibeMarketCloseIso = (vibe) => {
   const closeMs = Date.now() + Math.max(Math.round(fallbackSeconds), 20 * 60) * 1000;
   return new Date(closeMs).toISOString();
 };
+
+const formatAura = (value) => `${Number(value || 0).toLocaleString()} AURA`;
 
 const roundToStep = (value, step = 50) => {
   const numeric = safeBid(value, step);
@@ -776,7 +781,8 @@ const App = ({ vibe }) => {
   const { balance, activeBids, placeBid, settleAuction, refreshState } = useVibeStore();
   const { profile, user } = useAuth();
   const router = useRouter();
-  const selectedVibe = vibe || getAuctionItemBySlug(defaultAuctionSlug);
+  const selectedVibe = vibe || null;
+  if (!selectedVibe) return null;
   const baseBid = safeBid(selectedVibe?.bid, 100);
   const buyNowPrice = selectedVibe?.buyNowPrice ?? null;
 
@@ -1288,7 +1294,7 @@ const App = ({ vibe }) => {
     setPlacingBid(true);
 
     const bidResult = await placeBid({
-      id: selectedVibe?.slug || defaultAuctionSlug,
+      id: selectedVibe?.slug || selectedVibe?.id || 'unknown-vibe',
       name: selectedVibe?.title || 'Unknown Vibe',
       imageUrl: selectedVibe?.imageUrl ?? null,
       amount: bidAmount,
@@ -1357,7 +1363,7 @@ const App = ({ vibe }) => {
     setBuyingNow(true);
     setError('');
     const settled = await settleAuction({
-      id: selectedVibe?.slug || defaultAuctionSlug,
+      id: selectedVibe?.slug || selectedVibe?.id || 'unknown-vibe',
       name: selectedVibe?.title || 'Unknown Vibe',
       category: selectedVibe?.category || 'Vibes',
       price: buyNowPrice,
@@ -1407,6 +1413,13 @@ const App = ({ vibe }) => {
     vibeMarket?.state === 'open' &&
     marketIsClosed;
   const SHOW_PREDICTION_MARKET = false;
+  const provenanceFacts = [
+    { label: 'Format', value: buyNowPrice ? 'Auction + Buy Now' : 'Timed Auction' },
+    { label: 'Bid Activity', value: `${bids.length} recorded bid${bids.length === 1 ? '' : 's'}` },
+    { label: 'Current Leader', value: topBidUser || 'No leader yet' },
+    { label: 'Collector Status', value: auctionEnded ? 'Archived listing' : 'Live for collection' },
+  ];
+  const marketNarrative = selectedVibe?.description || 'A live collectible vibe with open bidding and public provenance.';
 
   return (
     <div style={customStyles.body}>
@@ -1470,7 +1483,7 @@ const App = ({ vibe }) => {
               </h1>
 
               <p style={{ ...customStyles.vibeDescription, fontSize: isMobile ? '15px' : customStyles.vibeDescription.fontSize }}>
-                {selectedVibe?.description || 'This vibe is live and currently accepting bids.'}
+                {marketNarrative}
               </p>
 
               {(authorHandle || primaryListedByHandle) && (
@@ -1493,6 +1506,65 @@ const App = ({ vibe }) => {
                   )}
                 </div>
               )}
+
+              <div
+                style={{
+                  marginTop: '18px',
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+                  gap: '10px',
+                  paddingTop: '16px',
+                  borderTop: '1px solid #2A2A2A',
+                }}
+              >
+                {provenanceFacts.map((fact) => (
+                  <div key={fact.label} style={{ background: '#F4F4F4', border: '1px solid #DDDDDD', padding: '12px' }}>
+                    <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', color: '#666666', marginBottom: '6px' }}>
+                      {fact.label}
+                    </div>
+                    <div style={{ fontWeight: 800, color: '#111111', lineHeight: 1.3 }}>
+                      {fact.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: isMobile ? '14px' : '18px',
+              background: '#111111',
+              border: '1px solid #252525',
+              borderRadius: '8px',
+              padding: isMobile ? '16px' : '18px',
+            }}
+          >
+            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '22px' : '26px', textTransform: 'uppercase', marginBottom: '10px' }}>
+              Provenance & Story
+            </div>
+            <div style={{ color: '#A2A2A2', fontSize: '14px', lineHeight: 1.6, marginBottom: '14px' }}>
+              This listing is treated as a collectible internet object. The description is the artifact story, the bid history is the public provenance, and the winning collector becomes part of its permanent record.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '10px' }}>
+              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
+                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
+                  Creator Ask
+                </div>
+                <div style={{ fontWeight: 800 }}>{formatAura(baseBid)}</div>
+              </div>
+              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
+                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
+                  Current Market
+                </div>
+                <div style={{ fontWeight: 800 }}>{formatAura(currentBid)}</div>
+              </div>
+              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
+                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
+                  Acquisition
+                </div>
+                <div style={{ fontWeight: 800 }}>{buyNowPrice ? `Bid or ${formatAura(buyNowPrice)}` : 'Winning bid only'}</div>
+              </div>
             </div>
           </div>
         </div>

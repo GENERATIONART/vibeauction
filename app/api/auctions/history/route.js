@@ -10,6 +10,8 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+const applyLiveFilter = (query, nowIso) => query.or(`end_time.is.null,end_time.gt.${nowIso}`);
+
 const asNumber = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -51,7 +53,7 @@ export async function GET(request) {
       { data: catRows },
     ] = await Promise.all([
       sb.from('vibes').select('id', { count: 'exact', head: true }),
-      sb.from('vibes').select('id', { count: 'exact', head: true }).gt('end_time', nowIso),
+      applyLiveFilter(sb.from('vibes').select('id', { count: 'exact', head: true }), nowIso),
       sb.from('vault_items').select('id', { count: 'exact', head: true }).like('id', 'vault-%'),
       sb.from('vibes').select('category').limit(2000),
     ]);
@@ -73,7 +75,7 @@ export async function GET(request) {
 
     // DB-level status filter (ended/settled share the same filter; resolved in JS below)
     if (status === 'live') {
-      q = q.gt('end_time', nowIso);
+      q = applyLiveFilter(q, nowIso);
     } else if (status === 'ended' || status === 'settled') {
       q = q.lte('end_time', nowIso);
     }
