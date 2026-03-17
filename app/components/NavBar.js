@@ -10,6 +10,7 @@ import { BRAND_NAME } from '../../lib/brand.js';
 const NAV_ITEMS = [
   { label: 'Gallery', href: '/' },
   { label: 'Market', href: '/auctions' },
+  { label: 'Breakouts', href: '/breakouts' },
   { label: 'Create Vibe', href: '/mint' },
   { label: 'Leaderboard', href: '/leaderboard' },
   { label: 'Top Up', href: '/top-up' },

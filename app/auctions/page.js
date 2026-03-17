@@ -278,12 +278,8 @@ export default function AuctionsPage() {
   const [summary,    setSummary]    = useState({ total: 0, live: 0, ended: 0, settled: 0 });
   const [pagination, setPagination] = useState({ page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0 });
   const [categories, setCategories] = useState([]);
-  const [graduationBoard, setGraduationBoard] = useState([]);
-  const [graduationSummary, setGraduationSummary] = useState({ breakoutCount: 0, graduatedCount: 0, qualifyingCount: 0 });
   const [loading,    setLoading]    = useState(true);
-  const [boardLoading, setBoardLoading] = useState(true);
   const [error,      setError]      = useState('');
-  const [boardError, setBoardError] = useState('');
 
   const [statusFilter,   setStatusFilter]   = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -334,22 +330,6 @@ export default function AuctionsPage() {
     }
   }, []);
 
-  const fetchGraduationBoard = useCallback(async () => {
-    setBoardLoading(true);
-    setBoardError('');
-    try {
-      const res = await fetch('/api/state/vibe-graduation-board?limit=6', { cache: 'no-store' });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload?.error || 'Failed to load graduation board');
-      setGraduationBoard(Array.isArray(payload?.board) ? payload.board : []);
-      setGraduationSummary(payload?.summary || { breakoutCount: 0, graduatedCount: 0, qualifyingCount: 0 });
-    } catch (err) {
-      setBoardError(err?.message || 'Failed to load graduation board');
-    } finally {
-      setBoardLoading(false);
-    }
-  }, []);
-
   // Track previous filters to reset page to 1 on filter change
   const prevFilters = useRef({ statusFilter, categoryFilter, search, sort });
 
@@ -369,18 +349,13 @@ export default function AuctionsPage() {
     fetchAuctions({ page: fetchPage, status: statusFilter, category: categoryFilter, search, sort });
   }, [page, statusFilter, categoryFilter, search, sort, fetchAuctions]);
 
-  useEffect(() => {
-    fetchGraduationBoard();
-  }, [fetchGraduationBoard]);
-
   // Auto-refresh every 60s
   useEffect(() => {
     const id = setInterval(() => {
       fetchAuctions({ page, status: statusFilter, category: categoryFilter, search, sort });
-      fetchGraduationBoard();
     }, 60_000);
     return () => clearInterval(id);
-  }, [page, statusFilter, categoryFilter, search, sort, fetchAuctions, fetchGraduationBoard]);
+  }, [page, statusFilter, categoryFilter, search, sort, fetchAuctions]);
 
   // Styles
   useEffect(() => {
@@ -442,103 +417,6 @@ export default function AuctionsPage() {
               <div style={{ marginTop: '6px', fontFamily: "'Anton', sans-serif", fontSize: '32px', lineHeight: 1, color: s.color }}>{fmt(s.value)}</div>
             </div>
           ))}
-        </section>
-
-        <section style={{ marginBottom: '24px', border: '1px solid #232323', background: 'linear-gradient(135deg, #111111 0%, #171717 100%)', padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ color: '#C8FF00', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                Weekly Graduation Queue
-              </div>
-              <div style={{ marginTop: '6px', fontFamily: "'Anton', sans-serif", fontSize: '32px', lineHeight: 0.95, textTransform: 'uppercase' }}>
-                Breakout Watch
-              </div>
-              <div style={{ marginTop: '8px', color: '#8C8C8C', fontSize: '13px', maxWidth: '620px', lineHeight: 1.5 }}>
-                Top-ranked vibes this week are the only ones that can graduate into token launch candidates. This is the rare path, not the default path.
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(88px, 1fr))', gap: '8px', width: 'min(100%, 360px)' }}>
-              {[
-                { label: 'In Top 2', value: graduationSummary.qualifyingCount, color: '#C8FF00' },
-                { label: 'Breakouts', value: graduationSummary.breakoutCount, color: '#FFB84D' },
-                { label: 'Graduated', value: graduationSummary.graduatedCount, color: '#5BD3FF' },
-              ].map((item) => (
-                <div key={item.label} style={{ background: '#0C0C0C', border: '1px solid #252525', padding: '10px' }}>
-                  <div style={{ color: '#777', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{item.label}</div>
-                  <div style={{ marginTop: '6px', fontFamily: "'Anton', sans-serif", fontSize: '24px', lineHeight: 1, color: item.color }}>{fmt(item.value)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {boardError && (
-            <div style={{ marginTop: '12px', color: '#FF9C9C', fontSize: '12px', fontWeight: 700 }}>
-              {boardError}
-            </div>
-          )}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginTop: '16px' }}>
-            {boardLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <div key={index} style={{ border: '1px solid #222', background: '#0D0D0D', minHeight: '128px', animation: 'skeletonPulse 1.6s ease-in-out infinite' }} />
-                ))
-              : graduationBoard.map((entry) => (
-                  <Link key={entry.slug} href={`/auction/${entry.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <article style={{ border: '1px solid #262626', background: '#0B0B0B', padding: '12px', height: '100%' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ color: '#666', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                            Rank #{entry?.graduation?.weeklyRank || '—'}
-                          </div>
-                          <div style={{ marginTop: '8px', fontFamily: "'Anton', sans-serif", fontSize: '22px', lineHeight: 0.98, textTransform: 'uppercase' }}>
-                            {entry.name}
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            background: (GRADUATION_CARD_META[entry?.graduation?.state] || GRADUATION_CARD_META.launching).bg,
-                            border: `1px solid ${(GRADUATION_CARD_META[entry?.graduation?.state] || GRADUATION_CARD_META.launching).color}`,
-                            color: (GRADUATION_CARD_META[entry?.graduation?.state] || GRADUATION_CARD_META.launching).color,
-                            fontSize: '10px',
-                            fontWeight: 800,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.6px',
-                            padding: '5px 8px',
-                            borderRadius: '999px',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {(GRADUATION_CARD_META[entry?.graduation?.state] || GRADUATION_CARD_META.launching).label}
-                        </div>
-                      </div>
-                      <div style={{ marginTop: '10px', color: '#808080', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase' }}>
-                        {entry.author ? `by ${entry.author}` : entry.category || 'Vibe'}
-                      </div>
-                      <div style={{ marginTop: '14px', height: '8px', background: '#171717', borderRadius: '999px', overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            width: `${Math.max(8, Math.min(100, Number(entry?.graduation?.auraProgressPct || 0)))}%`,
-                            height: '100%',
-                            background: 'linear-gradient(90deg, #FF7A18 0%, #C8FF00 100%)',
-                          }}
-                        />
-                      </div>
-                      <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <div>
-                          <div style={{ color: '#666', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}>Aura</div>
-                          <div style={{ marginTop: '4px', fontFamily: "'Anton', sans-serif", fontSize: '18px', lineHeight: 1 }}>
-                            {fmt(entry?.graduation?.currentAura)}
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ color: '#666', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}>Score</div>
-                          <div style={{ marginTop: '4px', fontFamily: "'Anton', sans-serif", fontSize: '18px', lineHeight: 1 }}>
-                            {fmt(entry?.graduation?.score)}
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  </Link>
-                ))}
-          </div>
         </section>
 
         {/* Search + Sort */}
