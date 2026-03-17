@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { buildGraduationSnapshot, GRADUATION_WINDOW_DAYS } from '../../../../lib/vibe-graduation.js';
+import { buildGraduationSnapshot } from '../../../../lib/vibe-graduation.js';
+import { getGraduationBoard } from '../../../../lib/server/state-db.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -204,25 +205,8 @@ export async function GET(request) {
       }
     }
 
-    const weeklyWindowStartMs = nowMs - GRADUATION_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-    const graduationRanks = new Map(
-      (vibeRows || [])
-        .filter((row) => new Date(row?.created_at || '').getTime() >= weeklyWindowStartMs)
-        .map((row) => {
-          const slug = String(row?.slug || '').trim();
-          const snapshot = buildGraduationSnapshot({
-            currentAura: Math.max(asNumber(row?.starting_price, 0), topBidBySlug.get(slug) || 0),
-            uniqueParticipants: participantIdsBySlug.get(slug)?.size || 0,
-            totalReactions: reactionCountBySlug.get(slug) || 0,
-            commentCount: commentCountBySlug.get(slug) || 0,
-            remixCount: remixCountBySlug.get(slug) || 0,
-            recentBidCount: 0,
-          });
-          return { slug, score: snapshot.score };
-        })
-        .sort((a, b) => b.score - a.score)
-        .map((entry, index) => [entry.slug, index + 1]),
-    );
+    const graduationBoard = await getGraduationBoard(200);
+    const graduationBySlug = new Map((graduationBoard?.board || []).map((entry) => [String(entry.slug || '').trim(), entry.graduation]));
 
     const auctions = (vibeRows || [])
       .map((row) => {
@@ -238,19 +222,21 @@ export async function GET(request) {
 
         const winnerId = settled?.user_id ? String(settled.user_id) : null;
         const slug = String(row?.slug || '').trim();
-        const graduation = buildGraduationSnapshot({
-          currentAura: Math.max(
-            asNumber(row.starting_price, 0),
-            topBidBySlug.get(slug) || 0,
-            settled ? asNumber(settled.price, 0) : 0,
-          ),
-          uniqueParticipants: participantIdsBySlug.get(slug)?.size || 0,
-          totalReactions: reactionCountBySlug.get(slug) || 0,
-          commentCount: commentCountBySlug.get(slug) || 0,
-          remixCount: remixCountBySlug.get(slug) || 0,
-          recentBidCount: 0,
-          weeklyRank: graduationRanks.get(slug) || null,
-        });
+        const graduation =
+          graduationBySlug.get(slug) ||
+          buildGraduationSnapshot({
+            currentAura: Math.max(
+              asNumber(row.starting_price, 0),
+              topBidBySlug.get(slug) || 0,
+              settled ? asNumber(settled.price, 0) : 0,
+            ),
+            uniqueParticipants: participantIdsBySlug.get(slug)?.size || 0,
+            totalReactions: reactionCountBySlug.get(slug) || 0,
+            commentCount: commentCountBySlug.get(slug) || 0,
+            remixCount: remixCountBySlug.get(slug) || 0,
+            recentBidCount: 0,
+            weeklyRank: null,
+          });
 
         return {
           id:            row.id || row.slug,
