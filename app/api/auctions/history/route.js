@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { buildGraduationSnapshot } from '../../../../lib/vibe-graduation.js';
+import { getGraduationBoard } from '../../../../lib/server/state-db.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,12 +109,40 @@ export async function GET(request) {
     const slugsOnPage = (vibeRows || []).map((r) => r.slug).filter(Boolean);
     const settledBySlug = new Map();
     const winnerIds = new Set();
+    const topBidBySlug = new Map();
+    const reactionCountBySlug = new Map();
+    const commentCountBySlug = new Map();
+    const participantIdsBySlug = new Map();
+    const remixCountBySlug = new Map();
 
     if (slugsOnPage.length > 0) {
-      const { data: vaultRows } = await sb
-        .from('vault_items')
-        .select('id, name, price, user_id, won_date, created_at')
-        .in('id', slugsOnPage.map((s) => `vault-${s}`));
+      const [{ data: vaultRows }, { data: bidRows }, { data: reactionRows }, { data: commentRows }, { data: remixRows }] = await Promise.all([
+        sb
+          .from('vault_items')
+          .select('id, name, price, user_id, won_date, created_at')
+          .in('id', slugsOnPage.map((s) => `vault-${s}`)),
+        sb
+          .from('vibe_bids')
+          .select('vibe_id, amount, user_id, created_at')
+          .in('vibe_id', slugsOnPage)
+          .order('created_at', { ascending: false })
+          .limit(3000),
+        sb
+          .from('vibe_reactions')
+          .select('vibe_id, user_id')
+          .in('vibe_id', slugsOnPage)
+          .limit(3000),
+        sb
+          .from('vibe_comments')
+          .select('vibe_id, user_id')
+          .in('vibe_id', slugsOnPage)
+          .limit(3000),
+        sb
+          .from('vibes')
+          .select('remix_source_slug')
+          .in('remix_source_slug', slugsOnPage)
+          .limit(3000),
+      ]);
 
       for (const row of vaultRows || []) {
         const vaultId = String(row?.id || '');
@@ -121,6 +151,44 @@ export async function GET(request) {
         if (!slug) continue;
         settledBySlug.set(slug, row);
         if (row?.user_id) winnerIds.add(String(row.user_id));
+      }
+
+      for (const row of bidRows || []) {
+        const slug = String(row?.vibe_id || '').trim();
+        if (!slug) continue;
+        const amount = asNumber(row?.amount, 0);
+        const previous = topBidBySlug.get(slug) || 0;
+        if (amount > previous) topBidBySlug.set(slug, amount);
+        if (row?.user_id) {
+          if (!participantIdsBySlug.has(slug)) participantIdsBySlug.set(slug, new Set());
+          participantIdsBySlug.get(slug).add(String(row.user_id));
+        }
+      }
+
+      for (const row of reactionRows || []) {
+        const slug = String(row?.vibe_id || '').trim();
+        if (!slug) continue;
+        reactionCountBySlug.set(slug, (reactionCountBySlug.get(slug) || 0) + 1);
+        if (row?.user_id) {
+          if (!participantIdsBySlug.has(slug)) participantIdsBySlug.set(slug, new Set());
+          participantIdsBySlug.get(slug).add(String(row.user_id));
+        }
+      }
+
+      for (const row of commentRows || []) {
+        const slug = String(row?.vibe_id || '').trim();
+        if (!slug) continue;
+        commentCountBySlug.set(slug, (commentCountBySlug.get(slug) || 0) + 1);
+        if (row?.user_id) {
+          if (!participantIdsBySlug.has(slug)) participantIdsBySlug.set(slug, new Set());
+          participantIdsBySlug.get(slug).add(String(row.user_id));
+        }
+      }
+
+      for (const row of remixRows || []) {
+        const slug = String(row?.remix_source_slug || '').trim();
+        if (!slug) continue;
+        remixCountBySlug.set(slug, (remixCountBySlug.get(slug) || 0) + 1);
       }
     }
 
@@ -137,6 +205,9 @@ export async function GET(request) {
       }
     }
 
+    const graduationBoard = await getGraduationBoard(200);
+    const graduationBySlug = new Map((graduationBoard?.board || []).map((entry) => [String(entry.slug || '').trim(), entry.graduation]));
+
     const auctions = (vibeRows || [])
       .map((row) => {
         const endTimeMs      = new Date(row?.end_time || '').getTime();
@@ -150,6 +221,23 @@ export async function GET(request) {
         if (status === 'ended'   && resolvedStatus !== 'ended')   return null;
 
         const winnerId = settled?.user_id ? String(settled.user_id) : null;
+        const slug = String(row?.slug || '').trim();
+        const graduation =
+          graduationBySlug.get(slug) ||
+          buildGraduationSnapshot({
+            currentAura: Math.max(
+              asNumber(row.starting_price, 0),
+              topBidBySlug.get(slug) || 0,
+              settled ? asNumber(settled.price, 0) : 0,
+            ),
+            uniqueParticipants: participantIdsBySlug.get(slug)?.size || 0,
+            totalReactions: reactionCountBySlug.get(slug) || 0,
+            commentCount: commentCountBySlug.get(slug) || 0,
+            remixCount: remixCountBySlug.get(slug) || 0,
+            recentBidCount: 0,
+            weeklyRank: null,
+          });
+
         return {
           id:            row.id || row.slug,
           slug:          row.slug || row.id || '',
@@ -166,6 +254,7 @@ export async function GET(request) {
           winner:        winnerId ? winnerNameById.get(winnerId) || 'Anonymous' : null,
           wonDate:       settled?.won_date || null,
           author:        row.author || null,
+          graduation,
         };
       })
       .filter(Boolean);

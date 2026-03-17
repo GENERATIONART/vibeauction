@@ -7,6 +7,13 @@ import { useAuth } from './app/state/auth-store';
 import NavBar from './app/components/NavBar';
 import { getSupabaseClient } from './lib/supabase-client.js';
 import { VIBE_REACTION_OPTIONS } from './lib/vibe-social.js';
+import {
+  GRADUATION_AURA_TARGET,
+  GRADUATION_MAX_PER_WEEK,
+  GRADUATION_MIN_COMMENTS,
+  GRADUATION_MIN_PARTICIPANTS,
+  GRADUATION_MIN_REACTIONS,
+} from './lib/vibe-graduation.js';
 
 const normalize = (value) =>
   String(value || '')
@@ -135,6 +142,15 @@ const getVibeMarketCloseIso = (vibe) => {
 };
 
 const formatAura = (value) => `${Number(value || 0).toLocaleString()} AURA`;
+
+const GRADUATION_META = {
+  launching: { label: 'Launching', accent: '#8E8E8E', bg: '#171717' },
+  heating: { label: 'Heating Up', accent: '#FFB84D', bg: '#221707' },
+  breakout: { label: 'Breakout', accent: '#C8FF00', bg: '#162200' },
+  graduated: { label: 'Graduated', accent: '#5BD3FF', bg: '#071B25' },
+};
+
+const clampPercent = (value) => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
 
 const roundToStep = (value, step = 50) => {
   const numeric = safeBid(value, step);
@@ -467,6 +483,13 @@ const customStyles = {
     borderRadius: '8px',
     padding: '18px',
   },
+  graduationPanel: {
+    marginTop: '18px',
+    background: '#101010',
+    border: '1px solid #2A2A2A',
+    borderRadius: '8px',
+    padding: '18px',
+  },
   socialTitle: {
     fontFamily: "'Anton', sans-serif",
     fontSize: '24px',
@@ -503,6 +526,57 @@ const customStyles = {
     fontWeight: 800,
     textTransform: 'uppercase',
     cursor: 'pointer',
+  },
+  graduationBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 10px',
+    borderRadius: '999px',
+    fontSize: '11px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+    marginBottom: '12px',
+  },
+  graduationGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+    marginTop: '14px',
+  },
+  graduationStat: {
+    background: '#171717',
+    border: '1px solid #252525',
+    borderRadius: '6px',
+    padding: '10px',
+  },
+  graduationLabel: {
+    color: '#808080',
+    fontSize: '10px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+  },
+  graduationValue: {
+    marginTop: '6px',
+    color: '#FFFFFF',
+    fontSize: '18px',
+    fontFamily: "'Anton', sans-serif",
+    lineHeight: 1,
+  },
+  graduationBar: {
+    width: '100%',
+    height: '10px',
+    background: '#1A1A1A',
+    borderRadius: '999px',
+    overflow: 'hidden',
+    marginTop: '10px',
+  },
+  graduationBarFill: {
+    height: '100%',
+    borderRadius: '999px',
+    transition: 'width 0.2s ease',
   },
   remixPanel: {
     background: '#111111',
@@ -973,6 +1047,9 @@ const App = ({ vibe }) => {
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentSaving, setCommentSaving] = useState(false);
   const [commentError, setCommentError] = useState('');
+  const [graduation, setGraduation] = useState(null);
+  const [graduationLoading, setGraduationLoading] = useState(true);
+  const [graduationError, setGraduationError] = useState('');
 
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1120;
@@ -1016,6 +1093,9 @@ const App = ({ vibe }) => {
     setCommentsLoading(true);
     setCommentSaving(false);
     setCommentError('');
+    setGraduation(null);
+    setGraduationLoading(true);
+    setGraduationError('');
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
 
   const loadBidHistory = useCallback(async () => {
@@ -1150,6 +1230,27 @@ const App = ({ vibe }) => {
     }
   }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title]);
 
+  const loadGraduation = useCallback(async () => {
+    if (!selectedVibe?.slug) {
+      setGraduationLoading(false);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({ vibeId: selectedVibe.slug });
+      if (selectedVibe?.id) params.set('vibeIdAlt', selectedVibe.id);
+      if (selectedVibe?.title) params.set('vibeName', selectedVibe.title);
+      const response = await fetch(`/api/state/vibe-graduation?${params.toString()}`, { cache: 'no-store' });
+      const payload = await response.json();
+      setGraduation(payload?.graduation || null);
+      setGraduationError('');
+    } catch (loadError) {
+      setGraduationError(loadError instanceof Error ? loadError.message : 'Failed to load graduation state.');
+    } finally {
+      setGraduationLoading(false);
+    }
+  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title]);
+
   useEffect(() => {
     const syncAuctionData = async () => {
       try {
@@ -1161,6 +1262,7 @@ const App = ({ vibe }) => {
       await loadVibeMarket();
       await loadVibeSocial();
       await loadComments();
+      await loadGraduation();
     };
 
     syncAuctionData();
@@ -1191,7 +1293,7 @@ const App = ({ vibe }) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, refreshState]);
+  }, [loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, loadGraduation, refreshState]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -1730,6 +1832,11 @@ const App = ({ vibe }) => {
           author: selectedVibe.remixSourceAuthor || null,
         }
       : null);
+  const graduationMeta = GRADUATION_META[graduation?.state] || GRADUATION_META.launching;
+  const auraProgress = clampPercent((Number(graduation?.currentAura || 0) / GRADUATION_AURA_TARGET) * 100);
+  const participantProgress = clampPercent((Number(graduation?.uniqueParticipants || 0) / GRADUATION_MIN_PARTICIPANTS) * 100);
+  const reactionProgress = clampPercent((Number(graduation?.totalReactions || 0) / GRADUATION_MIN_REACTIONS) * 100);
+  const commentProgress = clampPercent((Number(graduation?.commentCount || 0) / GRADUATION_MIN_COMMENTS) * 100);
 
   return (
     <div style={customStyles.body}>
@@ -2111,6 +2218,90 @@ const App = ({ vibe }) => {
             {socialError && (
               <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
                 {socialError}
+              </div>
+            )}
+          </div>
+
+          <div style={{ ...customStyles.graduationPanel, padding: isMobile ? '16px' : customStyles.graduationPanel.padding }}>
+            <div
+              style={{
+                ...customStyles.graduationBadge,
+                color: graduationMeta.accent,
+                border: `1px solid ${graduationMeta.accent}`,
+                background: graduationMeta.bg,
+              }}
+            >
+              {graduationMeta.label}
+            </div>
+            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize, marginBottom: '8px' }}>
+              Graduation Meter
+            </div>
+            <div style={customStyles.socialHelp}>
+              If a vibe clears the signal gates and finishes in the top {GRADUATION_MAX_PER_WEEK} this week, it becomes a token launch candidate.
+            </div>
+            <div style={customStyles.graduationStat}>
+              <div style={customStyles.graduationLabel}>Momentum Score</div>
+              <div style={{ ...customStyles.graduationValue, color: graduationMeta.accent }}>
+                {graduationLoading ? '...' : Number(graduation?.score || 0).toLocaleString()}
+              </div>
+              <div style={customStyles.graduationBar}>
+                <div
+                  style={{
+                    ...customStyles.graduationBarFill,
+                    width: `${auraProgress}%`,
+                    background: 'linear-gradient(90deg, #FF7A18 0%, #C8FF00 100%)',
+                  }}
+                />
+              </div>
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#B8B8B8', lineHeight: 1.5 }}>
+                {graduationLoading
+                  ? 'Loading thresholds...'
+                  : `${Number(graduation?.currentAura || 0).toLocaleString()} / ${GRADUATION_AURA_TARGET.toLocaleString()} AURA committed`}
+              </div>
+            </div>
+            <div style={customStyles.graduationGrid}>
+              <div style={customStyles.graduationStat}>
+                <div style={customStyles.graduationLabel}>Participants</div>
+                <div style={customStyles.graduationValue}>
+                  {graduationLoading ? '...' : `${Number(graduation?.uniqueParticipants || 0).toLocaleString()} / ${GRADUATION_MIN_PARTICIPANTS}`}
+                </div>
+                <div style={customStyles.graduationBar}>
+                  <div style={{ ...customStyles.graduationBarFill, width: `${participantProgress}%`, background: '#5BD3FF' }} />
+                </div>
+              </div>
+              <div style={customStyles.graduationStat}>
+                <div style={customStyles.graduationLabel}>Reactions</div>
+                <div style={customStyles.graduationValue}>
+                  {graduationLoading ? '...' : `${Number(graduation?.totalReactions || 0).toLocaleString()} / ${GRADUATION_MIN_REACTIONS}`}
+                </div>
+                <div style={customStyles.graduationBar}>
+                  <div style={{ ...customStyles.graduationBarFill, width: `${reactionProgress}%`, background: '#FF5C8A' }} />
+                </div>
+              </div>
+              <div style={customStyles.graduationStat}>
+                <div style={customStyles.graduationLabel}>Takes</div>
+                <div style={customStyles.graduationValue}>
+                  {graduationLoading ? '...' : `${Number(graduation?.commentCount || 0).toLocaleString()} / ${GRADUATION_MIN_COMMENTS}`}
+                </div>
+                <div style={customStyles.graduationBar}>
+                  <div style={{ ...customStyles.graduationBarFill, width: `${commentProgress}%`, background: '#FFB84D' }} />
+                </div>
+              </div>
+              <div style={customStyles.graduationStat}>
+                <div style={customStyles.graduationLabel}>Weekly Rank</div>
+                <div style={customStyles.graduationValue}>
+                  {graduationLoading ? '...' : graduation?.weeklyRank ? `#${graduation.weeklyRank}` : 'Unranked'}
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#9A9A9A', lineHeight: 1.45 }}>
+                  {graduation?.qualified
+                    ? 'Signal gates cleared.'
+                    : `Need all three gates plus a top ${GRADUATION_MAX_PER_WEEK} finish.`}
+                </div>
+              </div>
+            </div>
+            {graduationError && (
+              <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
+                {graduationError}
               </div>
             )}
           </div>

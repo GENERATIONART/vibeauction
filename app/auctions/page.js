@@ -19,6 +19,12 @@ const SORT_OPTIONS = [
 ];
 
 const PAGE_SIZE = 48;
+const GRADUATION_CARD_META = {
+  launching: { label: 'Launching', color: '#8E8E8E', bg: '#171717' },
+  heating: { label: 'Heating', color: '#FFB84D', bg: '#221707' },
+  breakout: { label: 'Breakout', color: '#C8FF00', bg: '#162200' },
+  graduated: { label: 'Graduated', color: '#5BD3FF', bg: '#071B25' },
+};
 
 const fmt = (v) => {
   const n = Number(v);
@@ -73,6 +79,7 @@ function AuctionCard({ auction }) {
   const [imgFailed, setImgFailed] = useState(false);
 
   const meta      = STATUS_META[auction.status] || STATUS_META.ended;
+  const graduationMeta = GRADUATION_CARD_META[auction?.graduation?.state] || null;
   const endMs     = new Date(auction.endTime || '').getTime();
   const remaining = endMs - now;
 
@@ -145,6 +152,27 @@ function AuctionCard({ auction }) {
             {auction.name}
           </div>
 
+          {graduationMeta && (
+            <div
+              style={{
+                alignSelf: 'flex-start',
+                background: graduationMeta.bg,
+                border: `1px solid ${graduationMeta.color}`,
+                color: graduationMeta.color,
+                fontSize: '10px',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.6px',
+                padding: '5px 8px',
+                borderRadius: '999px',
+                marginTop: '2px',
+              }}
+            >
+              {graduationMeta.label}
+              {auction?.graduation?.weeklyRank ? ` · #${auction.graduation.weeklyRank}` : ''}
+            </div>
+          )}
+
           {auction.author && (
             <div style={{ fontSize: '11px', color: '#777', fontWeight: 700, textTransform: 'uppercase' }}>
               by {auction.author}
@@ -185,6 +213,13 @@ function AuctionCard({ auction }) {
           {auction.status === 'settled' && auction.winner && (
             <div style={{ marginTop: '4px', fontSize: '12px', fontWeight: 800, color: '#0A6A87', textTransform: 'uppercase' }}>
               Winner: {auction.winner}
+            </div>
+          )}
+
+          {auction?.graduation && (
+            <div style={{ marginTop: '6px', fontSize: '11px', color: '#444', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.4 }}>
+              {fmt(auction.graduation.currentAura)} AURA
+              {auction.graduation.qualified ? ' · signal gate cleared' : ' · building signal'}
             </div>
           )}
         </div>
