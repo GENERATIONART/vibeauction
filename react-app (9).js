@@ -617,7 +617,6 @@ const App = () => {
         }
 
         setLiveAuctions(Array.isArray(payload?.auctions) ? payload.auctions : []);
-        await refreshState();
         setLastSyncedAt(Date.now());
       } catch {
         // Keep current UI state when background refresh fails.
@@ -627,30 +626,25 @@ const App = () => {
     syncLatestVibes();
 
     const onFocus = () => {
-      syncLatestVibes();
+      if (document.visibilityState === 'visible') syncLatestVibes();
     };
-
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncLatestVibes();
-      }
+      if (document.visibilityState === 'visible') syncLatestVibes();
     };
 
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     const pollId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        syncLatestVibes();
-      }
-    }, 5000);
+      if (document.visibilityState === 'visible') syncLatestVibes();
+    }, 30000);
 
     return () => {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [refreshState]);
+  }, []);
 
   useEffect(() => {
     const clockId = window.setInterval(() => setSyncNow(Date.now()), 1000);

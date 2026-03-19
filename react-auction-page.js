@@ -1098,11 +1098,14 @@ const App = ({ vibe }) => {
     setGraduationError('');
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
 
+  const activeBidsRef = React.useRef(activeBids);
+  activeBidsRef.current = activeBids;
+
   const loadBidHistory = useCallback(async () => {
     const vibeId = selectedVibe?.slug;
     const vibeIdAlt = selectedVibe?.id;
     const vibeName = selectedVibe?.title || selectedVibe?.name;
-    const fallbackBid = activeBids.find((entry) => normalize(entry?.id || entry?.name) === normalize(vibeId));
+    const fallbackBid = activeBidsRef.current.find((entry) => normalize(entry?.id || entry?.name) === normalize(vibeId));
     if (!vibeId) return;
 
     try {
@@ -1155,7 +1158,7 @@ const App = ({ vibe }) => {
         setCurrentBid((previous) => Math.max(previous, fallbackAmount));
       }
     }
-  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title, selectedVibe?.name, activeBids]);
+  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title, selectedVibe?.name]);
 
   const vibeMarketId = getVibeMarketId(selectedVibe);
 
@@ -1251,41 +1254,37 @@ const App = ({ vibe }) => {
     }
   }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title]);
 
+  const syncFnsRef = React.useRef({ loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, loadGraduation, refreshState });
+  syncFnsRef.current = { loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, loadGraduation, refreshState };
+
   useEffect(() => {
     const syncAuctionData = async () => {
       try {
-        await refreshState();
+        await syncFnsRef.current.refreshState();
       } catch {
         // Ignore state refresh errors and keep current state.
       }
-      await loadBidHistory();
-      await loadVibeMarket();
-      await loadVibeSocial();
-      await loadComments();
-      await loadGraduation();
+      await syncFnsRef.current.loadBidHistory();
+      await syncFnsRef.current.loadVibeMarket();
+      await syncFnsRef.current.loadVibeSocial();
+      await syncFnsRef.current.loadComments();
+      await syncFnsRef.current.loadGraduation();
     };
 
     syncAuctionData();
 
     const onFocus = () => {
-      if (document.visibilityState === 'visible') {
-        syncAuctionData();
-      }
+      if (document.visibilityState === 'visible') syncAuctionData();
     };
-
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncAuctionData();
-      }
+      if (document.visibilityState === 'visible') syncAuctionData();
     };
 
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     const pollId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        syncAuctionData();
-      }
+      if (document.visibilityState === 'visible') syncAuctionData();
     }, 15000);
 
     return () => {
@@ -1293,7 +1292,7 @@ const App = ({ vibe }) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, loadGraduation, refreshState]);
+  }, [selectedVibe?.slug]);
 
   useEffect(() => {
     const style = document.createElement('style');
