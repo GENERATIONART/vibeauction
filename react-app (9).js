@@ -1055,7 +1055,7 @@ const App = () => {
             Curated market for collectible vibes
           </div>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '40px' : '62px', lineHeight: 0.95, textTransform: 'uppercase', maxWidth: '740px' }}>
-            Collect Internet Taste
+            Collect Internet Slop
           </div>
           <p style={{ maxWidth: '700px', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.55, marginTop: '14px', color: '#B5B5B5', fontWeight: 600 }}>
             Bid on listed vibes, discover strange market objects, and build a vault of rare, internet-native artifacts.

@@ -1821,6 +1821,9 @@ const App = ({ vibe }) => {
     { label: 'Bid Activity', value: `${bids.length} recorded bid${bids.length === 1 ? '' : 's'}` },
     { label: 'Current Leader', value: topBidUser || 'No leader yet' },
     { label: 'Collector Status', value: auctionEnded ? 'Archived listing' : 'Live for collection' },
+    { label: 'Creator Ask', value: formatAura(baseBid) },
+    { label: 'Current Market', value: formatAura(currentBid) },
+    { label: 'Acquisition', value: buyNowPrice ? `Bid or ${formatAura(buyNowPrice)}` : 'Winning bid only' },
   ];
   const marketNarrative = selectedVibe?.description || 'A live collectible vibe with open bidding and public provenance.';
   const parentRemix =
@@ -1955,42 +1958,69 @@ const App = ({ vibe }) => {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
 
-          <div
-            style={{
-              marginTop: isMobile ? '14px' : '18px',
-              background: '#111111',
-              border: '1px solid #252525',
-              borderRadius: '8px',
-              padding: isMobile ? '16px' : '18px',
-            }}
-          >
-            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '22px' : '26px', textTransform: 'uppercase', marginBottom: '10px' }}>
-              Provenance & Story
-            </div>
-            <div style={{ color: '#A2A2A2', fontSize: '14px', lineHeight: 1.6, marginBottom: '14px' }}>
-              This listing is treated as a collectible internet object. The description is the artifact story, the bid history is the public provenance, and the winning collector becomes part of its permanent record.
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '10px' }}>
-              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
-                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
-                  Creator Ask
+              <div
+                style={{
+                  marginTop: '16px',
+                  paddingTop: '14px',
+                  borderTop: '1px solid #2A2A2A',
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                }}
+              >
+                {VIBE_REACTION_OPTIONS.map((option) => {
+                  const isActive = (vibeSocial?.viewerReactions || []).includes(option.id);
+                  const count = Number(vibeSocial?.reactionCounts?.[option.id] || 0);
+                  const isSaving = socialSaving === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => onToggleReaction(option.id)}
+                      aria-label={option.label}
+                      title={option.label}
+                      style={{
+                        ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
+                        opacity: isSaving ? 0.7 : 1,
+                      }}
+                    >
+                      {option.emoji || option.label}{count > 0 ? ` ${count}` : ''}
+                    </button>
+                  );
+                })}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                  {Number(vibeSocial?.totalReactions || 0) > 0 && (
+                    <div style={{ fontSize: '11px', color: '#555555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      {Number(vibeSocial.totalReactions).toLocaleString()} reactions
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/mint?remix=${encodeURIComponent(selectedVibe?.slug || '')}`)}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #333333',
+                      color: '#AAAAAA',
+                      padding: '8px 12px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    ↗ Remix
+                  </button>
                 </div>
-                <div style={{ fontWeight: 800 }}>{formatAura(baseBid)}</div>
-              </div>
-              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
-                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
-                  Current Market
-                </div>
-                <div style={{ fontWeight: 800 }}>{formatAura(currentBid)}</div>
-              </div>
-              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
-                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
-                  Acquisition
-                </div>
-                <div style={{ fontWeight: 800 }}>{buyNowPrice ? `Bid or ${formatAura(buyNowPrice)}` : 'Winning bid only'}</div>
+                {socialError && (
+                  <div style={{ width: '100%', marginTop: '4px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
+                    {socialError}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2048,6 +2078,47 @@ const App = ({ vibe }) => {
           </div>
 
           <BidHistory bids={bids} />
+
+          {(vibeSocial?.remixCount || 0) > 0 && (
+            <div
+              style={{
+                marginTop: isMobile ? '14px' : '18px',
+                background: '#111111',
+                border: '1px solid #222222',
+                borderRadius: '8px',
+                padding: isMobile ? '16px' : '18px',
+              }}
+            >
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '20px' : '22px', textTransform: 'uppercase', marginBottom: '12px' }}>
+                Remixes
+                <span style={{ marginLeft: '10px', fontSize: '14px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 800 }}>
+                  {Number(vibeSocial.remixCount).toLocaleString()} total
+                </span>
+              </div>
+              {vibeSocial.remixes.map((remix) => (
+                <a key={remix.slug} href={`/auction/${remix.slug}`} style={customStyles.remixMiniLink}>
+                  {remix.imageUrl ? (
+                    <img src={remix.imageUrl} alt={remix.name || 'Remix'} style={customStyles.remixMiniThumb} />
+                  ) : (
+                    <div style={customStyles.remixMiniFallback}>IMG</div>
+                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase', fontSize: '12px', lineHeight: 1.3 }}>
+                      {remix.name || 'Untitled Remix'}
+                    </div>
+                    <div style={{ marginTop: '4px', color: '#8B8B8B', fontSize: '11px', fontWeight: 700 }}>
+                      {remix.author ? `by ${remix.author.startsWith('@') ? remix.author : `@${remix.author}`}` : 'Remix listing'}
+                    </div>
+                  </div>
+                </a>
+              ))}
+              {parentRemix && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666666', lineHeight: 1.5 }}>
+                  This listing already sits inside a remix chain.
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <aside style={customStyles.sidebarPanel}>
@@ -2182,46 +2253,6 @@ const App = ({ vibe }) => {
             )}
           </div>
 
-          <div style={{ ...customStyles.socialPanel, padding: isMobile ? '16px' : customStyles.socialPanel.padding }}>
-            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize }}>
-              Crowd Reactions
-            </div>
-            <div style={customStyles.socialHelp}>
-              Lightweight audience signals make the listing feel alive. React to the vibe, then watch what kinds of remixes it spawns.
-            </div>
-            <div style={customStyles.reactionRow}>
-              {VIBE_REACTION_OPTIONS.map((option) => {
-                const isActive = (vibeSocial?.viewerReactions || []).includes(option.id);
-                const count = Number(vibeSocial?.reactionCounts?.[option.id] || 0);
-                const isSaving = socialSaving === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => onToggleReaction(option.id)}
-                    aria-label={option.label}
-                    title={option.label}
-                    style={{
-                      ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
-                      opacity: isSaving ? 0.7 : 1,
-                    }}
-                  >
-                    {option.emoji || option.label} {count > 0 ? `${count}` : ''}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#727272', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              {socialLoading ? 'Loading social signal...' : `${Number(vibeSocial?.totalReactions || 0).toLocaleString()} total reactions`}
-            </div>
-            {socialError && (
-              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
-                {socialError}
-              </div>
-            )}
-          </div>
-
           <div style={{ ...customStyles.graduationPanel, padding: isMobile ? '16px' : customStyles.graduationPanel.padding }}>
             <div
               style={{
@@ -2302,51 +2333,6 @@ const App = ({ vibe }) => {
             {graduationError && (
               <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
                 {graduationError}
-              </div>
-            )}
-          </div>
-
-          <div style={{ ...customStyles.remixPanel, padding: isMobile ? '18px 16px' : customStyles.remixPanel.padding }}>
-            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize, marginBottom: '8px' }}>
-              Remix This Vibe
-            </div>
-            <div style={{ color: '#A2A2A2', fontSize: '14px', lineHeight: 1.6 }}>
-              Fork the concept, keep the original as provenance, and mint your own collectible variant from this listing.
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push(`/mint?remix=${encodeURIComponent(selectedVibe?.slug || '')}`)}
-              style={{ ...customStyles.predictionButton, marginTop: '14px' }}
-            >
-              Start Remix Draft
-            </button>
-            {parentRemix && (
-              <div style={{ marginTop: '12px', fontSize: '12px', color: '#B8B8B8', lineHeight: 1.5 }}>
-                This listing already sits inside a remix chain.
-              </div>
-            )}
-            {(vibeSocial?.remixCount || 0) > 0 && (
-              <div style={customStyles.remixMiniList}>
-                {vibeSocial.remixes.map((remix) => (
-                  <a key={remix.slug} href={`/auction/${remix.slug}`} style={customStyles.remixMiniLink}>
-                    {remix.imageUrl ? (
-                      <img src={remix.imageUrl} alt={remix.name || 'Remix'} style={customStyles.remixMiniThumb} />
-                    ) : (
-                      <div style={customStyles.remixMiniFallback}>IMG</div>
-                    )}
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase', fontSize: '12px', lineHeight: 1.3 }}>
-                        {remix.name || 'Untitled Remix'}
-                      </div>
-                      <div style={{ marginTop: '4px', color: '#8B8B8B', fontSize: '11px', fontWeight: 700 }}>
-                        {remix.author ? `by ${remix.author.startsWith('@') ? remix.author : `@${remix.author}`}` : 'Remix listing'}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-                <div style={{ fontSize: '11px', color: '#7A7A7A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                  {Number(vibeSocial.remixCount || 0).toLocaleString()} remix{vibeSocial.remixCount === 1 ? '' : 'es'} total
-                </div>
               </div>
             )}
           </div>
