@@ -1,0 +1,4 @@
+{
+  "/api/state/vibe-graduation-board/route": "app/api/state/vibe-graduation-board/route.js",
+  "/api/auctions/history/route": "app/api/auctions/history/route.js"
+}

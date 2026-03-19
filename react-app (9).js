@@ -1051,16 +1051,19 @@ const App = () => {
             padding: isMobile ? '2px 0 0' : '4px 0 0',
           }}
         >
-          <div style={{ fontSize: '11px', color: '#8A8A8A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
-            Curated market for collectible vibes
+          <div style={{ fontSize: '11px', color: '#555555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+            The internet's slop pile
           </div>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '40px' : '62px', lineHeight: 0.95, textTransform: 'uppercase', maxWidth: '740px' }}>
             Collect Internet Slop
           </div>
-          <p style={{ maxWidth: '700px', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.55, marginTop: '14px', color: '#B5B5B5', fontWeight: 600 }}>
+          <p style={{ maxWidth: '600px', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.55, marginTop: '14px', color: '#B5B5B5', fontWeight: 600 }}>
             Bid on listed vibes, discover strange market objects, and build a vault of rare, internet-native artifacts.
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px', alignItems: 'center' }}>
+          <div style={{ marginTop: '8px', fontSize: isMobile ? '14px' : '15px', color: '#555555', fontWeight: 700 }}>
+            Be your worst self. We're not judging.
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
             <Link
               href="/auctions"
               style={{
@@ -1094,9 +1097,9 @@ const App = () => {
             >
               Surprise Me
             </button>
-            <div style={{ color: '#7F7F7F', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              {marketStats.totalLive.toLocaleString()} live listings · {marketStats.totalBids.toLocaleString()} tracked bids
-            </div>
+          </div>
+          <div style={{ marginTop: '12px', color: '#444444', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+            {marketStats.totalLive.toLocaleString()} live listings · {marketStats.totalBids.toLocaleString()} tracked bids
           </div>
         </div>
       </section>
