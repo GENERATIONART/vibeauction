@@ -938,6 +938,7 @@ const App = () => {
 
   const visibleItems = useMemo(() => sortedItems.slice(0, visibleCount), [sortedItems, visibleCount]);
   const hasMoreItems = visibleCount < sortedItems.length;
+  const topVibe = sortedItems[0] || null;
   const marketStats = useMemo(() => {
     const totalVolume = liveVibes.reduce((sum, item) => sum + Number(item.bid || 0), 0);
     const categoryLeaders = categories.filter((entry) => entry.label !== 'All Vibes');
@@ -1097,204 +1098,317 @@ const App = () => {
             padding: isMobile
               ? `32px ${sidePadding}px 28px`
               : `56px ${sidePadding}px 40px`,
+            display: 'grid',
+            gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1fr) 340px',
+            gap: isMobile ? '24px' : '40px',
+            alignItems: 'start',
           }}
         >
-          {/* Eyebrow */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginBottom: isMobile ? '14px' : '18px',
-            }}
-          >
-            <span
+          {/* ── Left column: text ── */}
+          <div>
+            {/* Eyebrow */}
+            <div
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: isMobile ? '14px' : '18px',
+              }}
+            >
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#C8FF00',
+                  display: 'inline-block',
+                  animation: 'va-pulse-dot 2s ease-in-out infinite',
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  color: '#C8FF00',
+                }}
+              >
+                {marketStats.totalLive > 0
+                  ? `${marketStats.totalLive} live listing${marketStats.totalLive !== 1 ? 's' : ''} right now`
+                  : 'The market is warming up'}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h1
+              style={{
+                fontFamily: "'Anton', sans-serif",
+                fontSize: isMobile ? '48px' : isTablet ? '68px' : '82px',
+                lineHeight: 0.92,
+                textTransform: 'uppercase',
+                maxWidth: '700px',
+                margin: 0,
+                color: '#FFF',
+              }}
+            >
+              Collect{' '}
+              <span
+                style={{
+                  color: '#C8FF00',
+                  display: 'inline',
+                  textShadow: '0 0 40px rgba(200,255,0,0.25)',
+                }}
+              >
+                Internet
+              </span>
+              <br />
+              Slop
+              <span
+                style={{
+                  display: 'inline-block',
+                  background: '#C8FF00',
+                  color: '#000',
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 800,
+                  fontSize: isMobile ? '14px' : '16px',
+                  padding: isMobile ? '4px 10px' : '5px 12px',
+                  marginLeft: isMobile ? '8px' : '12px',
+                  transform: 'rotate(-2deg) translateY(-6px)',
+                  verticalAlign: 'middle',
+                  boxShadow: '4px 4px 0px rgba(0,0,0,0.3)',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Since 2026
+              </span>
+            </h1>
+
+            {/* Animated accent line */}
+            <div
+              style={{
+                width: isMobile ? '80px' : '120px',
+                height: '3px',
                 background: '#C8FF00',
-                display: 'inline-block',
-                animation: 'va-pulse-dot 2s ease-in-out infinite',
+                margin: isMobile ? '16px 0' : '20px 0',
+                transformOrigin: 'left',
+                animation: 'va-hero-line 4s ease-in-out infinite',
               }}
             />
-            <span
+
+            {/* Subtitle */}
+            <p
               style={{
-                fontSize: '11px',
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                letterSpacing: '2px',
-                color: '#C8FF00',
+                maxWidth: '520px',
+                fontSize: isMobile ? '16px' : '17px',
+                lineHeight: 1.6,
+                color: '#B0B0B0',
+                fontWeight: 500,
+                margin: 0,
               }}
             >
-              {marketStats.totalLive > 0
-                ? `${marketStats.totalLive} live listing${marketStats.totalLive !== 1 ? 's' : ''} right now`
-                : 'The market is warming up'}
-            </span>
-          </div>
+              Bid on listed vibes, discover strange market objects, and build a vault
+              of rare, internet-native artifacts.
+            </p>
 
-          {/* Title */}
-          <h1
-            style={{
-              fontFamily: "'Anton', sans-serif",
-              fontSize: isMobile ? '48px' : isTablet ? '68px' : '96px',
-              lineHeight: 0.92,
-              textTransform: 'uppercase',
-              maxWidth: '900px',
-              margin: 0,
-              color: '#FFF',
-            }}
-          >
-            Collect{' '}
-            <span
+            {/* Rotating tagline */}
+            <div
               style={{
-                color: '#C8FF00',
-                display: 'inline-block',
-                textShadow: '0 0 40px rgba(200,255,0,0.25)',
+                marginTop: '10px',
+                height: '24px',
+                overflow: 'hidden',
+                position: 'relative',
               }}
             >
-              Internet
-            </span>
-            <br />
-            Slop
-            <span
-              style={{
-                display: 'inline-block',
-                background: '#C8FF00',
-                color: '#000',
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 800,
-                fontSize: isMobile ? '14px' : '18px',
-                padding: isMobile ? '4px 10px' : '6px 14px',
-                marginLeft: isMobile ? '8px' : '14px',
-                transform: 'rotate(-2deg) translateY(-8px)',
-                verticalAlign: 'middle',
-                boxShadow: '4px 4px 0px rgba(0,0,0,0.3)',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Since 2026
-            </span>
-          </h1>
-
-          {/* Animated accent line */}
-          <div
-            style={{
-              width: isMobile ? '80px' : '120px',
-              height: '3px',
-              background: '#C8FF00',
-              margin: isMobile ? '16px 0' : '20px 0',
-              transformOrigin: 'left',
-              animation: 'va-hero-line 4s ease-in-out infinite',
-            }}
-          />
-
-          {/* Subtitle */}
-          <p
-            style={{
-              maxWidth: '580px',
-              fontSize: isMobile ? '16px' : '18px',
-              lineHeight: 1.6,
-              color: '#B0B0B0',
-              fontWeight: 500,
-              margin: 0,
-            }}
-          >
-            Bid on listed vibes, discover strange market objects, and build a vault
-            of rare, internet-native artifacts.
-          </p>
-
-          {/* Rotating tagline */}
-          <div
-            style={{
-              marginTop: '10px',
-              height: '24px',
-              overflow: 'hidden',
-              position: 'relative',
-            }}
-          >
-            <span
-              key={taglineIndex}
-              style={{
-                display: 'inline-block',
-                fontSize: isMobile ? '13px' : '15px',
-                fontWeight: 700,
-                color: '#555',
-                fontStyle: 'italic',
-                animation: taglineFading
-                  ? 'none'
-                  : 'va-tagline-in 0.4s ease both',
-                opacity: taglineFading ? 0 : 1,
-                transition: 'opacity 0.35s ease',
-              }}
-            >
-              {ROTATING_TAGLINES[taglineIndex]}
-            </span>
-          </div>
-
-          {/* Market stats strip */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile
-                ? 'repeat(2, 1fr)'
-                : 'repeat(4, auto)',
-              gap: isMobile ? '8px' : '12px',
-              marginTop: isMobile ? '24px' : '36px',
-              maxWidth: '620px',
-            }}
-          >
-            {[
-              { label: 'Live Listings', value: marketStats.totalLive },
-              { label: 'Total Volume', value: `${marketStats.totalVolume.toLocaleString()} AURA` },
-              { label: 'Active Bids', value: marketStats.totalBids },
-              { label: 'Hot Category', value: marketStats.dominantCategory },
-            ].map((stat, i) => (
-              <div
-                key={stat.label}
-                className="va-stat-pill"
-                style={{ animationDelay: `${i * 0.1}s` }}
+              <span
+                key={taglineIndex}
+                style={{
+                  display: 'inline-block',
+                  fontSize: isMobile ? '13px' : '15px',
+                  fontWeight: 700,
+                  color: '#555',
+                  fontStyle: 'italic',
+                  animation: taglineFading
+                    ? 'none'
+                    : 'va-tagline-in 0.4s ease both',
+                  opacity: taglineFading ? 0 : 1,
+                  transition: 'opacity 0.35s ease',
+                }}
               >
-                <span
+                {ROTATING_TAGLINES[taglineIndex]}
+              </span>
+            </div>
+
+            {/* Market stats strip */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile
+                  ? 'repeat(2, 1fr)'
+                  : 'repeat(4, auto)',
+                gap: isMobile ? '8px' : '12px',
+                marginTop: isMobile ? '24px' : '32px',
+                maxWidth: '560px',
+              }}
+            >
+              {[
+                { label: 'Live Listings', value: marketStats.totalLive },
+                { label: 'Total Volume', value: `${marketStats.totalVolume.toLocaleString()} AURA` },
+                { label: 'Active Bids', value: marketStats.totalBids },
+                { label: 'Hot Category', value: marketStats.dominantCategory },
+              ].map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className="va-stat-pill"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1.2px',
+                      color: '#666',
+                    }}
+                  >
+                    {stat.label}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Anton', sans-serif",
+                      fontSize: isMobile ? '16px' : '18px',
+                      color: '#FFF',
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {stat.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Sync status */}
+            <div
+              style={{
+                marginTop: '14px',
+                fontSize: '11px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px',
+                color: '#3A3A3A',
+              }}
+            >
+              {secondsSinceSync === null
+                ? 'Syncing market gallery…'
+                : `Gallery synced ${secondsSinceSync}s ago`}
+            </div>
+          </div>
+
+          {/* ── Right column: Top Vibe card ── */}
+          {topVibe && (
+            <Link
+              href={`/auction/${topVibe.slug}`}
+              style={{
+                display: 'block',
+                textDecoration: 'none',
+                color: 'inherit',
+                background: '#111',
+                border: '2px solid #1E1E1E',
+                overflow: 'hidden',
+                transition: 'border-color 0.25s, box-shadow 0.25s, transform 0.25s',
+                alignSelf: isMobile ? 'stretch' : 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#C8FF00';
+                e.currentTarget.style.boxShadow = '0 8px 32px rgba(200,255,0,0.12)';
+                e.currentTarget.style.transform = 'translateY(-3px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#1E1E1E';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = 'none';
+              }}
+            >
+              {/* Image */}
+              <div
+                style={{
+                  position: 'relative',
+                  height: '220px',
+                  background: '#1A1A1A',
+                  borderBottom: '1px solid #252525',
+                }}
+              >
+                {topVibe.imageUrl ? (
+                  <img
+                    src={topVibe.imageUrl}
+                    alt={topVibe.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    loading="eager"
+                  />
+                ) : (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundImage: 'radial-gradient(#C8FF00 1px, transparent 1px)',
+                      backgroundSize: '12px 12px',
+                      opacity: 0.06,
+                    }}
+                  />
+                )}
+                {/* Badge */}
+                <div
                   style={{
-                    fontSize: '9px',
-                    fontWeight: 800,
+                    position: 'absolute',
+                    top: '10px',
+                    left: '10px',
+                    background: '#C8FF00',
+                    color: '#000',
+                    fontWeight: 900,
+                    fontSize: '10px',
                     textTransform: 'uppercase',
-                    letterSpacing: '1.2px',
-                    color: '#666',
+                    letterSpacing: '1px',
+                    padding: '4px 10px',
                   }}
                 >
-                  {stat.label}
-                </span>
-                <span
+                  Top Vibe
+                </div>
+              </div>
+
+              {/* Card body */}
+              <div style={{ padding: '16px' }}>
+                <div
                   style={{
                     fontFamily: "'Anton', sans-serif",
-                    fontSize: isMobile ? '16px' : '20px',
+                    fontSize: '26px',
+                    lineHeight: 1.05,
+                    textTransform: 'uppercase',
                     color: '#FFF',
-                    lineHeight: 1.1,
+                    marginBottom: '12px',
+                    overflowWrap: 'anywhere',
                   }}
                 >
-                  {stat.value}
-                </span>
+                  {topVibe.title}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                  <div>
+                    <div style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#666', marginBottom: '2px' }}>
+                      Current Bid
+                    </div>
+                    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', color: '#C8FF00' }}>
+                      {getBidDisplay(topVibe)} AURA
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#555', background: '#1A1A1A', border: '1px solid #2A2A2A', padding: '5px 10px' }}>
+                    {topVibe.category}
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-
-          {/* Sync status */}
-          <div
-            style={{
-              marginTop: '16px',
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.4px',
-              color: '#3A3A3A',
-            }}
-          >
-            {secondsSinceSync === null
-              ? 'Syncing market gallery…'
-              : `Gallery synced ${secondsSinceSync}s ago`}
-          </div>
+            </Link>
+          )}
         </div>
       </section>
 
