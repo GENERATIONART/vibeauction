@@ -542,7 +542,6 @@ const App = () => {
   const [viewportWidth, setViewportWidth] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [syncNow, setSyncNow] = useState(Date.now());
-  const [surprisePressed, setSurprisePressed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(HOME_BATCH_SIZE);
   const [loadMoreTrigger, setLoadMoreTrigger] = useState(null);
   const [shakeTokensById, setShakeTokensById] = useState({});
@@ -632,32 +631,6 @@ const App = () => {
         from { opacity: 0; transform: translateY(6px); }
         to { opacity: 1; transform: translateY(0); }
       }
-      .va-hero-cta {
-        display: inline-flex; align-items: center; gap: 8px;
-        font-weight: 900; text-transform: uppercase; font-size: 14px;
-        letter-spacing: 0.6px; padding: 14px 28px; text-decoration: none;
-        transition: all 0.2s ease; position: relative; overflow: hidden;
-      }
-      .va-hero-cta--primary {
-        background: #C8FF00; color: #000; border: 2px solid #000;
-      }
-      .va-hero-cta--primary:hover {
-        background: #DBFF55; transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(200, 255, 0, 0.3);
-      }
-      .va-hero-cta--secondary {
-        background: transparent; color: #C8FF00; border: 2px solid #C8FF00;
-      }
-      .va-hero-cta--secondary:hover {
-        background: rgba(200, 255, 0, 0.08); transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(200, 255, 0, 0.12);
-      }
-      .va-hero-cta--ghost {
-        background: transparent; color: #666; border: none; padding: 8px 4px;
-        font-size: 12px; text-decoration: underline; text-decoration-color: #333;
-        text-underline-offset: 3px; cursor: pointer;
-      }
-      .va-hero-cta--ghost:hover { color: #C8FF00; text-decoration-color: #C8FF00; }
       .va-stat-pill {
         display: flex; flex-direction: column; gap: 2px;
         padding: 10px 16px; background: rgba(200, 255, 0, 0.04);
@@ -1029,16 +1002,6 @@ const App = () => {
     ? Math.max(0, Math.floor((syncNow - lastSyncedAt) / 1000))
     : null;
 
-  const handleSurpriseMe = () => {
-    const pool = sortedItems.length > 0 ? sortedItems : liveVibes;
-    if (pool.length === 0) return;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    if (!pick?.slug) return;
-    setSurprisePressed(true);
-    setTimeout(() => setSurprisePressed(false), 140);
-    router.push(`/auction/${pick.slug}`);
-  };
-
   const tickerItems = useMemo(() => {
     if (liveVibes.length > 0) {
       const items = liveVibes.map((v) => `NEW LISTING: "${v.title}" starting at ${Number(v.bid).toLocaleString()} AURA`);
@@ -1286,31 +1249,6 @@ const App = () => {
             >
               {ROTATING_TAGLINES[taglineIndex]}
             </span>
-          </div>
-
-          {/* CTAs */}
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '12px',
-              marginTop: isMobile ? '22px' : '28px',
-              alignItems: 'center',
-            }}
-          >
-            <Link href="/auctions" className="va-hero-cta va-hero-cta--primary">
-              Browse Listings →
-            </Link>
-            <Link href="/swipe" className="va-hero-cta va-hero-cta--secondary">
-              Vibe or Pass ♥
-            </Link>
-            <button
-              type="button"
-              onClick={handleSurpriseMe}
-              className="va-hero-cta va-hero-cta--ghost"
-            >
-              Surprise me
-            </button>
           </div>
 
           {/* Market stats strip */}
