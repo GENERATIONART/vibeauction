@@ -16,7 +16,9 @@ export async function GET(request) {
     const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || 20)));
     const authToken = request.headers.get('authorization')?.replace('Bearer ', '') ?? null;
     const payload = await listPredictionMarkets({ state, limit, authToken, marketId, vibeId });
-    return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } });
+    const res = NextResponse.json(payload);
+    res.headers.set('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+    return res;
   } catch {
     return apiError('Internal server error');
   }

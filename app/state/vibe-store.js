@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createDefaultState } from '../../lib/default-store.js';
 import { useAuth } from './auth-store.js';
 import { getSupabaseClient } from '../../lib/supabase-client.js';
@@ -51,26 +51,34 @@ function sanitizeState(input) {
 async function apiRequest(url, options = {}) {
   const method = options.method || 'GET';
   const hasBody = options.body !== undefined;
-  const response = await fetch(url, {
-    method,
-    cache: method === 'GET' ? 'no-store' : undefined,
-    headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) },
-    body: hasBody ? JSON.stringify(options.body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  let payload = {};
   try {
-    payload = await response.json();
-  } catch {
-    payload = {};
-  }
+    const response = await fetch(url, {
+      method,
+      cache: method === 'GET' ? 'no-store' : undefined,
+      headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) },
+      body: hasBody ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const reason = payload?.error || `Request failed (${response.status})`;
-    throw new Error(reason);
-  }
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch {
+      payload = {};
+    }
 
-  return payload;
+    if (!response.ok) {
+      const reason = payload?.error || `Request failed (${response.status})`;
+      throw new Error(reason);
+    }
+
+    return payload;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 const mapVaultRow = (row) => ({
@@ -113,6 +121,17 @@ export function VibeStoreProvider({ children }) {
 
   const applyState = useCallback((nextState) => {
     setStore(sanitizeState(nextState));
+  }, []);
+
+  const inflight = useRef(new Map());
+
+  const dedupedRequest = useCallback(async (key, fn) => {
+    if (inflight.current.has(key)) {
+      return inflight.current.get(key);
+    }
+    const promise = fn().finally(() => inflight.current.delete(key));
+    inflight.current.set(key, promise);
+    return promise;
   }, []);
 
   const getAccessToken = useCallback(async ({ forceRefresh = false } = {}) => {
@@ -168,10 +187,12 @@ export function VibeStoreProvider({ children }) {
   }, [user]);
 
   const refreshState = useCallback(async () => {
-    const data = await apiRequest('/api/state');
-    applyState(data.state);
-    return data.state;
-  }, [applyState]);
+    return dedupedRequest('state', async () => {
+      const data = await apiRequest('/api/state');
+      applyState(data.state);
+      return data.state;
+    });
+  }, [applyState, dedupedRequest]);
 
   useEffect(() => {
     let cancelled = false;
@@ -441,6 +462,22 @@ export function VibeStoreProvider({ children }) {
     setError('');
   }, []);
 
+  const activeVibes = useMemo(
+    () => (store.mintedVibes || []).filter(v => {
+      const endMs = toExpiryMs(v.endTime);
+      return endMs === 0 || endMs > Date.now();
+    }),
+    [store.mintedVibes],
+  );
+
+  const endedVibes = useMemo(
+    () => (store.mintedVibes || []).filter(v => {
+      const endMs = toExpiryMs(v.endTime);
+      return endMs > 0 && endMs <= Date.now();
+    }),
+    [store.mintedVibes],
+  );
+
   const value = useMemo(
     () => ({
       balance: profile !== null ? (profile.aura_balance ?? 0) : store.balance,
@@ -449,6 +486,8 @@ export function VibeStoreProvider({ children }) {
       walletLog: store.walletLog,
       confessions: store.confessions,
       mintedVibes: store.mintedVibes,
+      activeVibes,
+      endedVibes,
       isHydrating,
       error,
       refreshState,
@@ -466,6 +505,8 @@ export function VibeStoreProvider({ children }) {
       store,
       profile,
       supabaseVaultItems,
+      activeVibes,
+      endedVibes,
       isHydrating,
       error,
       refreshState,

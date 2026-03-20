@@ -132,6 +132,20 @@ function AuctionCard({ auction }) {
             </>
           )}
 
+          {/* 🔥 HOT badge — recent bid activity */}
+          {auction.status === 'live' && (auction.graduation?.recentBidCount > 0) && (
+            <span style={{ position: 'absolute', top: 8, left: 8, background: '#FF6B00', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 7px', borderRadius: 3, letterSpacing: '0.05em', zIndex: 2, textTransform: 'uppercase' }}>
+              🔥 HOT
+            </span>
+          )}
+
+          {/* ⚡ LAST CHANCE badge — under 5 min */}
+          {auction.status === 'live' && remaining > 0 && remaining < 5 * 60 * 1000 && (
+            <span style={{ position: 'absolute', bottom: 8, right: 8, background: '#FF3B3B', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 7px', borderRadius: 3, letterSpacing: '0.05em', zIndex: 2, textTransform: 'uppercase', animation: 'pulseDot 1s ease-in-out infinite' }}>
+              ⚡ &lt;5 MIN
+            </span>
+          )}
+
           {/* Status badge */}
           <span style={{ position: 'absolute', top: '8px', right: '8px', background: meta.bg, border: `1px solid ${meta.border}`, color: meta.text, fontSize: '10px', padding: '4px 8px', textTransform: 'uppercase', fontWeight: 800, transform: 'rotate(2deg)', display: 'flex', alignItems: 'center', gap: '4px' }}>
             {meta.pulse && <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#C8FF00', animation: 'pulseDot 1.2s ease-in-out infinite', flexShrink: 0 }} />}
@@ -425,11 +439,13 @@ export default function AuctionsPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search by name…"
+            aria-label="Search auctions"
             style={{ flex: '1 1 280px', background: '#111', border: '2px solid #333', color: '#FFF', fontSize: '14px', fontFamily: "'Inter', sans-serif", padding: '10px 14px', outline: 'none', minHeight: '42px' }}
           />
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
+            aria-label="Sort auctions"
             style={{ background: '#111', border: '2px solid #333', color: '#FFF', fontSize: '13px', fontFamily: "'Inter', sans-serif", padding: '10px 14px', outline: 'none', cursor: 'pointer', fontWeight: 700, minHeight: '42px' }}
           >
             {SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}

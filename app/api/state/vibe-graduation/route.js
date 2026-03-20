@@ -11,7 +11,9 @@ export async function GET(request) {
     const vibeIdAlt = searchParams.get('vibeIdAlt') || null;
     const vibeName = searchParams.get('vibeName') || null;
     const result = await getGraduationForVibe(vibeId, vibeIdAlt, vibeName);
-    return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
+    const res = NextResponse.json(result);
+    res.headers.set('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=60');
+    return res;
   } catch {
     return apiError('Internal server error');
   }

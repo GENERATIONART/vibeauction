@@ -266,10 +266,11 @@ export async function GET(request) {
     const totalFiltered = filteredCount ?? 0;
     const totalPages    = Math.max(1, Math.ceil(totalFiltered / pageSize));
 
-    return NextResponse.json(
+    const res = NextResponse.json(
       { auctions, summary, pagination: { page, pageSize, total: totalFiltered, totalPages }, categories },
-      { headers: { 'Cache-Control': 'no-store' } },
     );
+    res.headers.set('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+    return res;
   } catch {
     return apiError('Internal server error');
   }

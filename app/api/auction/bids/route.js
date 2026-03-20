@@ -17,10 +17,9 @@ export async function GET(request) {
 
   try {
     const { bids, topBid } = await getRecentBidsForVibe(vibeId, 10, vibeIdAlt, vibeName);
-    return NextResponse.json(
-      { bids, topBid },
-      { headers: { 'Cache-Control': 'no-store' } },
-    );
+    const res = NextResponse.json({ bids, topBid });
+    res.headers.set('Cache-Control', 'public, s-maxage=3, stale-while-revalidate=10');
+    return res;
   } catch (err) {
     console.error('[bids] failed to fetch bids for', vibeId, err?.message ?? err);
     return NextResponse.json(
