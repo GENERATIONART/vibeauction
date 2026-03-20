@@ -1957,15 +1957,6 @@ const App = ({ vibe }) => {
     vibeMarket?.state === 'open' &&
     marketIsClosed;
   const SHOW_PREDICTION_MARKET = false;
-  const provenanceFacts = [
-    { label: 'Format', value: buyNowPrice ? 'Auction + Buy Now' : 'Timed Auction' },
-    { label: 'Bid Activity', value: `${bids.length} recorded bid${bids.length === 1 ? '' : 's'}` },
-    { label: 'Current Leader', value: topBidUser || 'No leader yet' },
-    { label: 'Collector Status', value: auctionEnded ? 'Archived listing' : 'Live for collection' },
-    { label: 'Creator Ask', value: formatAura(baseBid) },
-    { label: 'Current Market', value: formatAura(currentBid) },
-    { label: 'Acquisition', value: buyNowPrice ? `Bid or ${formatAura(buyNowPrice)}` : 'Winning bid only' },
-  ];
   const marketNarrative = selectedVibe?.description || 'A live collectible vibe with open bidding and public provenance.';
   const parentRemix =
     vibeSocial?.parentRemix ||
@@ -2097,27 +2088,6 @@ const App = ({ vibe }) => {
                 </div>
               )}
 
-              <div
-                style={{
-                  marginTop: '18px',
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
-                  gap: '10px',
-                  paddingTop: '16px',
-                  borderTop: '1px solid #2A2A2A',
-                }}
-              >
-                {provenanceFacts.map((fact) => (
-                  <div key={fact.label} style={{ background: '#F4F4F4', border: '1px solid #DDDDDD', padding: '12px' }}>
-                    <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', color: '#666666', marginBottom: '6px' }}>
-                      {fact.label}
-                    </div>
-                    <div style={{ fontWeight: 800, color: '#111111', lineHeight: 1.3 }}>
-                      {fact.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               <div
                 style={{
