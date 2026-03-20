@@ -438,7 +438,7 @@ export default function SwipePage() {
 
       <NavBar />
 
-      <main style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px 100px' }}>
+      <main style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -457,7 +457,7 @@ export default function SwipePage() {
 
         {/* Card stack */}
         {loading ? (
-          <div style={{ height: 520, background: '#111', border: '2px solid #1A1A1A', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ height: 'min(520px, calc(100dvh - 220px))', background: '#111', border: '2px solid #1A1A1A', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ textAlign: 'center', color: '#333' }}>
               <div style={{ width: 36, height: 36, border: '3px solid #222', borderTop: '3px solid #C8FF00', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
               <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, textTransform: 'uppercase', letterSpacing: 1 }}>Loading vibes...</div>
@@ -479,7 +479,7 @@ export default function SwipePage() {
 
             <div
               ref={cardRef}
-              style={{ position: 'relative', height: 520, touchAction: 'none' }}
+              style={{ position: 'relative', height: 'min(520px, calc(100dvh - 220px))', touchAction: 'none' }}
               onMouseDown={onPointerDown}
               onMouseMove={onPointerMove}
               onMouseUp={onPointerUp}

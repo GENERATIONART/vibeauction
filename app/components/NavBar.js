@@ -7,14 +7,15 @@ import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
 import { BRAND_NAME } from '../../lib/brand.js';
 
+// primary = shown on desktop, secondary = hidden in a "More" group on tighter viewports
 const NAV_ITEMS = [
-  { label: 'Gallery', href: '/' },
-  { label: 'Market', href: '/auctions' },
+  { label: 'Gallery',      href: '/' },
+  { label: 'Market',       href: '/auctions' },
   { label: 'Vibe or Pass', href: '/swipe' },
-  { label: 'Breakouts', href: '/breakouts' },
-  { label: 'Create Vibe', href: '/mint' },
-  { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Top Up', href: '/top-up' },
+  { label: 'Breakouts',    href: '/breakouts' },
+  { label: 'Create',       href: '/mint' },
+  { label: 'Leaderboard',  href: '/leaderboard' },
+  { label: 'Top Up',       href: '/top-up' },
 ];
 
 export default function NavBar() {
@@ -103,16 +104,22 @@ export default function NavBar() {
         </Link>
 
         {!isMobile && (
-          <nav style={{ display: 'flex', gap: '24px' }}>
-            {NAV_ITEMS.map((item) => {
+          <nav style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '20px' }}>
+            {NAV_ITEMS.map((item, i) => {
               const isActive = pathname === item.href;
+              // On tablet hide the least important items to avoid crowding
+              if (isTablet && (item.href === '/top-up' || item.href === '/leaderboard')) return null;
               return (
                 <Link
                   key={item.label}
                   href={item.href}
                   style={{
                     ...navItemStyle,
-                    color: isActive || navHover === item.label ? '#C8FF00' : '#FFFFFF',
+                    fontSize: isTablet ? '12px' : '13px',
+                    color: isActive || navHover === item.label ? '#C8FF00' : '#AAAAAA',
+                    // highlight the fun one
+                    ...(item.href === '/swipe' && !isActive ? { color: '#C8FF00', opacity: 0.75 } : {}),
+                    ...(isActive ? { color: '#C8FF00' } : {}),
                   }}
                   onMouseEnter={() => setNavHover(item.label)}
                   onMouseLeave={() => setNavHover('')}

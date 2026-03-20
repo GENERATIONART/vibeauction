@@ -1081,7 +1081,7 @@ const App = () => {
           <div style={{ marginTop: '8px', fontSize: isMobile ? '14px' : '15px', color: '#555555', fontWeight: 700 }}>
             Be your worst self. We're not judging.
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px', alignItems: 'center' }}>
             <Link
               href="/auctions"
               style={{
@@ -1092,23 +1092,23 @@ const App = () => {
                 textTransform: 'uppercase',
                 fontSize: '13px',
                 letterSpacing: '0.5px',
-                padding: '11px 14px',
+                padding: '11px 18px',
                 textDecoration: 'none',
               }}
             >
-              Browse Live Listings
+              Browse Listings
             </Link>
             <Link
               href="/swipe"
               style={{
-                background: '#111111',
+                background: 'transparent',
                 color: '#C8FF00',
                 border: '1px solid #C8FF00',
                 fontWeight: 900,
                 textTransform: 'uppercase',
                 fontSize: '13px',
                 letterSpacing: '0.5px',
-                padding: '11px 14px',
+                padding: '11px 18px',
                 textDecoration: 'none',
               }}
             >
@@ -1118,25 +1118,27 @@ const App = () => {
               type="button"
               onClick={handleSurpriseMe}
               style={{
-                background: '#111111',
-                color: '#FFFFFF',
-                border: '1px solid #2C2C2C',
-                fontWeight: 900,
+                background: 'transparent',
+                color: '#444',
+                border: 'none',
+                fontWeight: 700,
                 textTransform: 'uppercase',
-                fontSize: '13px',
+                fontSize: '12px',
                 letterSpacing: '0.5px',
-                padding: '11px 14px',
+                padding: '4px 0',
                 cursor: 'pointer',
+                textDecoration: 'underline',
+                textDecorationColor: '#333',
               }}
             >
-              Surprise Me
+              Surprise me
             </button>
           </div>
-          <div style={{ marginTop: '12px', color: '#444444', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-            {marketStats.totalLive.toLocaleString()} live listings · {marketStats.totalBids.toLocaleString()} tracked bids
-          </div>
-          <div style={{ marginTop: '6px', fontSize: '12px', color: '#333', fontStyle: 'italic', transition: 'opacity 0.4s', opacity: taglineFading ? 0 : 1 }}>
-            {ROTATING_TAGLINES[taglineIndex]}
+          <div style={{ marginTop: '14px', color: '#383838', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span>{marketStats.totalLive.toLocaleString()} live · {marketStats.totalBids.toLocaleString()} bids</span>
+            <span style={{ color: '#252525', transition: 'opacity 0.4s', opacity: taglineFading ? 0 : 1, fontStyle: 'italic', textTransform: 'none', fontWeight: 400 }}>
+              {ROTATING_TAGLINES[taglineIndex]}
+            </span>
           </div>
         </div>
       </section>
