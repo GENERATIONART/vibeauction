@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { label: 'Create',       href: '/mint' },
   { label: 'Leaderboard',  href: '/leaderboard' },
   { label: 'Top Up',       href: '/top-up' },
+  { label: 'About',        href: '/about' },
 ];
 
 export default function NavBar() {

@@ -1,0 +1,197 @@
+'use client';
+
+import Link from 'next/link';
+import NavBar from '../components/NavBar';
+
+const Section = ({ title, children }) => (
+  <div style={{ borderTop: '1px solid #1A1A1A', paddingTop: 40, marginTop: 40 }}>
+    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(28px, 5vw, 42px)', textTransform: 'uppercase', lineHeight: 1, marginBottom: 20, color: '#C8FF00' }}>
+      {title}
+    </div>
+    {children}
+  </div>
+);
+
+const P = ({ children, style }) => (
+  <p style={{ color: '#888', fontSize: 16, lineHeight: 1.7, marginBottom: 16, maxWidth: 680, ...style }}>
+    {children}
+  </p>
+);
+
+const BigStat = ({ number, label }) => (
+  <div style={{ textAlign: 'center' }}>
+    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(48px, 8vw, 72px)', lineHeight: 1, color: '#C8FF00' }}>{number}</div>
+    <div style={{ color: '#444', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 6 }}>{label}</div>
+  </div>
+);
+
+const FaqItem = ({ q, a }) => (
+  <div style={{ borderLeft: '2px solid #1A1A1A', paddingLeft: 20, marginBottom: 28 }}>
+    <div style={{ fontWeight: 800, fontSize: 15, color: '#FFF', marginBottom: 8 }}>{q}</div>
+    <div style={{ color: '#666', fontSize: 15, lineHeight: 1.6 }}>{a}</div>
+  </div>
+);
+
+const Timeline = ({ year, event }) => (
+  <div style={{ display: 'flex', gap: 20, marginBottom: 24 }}>
+    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 20, color: '#C8FF00', minWidth: 60, paddingTop: 2 }}>{year}</div>
+    <div style={{ color: '#666', fontSize: 15, lineHeight: 1.6, borderLeft: '1px solid #1A1A1A', paddingLeft: 20 }}>{event}</div>
+  </div>
+);
+
+export default function AboutPage() {
+  return (
+    <div style={{ background: '#0D0D0D', minHeight: '100dvh', color: '#FFF', fontFamily: "'Inter', sans-serif" }}>
+      <NavBar />
+
+      <main style={{ maxWidth: 780, margin: '0 auto', padding: 'clamp(32px, 5vw, 72px) 24px 80px' }}>
+
+        {/* Hero */}
+        <div style={{ marginBottom: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#444', marginBottom: 16 }}>
+            About this website
+          </div>
+          <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(44px, 9vw, 88px)', lineHeight: 0.92, textTransform: 'uppercase', margin: 0 }}>
+            We Have<br />
+            <span style={{ color: '#C8FF00' }}>No Idea</span><br />
+            What This Is
+          </h1>
+          <P style={{ marginTop: 28, fontSize: 18, color: '#AAA' }}>
+            But we built it anyway. You're welcome. Or we're sorry. Probably both.
+          </P>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 24, border: '1px solid #1A1A1A', padding: '32px 24px', marginTop: 48, background: '#0F0F0F' }}>
+          <BigStat number="1" label="Original idea" />
+          <BigStat number="0" label="Business plans" />
+          <BigStat number="∞" label="Regrets" />
+          <BigStat number="?" label="Exit strategy" />
+        </div>
+
+        {/* The Vision */}
+        <Section title="The Vision™">
+          <P>
+            Someone, at some point, thought: <em style={{ color: '#FFF' }}>"what if vibes... had prices?"</em>
+          </P>
+          <P>
+            That person should probably seek help. Instead they built a website.
+          </P>
+          <P>
+            The vision is this: the internet produces an unfathomable amount of emotional residue every single day. Feelings. Aesthetics. Moods. Cursed energy. Collectively we are drowning in vibes and nobody is monetising them properly. That felt wrong. So here we are.
+          </P>
+          <P>
+            Is it art? Is it finance? Is it a cry for help? The answer is yes.
+          </P>
+        </Section>
+
+        {/* Timeline */}
+        <Section title="A Brief History">
+          <Timeline year="Day 1" event="Someone opens a laptop and types 'what if you could auction vibes' into a notes app. Closes the laptop. Goes to sleep. Wakes up still thinking about it. This is a bad sign." />
+          <Timeline year="Day 4" event="The domain is purchased. There is no turning back now. Partners are informed. Partners are confused. Partners are supportive anyway because that's what partners do." />
+          <Timeline year="Day 11" event="First prototype. It is absolutely horrifying. The button doesn't work. The button has never worked. What button?" />
+          <Timeline year="Day 23" event="Someone asks 'but what is the business model?' The room goes quiet. Someone coughs. We move on." />
+          <Timeline year="Day 47" event="Real users appear. They are bidding real AURA on things like 'Gaslit by the Algorithm' and 'Unhinged 3am Energy'. This is somehow exactly what was intended." />
+          <Timeline year="Now" event="You are here. Reading this. Considering bidding on a vibe. This is your life. We're not judging." />
+        </Section>
+
+        {/* Why */}
+        <Section title="Why Did You Build This">
+          <P>
+            Genuinely great question. Here are the answers we've considered:
+          </P>
+          <ul style={{ color: '#666', fontSize: 15, lineHeight: 2, paddingLeft: 20, maxWidth: 640 }}>
+            <li>Someone dared us and we can't back down from a dare</li>
+            <li>We had too much free time and not enough therapy</li>
+            <li>The financial system made no sense so we made a worse one</li>
+            <li>We thought it was funny and then it got too real</li>
+            <li>We are genuinely concerned about the state of the internet and this is our intervention</li>
+            <li>Spite</li>
+            <li>We don't know</li>
+          </ul>
+          <P style={{ marginTop: 24 }}>
+            The honest answer is the last one. We don't know. We just kept building and it kept making a weird kind of sense and now there are real people bidding real fake currency on real vibes and somehow that feels more legitimate than half the things on the internet.
+          </P>
+        </Section>
+
+        {/* FAQ */}
+        <Section title="Frequently Asked Questions">
+          <FaqItem
+            q="Is this a joke?"
+            a="Parts of it, yes. Which parts? We'll never tell. The pricing is real. The vibes are real. The AURA is fake but it feels real, which is basically the definition of a vibe."
+          />
+          <FaqItem
+            q="What is AURA exactly?"
+            a="AURA is the currency of this website. It has no monetary value. It has tremendous vibe value. The distinction is important and also completely made up."
+          />
+          <FaqItem
+            q="Why are you auctioning feelings?"
+            a="Because the alternative is just having them for free and that seems like a waste."
+          />
+          <FaqItem
+            q="Is this legal?"
+            a="We asked a lawyer. The lawyer had more questions than answers. We're choosing to interpret that as a yes."
+          />
+          <FaqItem
+            q="What happens when I win a vibe?"
+            a="It goes in your vault. You own it now. The energy is yours. Whether that changes anything about your actual life is between you and the universe."
+          />
+          <FaqItem
+            q="Can I get a refund?"
+            a="You cannot. The vibes are non-refundable. This is stated in the terms of service that nobody read, including us when we wrote it."
+          />
+          <FaqItem
+            q="Who is behind this?"
+            a="People. Humans, specifically. We're real. We're out here. We have feelings about the internet and this is how we're processing them."
+          />
+          <FaqItem
+            q="Will this make me happy?"
+            a="Bidding on 'Dissociation as a Coping Mechanism' at 3am probably won't fix anything. But it might feel correct in the moment and that counts for something."
+          />
+        </Section>
+
+        {/* Manifesto */}
+        <Section title="Our Manifesto (We Wrote It At 2am)">
+          <div style={{
+            border: '1px solid #1A1A1A',
+            background: '#0A0A0A',
+            padding: '28px 32px',
+            borderLeft: '3px solid #C8FF00',
+          }}>
+            <P style={{ color: '#AAA', fontStyle: 'italic', fontSize: 17, lineHeight: 1.8 }}>
+              "The internet is full of things that should not exist. We are one of them. We are proud of this.
+              <br /><br />
+              Everything is a vibe. Your situationship is a vibe. The economy is a vibe. Your personality is a collection of vibes you absorbed from the internet between 2009 and now. We think that's worth something.
+              <br /><br />
+              We believe in chaos, creativity, and the deeply human need to assign value to things that have no value. We believe the worst idea, executed with full commitment, is better than the best idea never started.
+              <br /><br />
+              We built this because the internet deserved a market for its feelings. It got one. You're welcome."
+            </P>
+            <div style={{ color: '#333', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 16 }}>
+              — The Team, probably
+            </div>
+          </div>
+        </Section>
+
+        {/* CTA */}
+        <div style={{ marginTop: 60, textAlign: 'center', borderTop: '1px solid #1A1A1A', paddingTop: 48 }}>
+          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(28px, 5vw, 44px)', textTransform: 'uppercase', lineHeight: 1, marginBottom: 16 }}>
+            You've Read This Far.
+          </div>
+          <div style={{ color: '#555', fontSize: 16, marginBottom: 28 }}>
+            That means you're one of us now. Go bid on something.
+          </div>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/auctions" style={{ background: '#C8FF00', color: '#000', fontFamily: "'Anton', sans-serif", fontSize: 16, textTransform: 'uppercase', letterSpacing: 1, padding: '14px 28px', textDecoration: 'none' }}>
+              Browse Listings
+            </Link>
+            <Link href="/swipe" style={{ background: 'transparent', color: '#C8FF00', border: '1px solid #C8FF00', fontFamily: "'Anton', sans-serif", fontSize: 16, textTransform: 'uppercase', letterSpacing: 1, padding: '14px 28px', textDecoration: 'none' }}>
+              Vibe or Pass ♥
+            </Link>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  );
+}
