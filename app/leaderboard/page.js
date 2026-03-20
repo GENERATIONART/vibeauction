@@ -407,7 +407,6 @@ export default function LeaderboardPage() {
 
     const style = document.createElement('style');
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
       @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       @keyframes skeletonPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
       * { box-sizing: border-box; margin: 0; padding: 0; }

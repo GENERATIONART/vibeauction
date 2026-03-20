@@ -330,38 +330,37 @@ export default function AuctionsPage() {
     }
   }, []);
 
-  // Track previous filters to reset page to 1 on filter change
-  const prevFilters = useRef({ statusFilter, categoryFilter, search, sort });
+  // Track previous filters to reset page to 1 on filter change (without double-fetch)
+  const prevFiltersRef = useRef({ statusFilter, categoryFilter, search, sort });
+  const fetchRef = useRef(fetchAuctions);
+  useEffect(() => { fetchRef.current = fetchAuctions; });
 
   useEffect(() => {
-    const prev = prevFilters.current;
+    const prev = prevFiltersRef.current;
     const filtersChanged =
       prev.statusFilter   !== statusFilter   ||
       prev.categoryFilter !== categoryFilter ||
       prev.search         !== search         ||
       prev.sort           !== sort;
 
-    prevFilters.current = { statusFilter, categoryFilter, search, sort };
+    prevFiltersRef.current = { statusFilter, categoryFilter, search, sort };
 
-    const fetchPage = filtersChanged ? 1 : page;
+    fetchRef.current({ page: filtersChanged ? 1 : page, status: statusFilter, category: categoryFilter, search, sort });
     if (filtersChanged && page !== 1) setPage(1);
-
-    fetchAuctions({ page: fetchPage, status: statusFilter, category: categoryFilter, search, sort });
-  }, [page, statusFilter, categoryFilter, search, sort, fetchAuctions]);
+  }, [page, statusFilter, categoryFilter, search, sort]);
 
   // Auto-refresh every 60s
   useEffect(() => {
     const id = setInterval(() => {
-      fetchAuctions({ page, status: statusFilter, category: categoryFilter, search, sort });
+      fetchRef.current({ page, status: statusFilter, category: categoryFilter, search, sort });
     }, 60_000);
     return () => clearInterval(id);
-  }, [page, statusFilter, categoryFilter, search, sort, fetchAuctions]);
+  }, [page, statusFilter, categoryFilter, search, sort]);
 
   // Styles
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
       * { box-sizing: border-box; }
       body { margin: 0; background: #0D0D0D; }
       @keyframes skeletonPulse { 0%,100% { opacity:1 } 50% { opacity:0.45 } }

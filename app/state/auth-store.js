@@ -100,7 +100,7 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe();
   }, [loadProfile]);
 
-  const signUp = async (email, password, username) => {
+  const signUp = useCallback(async (email, password, username) => {
     const sb = getSupabaseClient();
     if (!sb) throw new Error('Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local');
     const { data, error } = await sb.auth.signUp({
@@ -110,17 +110,17 @@ export function AuthProvider({ children }) {
     });
     if (error) throw error;
     return data;
-  };
+  }, []);
 
-  const signIn = async (email, password) => {
+  const signIn = useCallback(async (email, password) => {
     const sb = getSupabaseClient();
     if (!sb) throw new Error('Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local');
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     const sb = getSupabaseClient();
     if (!sb) return;
     const { error } = await sb.auth.signOut();
@@ -128,7 +128,7 @@ export function AuthProvider({ children }) {
     profileRequestRef.current += 1;
     setUser(null);
     setProfile(null);
-  };
+  }, []);
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getGraduationForVibe } from '../../../../lib/server/state-db.js';
+import { apiError } from '../../../../lib/api-error.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,7 @@ export async function GET(request) {
     const vibeName = searchParams.get('vibeName') || null;
     const result = await getGraduationForVibe(vibeId, vibeIdAlt, vibeName);
     return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
-    return NextResponse.json(
-      { graduation: null, error: 'Failed to load graduation state', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 },
-    );
+  } catch {
+    return apiError('Internal server error');
   }
 }
