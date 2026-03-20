@@ -1134,12 +1134,6 @@ const App = () => {
               Surprise me
             </button>
           </div>
-          <div style={{ marginTop: '14px', color: '#383838', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span>{marketStats.totalLive.toLocaleString()} live · {marketStats.totalBids.toLocaleString()} bids</span>
-            <span style={{ color: '#252525', transition: 'opacity 0.4s', opacity: taglineFading ? 0 : 1, fontStyle: 'italic', textTransform: 'none', fontWeight: 400 }}>
-              {ROTATING_TAGLINES[taglineIndex]}
-            </span>
-          </div>
         </div>
       </section>
 
