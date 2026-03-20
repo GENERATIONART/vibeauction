@@ -1098,6 +1098,22 @@ const App = () => {
             >
               Browse Live Listings
             </Link>
+            <Link
+              href="/swipe"
+              style={{
+                background: '#111111',
+                color: '#C8FF00',
+                border: '1px solid #C8FF00',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                fontSize: '13px',
+                letterSpacing: '0.5px',
+                padding: '11px 14px',
+                textDecoration: 'none',
+              }}
+            >
+              Vibe or Pass ♥
+            </Link>
             <button
               type="button"
               onClick={handleSurpriseMe}
