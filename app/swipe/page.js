@@ -328,7 +328,7 @@ export default function SwipePage() {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/auctions/history?status=live&sort=newest&page=1&limit=100', { cache: 'no-store' });
+        const res = await fetch('/api/auctions/history?status=live&sort=newest&page=1&pageSize=100', { cache: 'no-store' });
         const data = await res.json();
         const list = Array.isArray(data?.auctions) ? data.auctions : [];
         // Shuffle for freshness
