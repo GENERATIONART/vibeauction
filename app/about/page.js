@@ -85,15 +85,6 @@ export default function AboutPage() {
           </P>
         </Section>
 
-        {/* Timeline */}
-        <Section title="A Brief History">
-          <Timeline year="Day 1" event="Someone opens a laptop and types 'what if you could auction vibes' into a notes app. Closes the laptop. Goes to sleep. Wakes up still thinking about it. This is a bad sign." />
-          <Timeline year="Day 4" event="The domain is purchased. There is no turning back now. Partners are informed. Partners are confused. Partners are supportive anyway because that's what partners do." />
-          <Timeline year="Day 11" event="First prototype. It is absolutely horrifying. The button doesn't work. The button has never worked. What button?" />
-          <Timeline year="Day 23" event="Someone asks 'but what is the business model?' The room goes quiet. Someone coughs. We move on." />
-          <Timeline year="Day 47" event="Real users appear. They are bidding real AURA on things like 'Gaslit by the Algorithm' and 'Unhinged 3am Energy'. This is somehow exactly what was intended." />
-          <Timeline year="Now" event="You are here. Reading this. Considering bidding on a vibe. This is your life. We're not judging." />
-        </Section>
 
         {/* Why */}
         <Section title="Why Did You Build This">
