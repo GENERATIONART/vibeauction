@@ -525,6 +525,16 @@ const AuctionCard = ({ item, bidDisplay, onOpenAuction, isMobile, isSmallMobile,
   );
 };
 
+const ROTATING_TAGLINES = [
+  'No refunds. No regrets.',
+  'Your therapist will have questions.',
+  'Bidding is cheaper than therapy.',
+  'Finally, a use for your crypto.',
+  "The internet's lost and found.",
+  'Collect what you cannot explain.',
+  'Rare artifacts from the feed.',
+];
+
 const App = () => {
   const [activeCategory, setActiveCategory] = useState('All Vibes');
   const [activeSort, setActiveSort] = useState('Trending');
@@ -539,9 +549,23 @@ const App = () => {
   const [bumpedAtById, setBumpedAtById] = useState({});
   const [screenShakeToken, setScreenShakeToken] = useState(0);
   const [isScreenShaking, setIsScreenShaking] = useState(false);
+  const [taglineIndex, setTaglineIndex] = useState(0);
+  const [taglineFading, setTaglineFading] = useState(false);
   const prevBidActivityRef = useRef(null);
   const bidBaselineReadyRef = useRef(false);
   const latestBidSeenRef = useRef(0);
+
+  // Rotating tagline cycle
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTaglineFading(true);
+      setTimeout(() => {
+        setTaglineIndex((i) => (i + 1) % ROTATING_TAGLINES.length);
+        setTaglineFading(false);
+      }, 400);
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
 
   const { balance, activeBids, refreshState } = useVibeStore();
   const router = useRouter();
@@ -617,7 +641,6 @@ const App = () => {
         }
 
         setLiveAuctions(Array.isArray(payload?.auctions) ? payload.auctions : []);
-        await refreshState();
         setLastSyncedAt(Date.now());
       } catch {
         // Keep current UI state when background refresh fails.
@@ -627,30 +650,25 @@ const App = () => {
     syncLatestVibes();
 
     const onFocus = () => {
-      syncLatestVibes();
+      if (document.visibilityState === 'visible') syncLatestVibes();
     };
-
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncLatestVibes();
-      }
+      if (document.visibilityState === 'visible') syncLatestVibes();
     };
 
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     const pollId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        syncLatestVibes();
-      }
-    }, 5000);
+      if (document.visibilityState === 'visible') syncLatestVibes();
+    }, 30000);
 
     return () => {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [refreshState]);
+  }, []);
 
   useEffect(() => {
     const clockId = window.setInterval(() => setSyncNow(Date.now()), 1000);
@@ -804,6 +822,22 @@ const App = () => {
       ...Object.entries(catMap).map(([label, count]) => ({ label, count })),
     ];
   }, [liveVibes]);
+
+  // Vibe of the Hour — hottest active listing by recent bid count + score
+  const vibeOfTheHour = useMemo(() => {
+    const now = Date.now();
+    const candidates = (Array.isArray(liveAuctions) ? liveAuctions : [])
+      .filter((v) => {
+        const endMs = v.endTime ? new Date(v.endTime).getTime() : 0;
+        return endMs > now && (v.graduation?.recentBidCount > 0 || v.graduation?.score > 30);
+      })
+      .map((v) => ({
+        ...v,
+        _hotScore: (v.graduation?.recentBidCount || 0) * 10 + (v.graduation?.score || 0),
+      }))
+      .sort((a, b) => b._hotScore - a._hotScore);
+    return candidates[0] || null;
+  }, [liveAuctions]);
 
   const filteredItems = useMemo(() =>
     activeCategory === 'All Vibes'
@@ -1051,16 +1085,19 @@ const App = () => {
             padding: isMobile ? '2px 0 0' : '4px 0 0',
           }}
         >
-          <div style={{ fontSize: '11px', color: '#8A8A8A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
-            Curated market for collectible vibes
+          <div style={{ fontSize: '11px', color: '#555555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+            The internet's slop pile
           </div>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '40px' : '62px', lineHeight: 0.95, textTransform: 'uppercase', maxWidth: '740px' }}>
-            Collect Internet Taste
+            Collect Internet Slop
           </div>
-          <p style={{ maxWidth: '700px', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.55, marginTop: '14px', color: '#B5B5B5', fontWeight: 600 }}>
+          <p style={{ maxWidth: '600px', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.55, marginTop: '14px', color: '#B5B5B5', fontWeight: 600 }}>
             Bid on listed vibes, discover strange market objects, and build a vault of rare, internet-native artifacts.
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px', alignItems: 'center' }}>
+          <div style={{ marginTop: '8px', fontSize: isMobile ? '14px' : '15px', color: '#555555', fontWeight: 700 }}>
+            Be your worst self. We're not judging.
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
             <Link
               href="/auctions"
               style={{
@@ -1094,12 +1131,77 @@ const App = () => {
             >
               Surprise Me
             </button>
-            <div style={{ color: '#7F7F7F', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              {marketStats.totalLive.toLocaleString()} live listings · {marketStats.totalBids.toLocaleString()} tracked bids
-            </div>
+          </div>
+          <div style={{ marginTop: '12px', color: '#444444', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+            {marketStats.totalLive.toLocaleString()} live listings · {marketStats.totalBids.toLocaleString()} tracked bids
+          </div>
+          <div style={{ marginTop: '6px', fontSize: '12px', color: '#333', fontStyle: 'italic', transition: 'opacity 0.4s', opacity: taglineFading ? 0 : 1 }}>
+            {ROTATING_TAGLINES[taglineIndex]}
           </div>
         </div>
       </section>
+
+      {/* ⚡ VIBE OF THE HOUR */}
+      {vibeOfTheHour && (
+        <section style={{ maxWidth: '1400px', margin: '0 auto', padding: isMobile ? `0 ${sidePadding}px 16px` : `0 ${sidePadding}px 20px` }}>
+          <Link href={`/auction/${vibeOfTheHour.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <div style={{
+              border: '2px solid #C8FF00',
+              background: '#0F0F0F',
+              borderRadius: 8,
+              overflow: 'hidden',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '280px 1fr',
+              boxShadow: '0 0 32px rgba(200,255,0,0.08)',
+              transition: 'box-shadow 0.2s',
+            }}>
+              {/* Image */}
+              <div style={{ position: 'relative', height: isMobile ? 180 : '100%', minHeight: 180, background: '#1A1A1A', overflow: 'hidden' }}>
+                {vibeOfTheHour.imageUrl ? (
+                  <img src={vibeOfTheHour.imageUrl} alt={vibeOfTheHour.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="lazy" />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: 'repeating-linear-gradient(45deg, #1A1A1A 0, #1A1A1A 10px, #141414 10px, #141414 20px)' }} />
+                )}
+              </div>
+              {/* Content */}
+              <div style={{ padding: isMobile ? '16px' : '24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ background: '#C8FF00', color: '#000', fontSize: 10, fontWeight: 900, padding: '4px 10px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    ⚡ Vibe of the Hour
+                  </span>
+                  {vibeOfTheHour.category && (
+                    <span style={{ color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{vibeOfTheHour.category}</span>
+                  )}
+                </div>
+                <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? 26 : 36, lineHeight: 1, textTransform: 'uppercase', color: '#FFF' }}>
+                  {vibeOfTheHour.name}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 22, color: '#C8FF00' }}>
+                    {(vibeOfTheHour.graduation?.currentAura || vibeOfTheHour.startingPrice || 0).toLocaleString()} AURA
+                  </span>
+                  <span style={{ color: '#555', fontSize: 12, fontWeight: 700 }}>current top bid</span>
+                </div>
+                <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  {vibeOfTheHour.graduation?.uniqueParticipants > 0 && (
+                    <span style={{ color: '#888', fontSize: 12, fontWeight: 700 }}>
+                      {vibeOfTheHour.graduation.uniqueParticipants} bidder{vibeOfTheHour.graduation.uniqueParticipants !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {vibeOfTheHour.graduation?.totalReactions > 0 && (
+                    <span style={{ color: '#888', fontSize: 12, fontWeight: 700 }}>
+                      {vibeOfTheHour.graduation.totalReactions} reactions
+                    </span>
+                  )}
+                  <span style={{ color: '#C8FF00', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Bid Now →
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </section>
+      )}
 
       <section
         style={{

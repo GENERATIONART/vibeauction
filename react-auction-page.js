@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import { useAuth } from './app/state/auth-store';
@@ -158,28 +158,36 @@ const roundToStep = (value, step = 50) => {
 };
 
 async function marketApiRequest(path, { method = 'GET', body } = {}, token = null) {
-  const response = await fetch(path, {
-    method,
-    headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-    cache: method === 'GET' ? 'no-store' : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  let payload = {};
   try {
-    payload = await response.json();
-  } catch {
-    payload = {};
-  }
+    const response = await fetch(path, {
+      method,
+      headers: {
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      cache: method === 'GET' ? 'no-store' : undefined,
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    throw new Error(payload?.error || `Request failed (${response.status})`);
-  }
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch {
+      payload = {};
+    }
 
-  return payload;
+    if (!response.ok) {
+      throw new Error(payload?.error || `Request failed (${response.status})`);
+    }
+
+    return payload;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 const customStyles = {
@@ -920,20 +928,40 @@ const WatchButton = ({ isWatching, onClick }) => {
   );
 };
 
-const BidHistory = ({ bids }) => (
+const BidHistory = ({ bids, optimisticBid }) => (
   <div style={customStyles.historyPanel}>
     <div style={customStyles.historyTitle}>
       <span>
         <LiveDot /> Live Bids
       </span>
-      <span style={{ fontSize: '11px', color: '#555555' }}>{bids.length} Total</span>
+      <span style={{ fontSize: '11px', color: '#555555' }}>{bids.length + (optimisticBid ? 1 : 0)} Total</span>
     </div>
-    {bids.length === 0 && (
+    {bids.length === 0 && !optimisticBid && (
       <div style={{ padding: '24px 16px', textAlign: 'center', color: '#444', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
         No bids yet — be the first
       </div>
     )}
     <ul style={customStyles.historyList}>
+      {optimisticBid && (
+        <li
+          key="optimistic"
+          style={{
+            ...customStyles.historyItem,
+            borderBottom: bids.length === 0 ? 'none' : '1px solid #222222',
+            animation: 'pulse-opacity 1.5s ease-in-out infinite',
+          }}
+        >
+          <div>
+            <span style={{ ...customStyles.historyUser, color: '#C8FF00' }}>
+              {optimisticBid.user}
+            </span>
+            <div style={customStyles.historyTime}>{optimisticBid.time}</div>
+          </div>
+          <span style={{ ...customStyles.historyAmt, color: '#FFFFFF' }}>
+            {optimisticBid.amount.toLocaleString()}
+          </span>
+        </li>
+      )}
       {bids.map((bid, index) => (
         <li
           key={bid.id}
@@ -946,7 +974,7 @@ const BidHistory = ({ bids }) => (
             <span
               style={{
                 ...customStyles.historyUser,
-                color: index === 0 ? '#C8FF00' : '#888888',
+                color: index === 0 && !optimisticBid ? '#C8FF00' : '#888888',
               }}
             >
               {bid.user}
@@ -956,7 +984,7 @@ const BidHistory = ({ bids }) => (
           <span
             style={{
               ...customStyles.historyAmt,
-              color: index === 0 ? '#FFFFFF' : '#666666',
+              color: index === 0 && !optimisticBid ? '#FFFFFF' : '#666666',
             }}
           >
             {bid.amount.toLocaleString()}
@@ -981,6 +1009,70 @@ const Timer = ({ hours, mins, secs }) => (
     ))}
   </div>
 );
+
+const SkeletonCard = () => (
+  <div style={{ background: '#1A1A1A', borderRadius: 12, padding: 24, animation: 'skeleton-pulse 1.5s ease-in-out infinite' }}>
+    <div style={{ background: '#2A2A2A', height: 280, borderRadius: 8, marginBottom: 16 }} />
+    <div style={{ background: '#2A2A2A', height: 24, borderRadius: 4, marginBottom: 8, width: '60%' }} />
+    <div style={{ background: '#2A2A2A', height: 16, borderRadius: 4, width: '40%' }} />
+    <style>{`@keyframes skeleton-pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }`}</style>
+  </div>
+);
+
+function useConfetti() {
+  const canvasRef = useRef(null);
+  const burst = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.style.display = 'block';
+    const ctx = canvas.getContext('2d');
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    const colors = ['#C8FF00', '#FF3B3B', '#3B82FF', '#FF6B00', '#fff'];
+    const particles = Array.from({ length: 120 }, () => ({
+      x: W / 2 + (Math.random() - 0.5) * 200,
+      y: H / 2,
+      vx: (Math.random() - 0.5) * 12,
+      vy: -(Math.random() * 10 + 5),
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 8 + 4,
+      gravity: 0.3,
+      alpha: 1,
+    }));
+
+    let frame;
+    const animate = () => {
+      ctx.clearRect(0, 0, W, H);
+      let alive = false;
+      for (const p of particles) {
+        p.vy += p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.015;
+        if (p.alpha > 0) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.size, p.size * 0.6);
+          ctx.restore();
+        }
+      }
+      if (alive) {
+        frame = requestAnimationFrame(animate);
+      } else {
+        canvas.style.display = 'none';
+      }
+    };
+    frame = requestAnimationFrame(animate);
+    return () => { cancelAnimationFrame(frame); canvas.style.display = 'none'; };
+  }, []);
+
+  return { canvasRef, burst };
+}
 
 const App = ({ vibe }) => {
   const { balance, activeBids, placeBid, settleAuction, refreshState } = useVibeStore();
@@ -1051,8 +1143,44 @@ const App = ({ vibe }) => {
   const [graduationLoading, setGraduationLoading] = useState(true);
   const [graduationError, setGraduationError] = useState('');
 
+  // Sweep 2 — Optimistic bid
+  const [optimisticBid, setOptimisticBid] = useState(null);
+
+  // Sweep 5 — Confetti
+  const { canvasRef, burst: confettiBurst } = useConfetti();
+
+  // Sweep 6 — Keyboard shortcut toast
+  const [showKeyboardHint, setShowKeyboardHint] = useState(true);
+
+  // Sweep 7 — Share / copy toast
+  const [copied, setCopied] = useState(false);
+
   const isMobile = viewportWidth <= 768;
   const isTablet = viewportWidth <= 1120;
+
+  // Sweep 6 — Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if (e.key === 'Escape') {
+          e.target.blur();
+        }
+        return;
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        const bidInput = document.querySelector('input[placeholder*="bid" i]');
+        if (bidInput) bidInput.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Dismiss keyboard hint after 3s
+  useEffect(() => {
+    const t = setTimeout(() => setShowKeyboardHint(false), 3000);
+    return () => clearTimeout(t);
+  }, []);
   useEffect(() => {
     const storedBid = activeBids.find(
       (entry) => normalize(entry?.id || entry?.name) === normalize(selectedVibe?.slug),
@@ -1098,11 +1226,14 @@ const App = ({ vibe }) => {
     setGraduationError('');
   }, [selectedVibe?.slug, selectedVibe?.timer, selectedVibe?.endTime, baseBid]);
 
+  const activeBidsRef = React.useRef(activeBids);
+  activeBidsRef.current = activeBids;
+
   const loadBidHistory = useCallback(async () => {
     const vibeId = selectedVibe?.slug;
     const vibeIdAlt = selectedVibe?.id;
     const vibeName = selectedVibe?.title || selectedVibe?.name;
-    const fallbackBid = activeBids.find((entry) => normalize(entry?.id || entry?.name) === normalize(vibeId));
+    const fallbackBid = activeBidsRef.current.find((entry) => normalize(entry?.id || entry?.name) === normalize(vibeId));
     if (!vibeId) return;
 
     try {
@@ -1155,7 +1286,7 @@ const App = ({ vibe }) => {
         setCurrentBid((previous) => Math.max(previous, fallbackAmount));
       }
     }
-  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title, selectedVibe?.name, activeBids]);
+  }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title, selectedVibe?.name]);
 
   const vibeMarketId = getVibeMarketId(selectedVibe);
 
@@ -1251,41 +1382,37 @@ const App = ({ vibe }) => {
     }
   }, [selectedVibe?.slug, selectedVibe?.id, selectedVibe?.title]);
 
+  const syncFnsRef = React.useRef({ loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, loadGraduation, refreshState });
+  syncFnsRef.current = { loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, loadGraduation, refreshState };
+
   useEffect(() => {
     const syncAuctionData = async () => {
       try {
-        await refreshState();
+        await syncFnsRef.current.refreshState();
       } catch {
         // Ignore state refresh errors and keep current state.
       }
-      await loadBidHistory();
-      await loadVibeMarket();
-      await loadVibeSocial();
-      await loadComments();
-      await loadGraduation();
+      await syncFnsRef.current.loadBidHistory();
+      await syncFnsRef.current.loadVibeMarket();
+      await syncFnsRef.current.loadVibeSocial();
+      await syncFnsRef.current.loadComments();
+      await syncFnsRef.current.loadGraduation();
     };
 
     syncAuctionData();
 
     const onFocus = () => {
-      if (document.visibilityState === 'visible') {
-        syncAuctionData();
-      }
+      if (document.visibilityState === 'visible') syncAuctionData();
     };
-
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncAuctionData();
-      }
+      if (document.visibilityState === 'visible') syncAuctionData();
     };
 
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     const pollId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        syncAuctionData();
-      }
+      if (document.visibilityState === 'visible') syncAuctionData();
     }, 15000);
 
     return () => {
@@ -1293,7 +1420,7 @@ const App = ({ vibe }) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.clearInterval(pollId);
     };
-  }, [loadBidHistory, loadVibeMarket, loadVibeSocial, loadComments, loadGraduation, refreshState]);
+  }, [selectedVibe?.slug]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -1696,6 +1823,9 @@ const App = ({ vibe }) => {
     setTimeout(() => setBidPressed(false), 180);
     setPlacingBid(true);
 
+    // Sweep 2 — Optimistic UI
+    setOptimisticBid({ amount: bidAmount, user: 'You', time: 'just now', isOptimistic: true });
+
     const bidResult = await placeBid({
       id: selectedVibe?.slug || selectedVibe?.id || 'unknown-vibe',
       name: selectedVibe?.title || 'Unknown Vibe',
@@ -1704,6 +1834,7 @@ const App = ({ vibe }) => {
     });
 
     setPlacingBid(false);
+    setOptimisticBid(null);
 
     if (!bidResult?.accepted) {
       if (bidResult?.reason === 'bid_too_low') {
@@ -1798,9 +1929,19 @@ const App = ({ vibe }) => {
       return;
     }
     setShowBuySuccess(true);
+    confettiBurst();
   };
 
   const displayBid = currentBid + increment;
+
+  // Sweep 3 — Last Chance mode (< 5 min remaining)
+  const totalRemainingMs = (timer.hours * 3600 + timer.mins * 60 + timer.secs) * 1000;
+  const lastChance = !auctionEnded && totalRemainingMs > 0 && totalRemainingMs < 5 * 60 * 1000;
+
+  // Sweep 12 — Bid War indicator
+  const uniqueBidders = new Set(bids.map(b => b.userId).filter(Boolean)).size;
+  const isBidWar = uniqueBidders >= 2;
+
   const hasVibeMarket = Boolean(vibeMarket?.id);
   const probabilityYesRaw = safeBid(vibeMarket?.probabilityYes, Number.NaN);
   const hasLiveOdds = Number.isFinite(probabilityYesRaw);
@@ -1821,6 +1962,9 @@ const App = ({ vibe }) => {
     { label: 'Bid Activity', value: `${bids.length} recorded bid${bids.length === 1 ? '' : 's'}` },
     { label: 'Current Leader', value: topBidUser || 'No leader yet' },
     { label: 'Collector Status', value: auctionEnded ? 'Archived listing' : 'Live for collection' },
+    { label: 'Creator Ask', value: formatAura(baseBid) },
+    { label: 'Current Market', value: formatAura(currentBid) },
+    { label: 'Acquisition', value: buyNowPrice ? `Bid or ${formatAura(buyNowPrice)}` : 'Winning bid only' },
   ];
   const marketNarrative = selectedVibe?.description || 'A live collectible vibe with open bidding and public provenance.';
   const parentRemix =
@@ -1840,6 +1984,25 @@ const App = ({ vibe }) => {
 
   return (
     <div style={customStyles.body}>
+      <style>{`@keyframes pulse-opacity { 0%,100% { opacity:0.6 } 50% { opacity:1 } } @keyframes last-chance-pulse { 0%,100% { border-color: #FF3B3B; } 50% { border-color: #FF6B6B; } }`}</style>
+
+      {/* Sweep 5 — Confetti canvas */}
+      <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none', display: 'none', zIndex: 9999 }} />
+
+      {/* Sweep 6 — Keyboard hint */}
+      {showKeyboardHint && !isMobile && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9000,
+          background: 'rgba(30,30,30,0.95)', border: '1px solid #333',
+          borderRadius: 8, padding: '10px 16px',
+          fontSize: 13, color: '#888', fontFamily: "'Inter', sans-serif",
+          animation: 'pulse-opacity 2s ease-in-out 1',
+          transition: 'opacity 0.5s',
+        }}>
+          Press <strong style={{ color: '#C8FF00' }}>B</strong> to bid
+        </div>
+      )}
+
       <NavBar />
 
       <div
@@ -1955,42 +2118,100 @@ const App = ({ vibe }) => {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
 
-          <div
-            style={{
-              marginTop: isMobile ? '14px' : '18px',
-              background: '#111111',
-              border: '1px solid #252525',
-              borderRadius: '8px',
-              padding: isMobile ? '16px' : '18px',
-            }}
-          >
-            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '22px' : '26px', textTransform: 'uppercase', marginBottom: '10px' }}>
-              Provenance & Story
-            </div>
-            <div style={{ color: '#A2A2A2', fontSize: '14px', lineHeight: 1.6, marginBottom: '14px' }}>
-              This listing is treated as a collectible internet object. The description is the artifact story, the bid history is the public provenance, and the winning collector becomes part of its permanent record.
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '10px' }}>
-              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
-                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
-                  Creator Ask
+              <div
+                style={{
+                  marginTop: '16px',
+                  paddingTop: '14px',
+                  borderTop: '1px solid #2A2A2A',
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                }}
+              >
+                {VIBE_REACTION_OPTIONS.map((option) => {
+                  const isActive = (vibeSocial?.viewerReactions || []).includes(option.id);
+                  const count = Number(vibeSocial?.reactionCounts?.[option.id] || 0);
+                  const isSaving = socialSaving === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => onToggleReaction(option.id)}
+                      aria-label={option.label}
+                      title={option.label}
+                      style={{
+                        ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
+                        opacity: isSaving ? 0.7 : 1,
+                      }}
+                    >
+                      {option.emoji || option.label}{count > 0 ? ` ${count}` : ''}
+                    </button>
+                  );
+                })}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                  {Number(vibeSocial?.totalReactions || 0) > 0 && (
+                    <div style={{ fontSize: '11px', color: '#555555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      {Number(vibeSocial.totalReactions).toLocaleString()} reactions
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/mint?remix=${encodeURIComponent(selectedVibe?.slug || '')}`)}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #333333',
+                      color: '#AAAAAA',
+                      padding: '8px 12px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    ↗ Remix
+                  </button>
+                  {/* Sweep 7 — Share button */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const url = window.location.href;
+                      const title = selectedVibe?.title || 'Check this vibe';
+                      if (navigator.share) {
+                        await navigator.share({ title, url }).catch(() => {});
+                      } else {
+                        await navigator.clipboard.writeText(url).catch(() => {});
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }
+                    }}
+                    style={{
+                      background: 'none', border: '1px solid #333', borderRadius: 6,
+                      color: '#888', padding: '6px 14px', cursor: 'pointer',
+                      fontSize: 13, fontFamily: "'Inter', sans-serif",
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      position: 'relative',
+                    }}
+                  >
+                    ↗ Share
+                    {copied && (
+                      <span style={{
+                        position: 'absolute', top: -28, left: '50%', transform: 'translateX(-50%)',
+                        background: '#C8FF00', color: '#000', fontSize: 11, fontWeight: 800,
+                        padding: '3px 8px', borderRadius: 4, whiteSpace: 'nowrap',
+                      }}>Link copied!</span>
+                    )}
+                  </button>
                 </div>
-                <div style={{ fontWeight: 800 }}>{formatAura(baseBid)}</div>
-              </div>
-              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
-                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
-                  Current Market
-                </div>
-                <div style={{ fontWeight: 800 }}>{formatAura(currentBid)}</div>
-              </div>
-              <div style={{ background: '#171717', border: '1px solid #262626', padding: '12px' }}>
-                <div style={{ fontSize: '10px', color: '#717171', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.8px', marginBottom: '6px' }}>
-                  Acquisition
-                </div>
-                <div style={{ fontWeight: 800 }}>{buyNowPrice ? `Bid or ${formatAura(buyNowPrice)}` : 'Winning bid only'}</div>
+                {socialError && (
+                  <div style={{ width: '100%', marginTop: '4px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
+                    {socialError}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2047,7 +2268,48 @@ const App = ({ vibe }) => {
             )}
           </div>
 
-          <BidHistory bids={bids} />
+          <BidHistory bids={bids} optimisticBid={optimisticBid} />
+
+          {(vibeSocial?.remixCount || 0) > 0 && (
+            <div
+              style={{
+                marginTop: isMobile ? '14px' : '18px',
+                background: '#111111',
+                border: '1px solid #222222',
+                borderRadius: '8px',
+                padding: isMobile ? '16px' : '18px',
+              }}
+            >
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '20px' : '22px', textTransform: 'uppercase', marginBottom: '12px' }}>
+                Remixes
+                <span style={{ marginLeft: '10px', fontSize: '14px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 800 }}>
+                  {Number(vibeSocial.remixCount).toLocaleString()} total
+                </span>
+              </div>
+              {vibeSocial.remixes.map((remix) => (
+                <a key={remix.slug} href={`/auction/${remix.slug}`} style={customStyles.remixMiniLink}>
+                  {remix.imageUrl ? (
+                    <img src={remix.imageUrl} alt={remix.name || 'Remix'} style={customStyles.remixMiniThumb} />
+                  ) : (
+                    <div style={customStyles.remixMiniFallback}>IMG</div>
+                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase', fontSize: '12px', lineHeight: 1.3 }}>
+                      {remix.name || 'Untitled Remix'}
+                    </div>
+                    <div style={{ marginTop: '4px', color: '#8B8B8B', fontSize: '11px', fontWeight: 700 }}>
+                      {remix.author ? `by ${remix.author.startsWith('@') ? remix.author : `@${remix.author}`}` : 'Remix listing'}
+                    </div>
+                  </div>
+                </a>
+              ))}
+              {parentRemix && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666666', lineHeight: 1.5 }}>
+                  This listing already sits inside a remix chain.
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <aside style={customStyles.sidebarPanel}>
@@ -2077,8 +2339,39 @@ const App = ({ vibe }) => {
               </div>
             )}
 
+            {/* Sweep 12 — Bid War badge */}
+            {isBidWar && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'rgba(255, 59, 59, 0.15)',
+                border: '1px solid #FF3B3B',
+                borderRadius: 20, padding: '4px 12px',
+                fontSize: 12, fontWeight: 700, color: '#FF3B3B',
+                fontFamily: "'Inter', sans-serif",
+                letterSpacing: '0.05em',
+                animation: 'pulse-opacity 1.5s ease-in-out infinite',
+                marginBottom: '12px',
+              }}>
+                ⚔️ BID WAR
+              </div>
+            )}
+
+            {/* Sweep 3 — Last Chance */}
+            {lastChance && (
+              <div style={{
+                fontSize: 13, fontWeight: 800, color: '#FF3B3B',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                marginBottom: 4, textAlign: 'center',
+                animation: 'pulse-opacity 1s ease-in-out infinite',
+              }}>
+                ⚡ LAST CHANCE
+              </div>
+            )}
+
             <div style={customStyles.panelLabel}>Auction Ends In</div>
-            <Timer hours={timer.hours} mins={timer.mins} secs={timer.secs} />
+            <div style={lastChance ? { border: '2px solid #FF3B3B', borderRadius: 8, padding: 4, background: 'rgba(255,59,59,0.08)', animation: 'last-chance-pulse 1.5s ease-in-out infinite' } : {}}>
+              <Timer hours={timer.hours} mins={timer.mins} secs={timer.secs} />
+            </div>
 
             {showBidSuccess && (
               <div
@@ -2182,46 +2475,6 @@ const App = ({ vibe }) => {
             )}
           </div>
 
-          <div style={{ ...customStyles.socialPanel, padding: isMobile ? '16px' : customStyles.socialPanel.padding }}>
-            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize }}>
-              Crowd Reactions
-            </div>
-            <div style={customStyles.socialHelp}>
-              Lightweight audience signals make the listing feel alive. React to the vibe, then watch what kinds of remixes it spawns.
-            </div>
-            <div style={customStyles.reactionRow}>
-              {VIBE_REACTION_OPTIONS.map((option) => {
-                const isActive = (vibeSocial?.viewerReactions || []).includes(option.id);
-                const count = Number(vibeSocial?.reactionCounts?.[option.id] || 0);
-                const isSaving = socialSaving === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => onToggleReaction(option.id)}
-                    aria-label={option.label}
-                    title={option.label}
-                    style={{
-                      ...(isActive ? customStyles.reactionButtonActive : customStyles.reactionButton),
-                      opacity: isSaving ? 0.7 : 1,
-                    }}
-                  >
-                    {option.emoji || option.label} {count > 0 ? `${count}` : ''}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#727272', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              {socialLoading ? 'Loading social signal...' : `${Number(vibeSocial?.totalReactions || 0).toLocaleString()} total reactions`}
-            </div>
-            {socialError && (
-              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
-                {socialError}
-              </div>
-            )}
-          </div>
-
           <div style={{ ...customStyles.graduationPanel, padding: isMobile ? '16px' : customStyles.graduationPanel.padding }}>
             <div
               style={{
@@ -2302,51 +2555,6 @@ const App = ({ vibe }) => {
             {graduationError && (
               <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: '#FF9A9A' }}>
                 {graduationError}
-              </div>
-            )}
-          </div>
-
-          <div style={{ ...customStyles.remixPanel, padding: isMobile ? '18px 16px' : customStyles.remixPanel.padding }}>
-            <div style={{ ...customStyles.socialTitle, fontSize: isMobile ? '22px' : customStyles.socialTitle.fontSize, marginBottom: '8px' }}>
-              Remix This Vibe
-            </div>
-            <div style={{ color: '#A2A2A2', fontSize: '14px', lineHeight: 1.6 }}>
-              Fork the concept, keep the original as provenance, and mint your own collectible variant from this listing.
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push(`/mint?remix=${encodeURIComponent(selectedVibe?.slug || '')}`)}
-              style={{ ...customStyles.predictionButton, marginTop: '14px' }}
-            >
-              Start Remix Draft
-            </button>
-            {parentRemix && (
-              <div style={{ marginTop: '12px', fontSize: '12px', color: '#B8B8B8', lineHeight: 1.5 }}>
-                This listing already sits inside a remix chain.
-              </div>
-            )}
-            {(vibeSocial?.remixCount || 0) > 0 && (
-              <div style={customStyles.remixMiniList}>
-                {vibeSocial.remixes.map((remix) => (
-                  <a key={remix.slug} href={`/auction/${remix.slug}`} style={customStyles.remixMiniLink}>
-                    {remix.imageUrl ? (
-                      <img src={remix.imageUrl} alt={remix.name || 'Remix'} style={customStyles.remixMiniThumb} />
-                    ) : (
-                      <div style={customStyles.remixMiniFallback}>IMG</div>
-                    )}
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase', fontSize: '12px', lineHeight: 1.3 }}>
-                        {remix.name || 'Untitled Remix'}
-                      </div>
-                      <div style={{ marginTop: '4px', color: '#8B8B8B', fontSize: '11px', fontWeight: 700 }}>
-                        {remix.author ? `by ${remix.author.startsWith('@') ? remix.author : `@${remix.author}`}` : 'Remix listing'}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-                <div style={{ fontSize: '11px', color: '#7A7A7A', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                  {Number(vibeSocial.remixCount || 0).toLocaleString()} remix{vibeSocial.remixCount === 1 ? '' : 'es'} total
-                </div>
               </div>
             )}
           </div>

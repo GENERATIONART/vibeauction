@@ -316,9 +316,13 @@ const LeaderRow = ({ rank, username, vibesWon, totalSpent, isMobile }) => {
         cursor: 'pointer',
         transition: 'background 0.15s',
       }}
+      tabIndex={0}
+      role="row"
+      aria-label={`${username}, rank ${rank}, ${totalSpent.toLocaleString()} AURA spent`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => { window.location.href = profileHref; }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.location.href = profileHref; } }}
     >
       <td style={{ ...customStyles.leaderCellRank, padding: isMobile ? '12px 10px' : undefined }}>
         {rank}
@@ -407,7 +411,6 @@ export default function LeaderboardPage() {
 
     const style = document.createElement('style');
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
       @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       @keyframes skeletonPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -600,7 +603,14 @@ export default function LeaderboardPage() {
             ) : topSpenders.length === 0 ? (
               <div style={customStyles.emptyBox}>No bidders ranked yet</div>
             ) : (
-              <table style={customStyles.leaderTable}>
+              <table style={customStyles.leaderTable} role="table" aria-label="Top bidders leaderboard">
+                <thead>
+                  <tr style={{ background: '#111' }}>
+                    <th style={{ ...customStyles.leaderCellRank, color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', paddingBottom: 8 }} scope="col">Rank</th>
+                    <th style={{ ...customStyles.leaderCellMain, color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', paddingBottom: 8 }} scope="col">Bidder</th>
+                    <th style={{ ...customStyles.leaderCellScore, color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', paddingBottom: 8 }} scope="col">AURA Spent</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {topSpenders.map((row, i) => (
                     <LeaderRow

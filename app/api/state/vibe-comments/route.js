@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCommentsForVibe, submitCommentInStore } from '../../../../lib/server/state-db.js';
+import { apiError } from '../../../../lib/api-error.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,12 +11,11 @@ export async function GET(request) {
     const vibeIdAlt = searchParams.get('vibeIdAlt') || null;
     const vibeName = searchParams.get('vibeName') || null;
     const comments = await getCommentsForVibe(vibeId, 24, vibeIdAlt, vibeName);
-    return NextResponse.json(comments, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to load vibe comments', details: error instanceof Error ? error.message : String(error), comments: [] },
-      { status: 500 },
-    );
+    const res = NextResponse.json(comments);
+    res.headers.set('Cache-Control', 'public, s-maxage=5, stale-while-revalidate=15');
+    return res;
+  } catch {
+    return apiError('Internal server error');
   }
 }
 
@@ -26,10 +26,7 @@ export async function POST(request) {
     const authToken = authHeader.replace(/^Bearer\s+/i, '').trim() || null;
     const result = await submitCommentInStore(body?.comment, authToken);
     return NextResponse.json(result);
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to post vibe comment', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 },
-    );
+  } catch {
+    return apiError('Internal server error');
   }
 }

@@ -16,6 +16,63 @@
   "confessions": [],
   "mintedVibes": [
     {
+      "id": "mint-fucked-again-unhinged-ideas-1773934661861",
+      "slug": "fucked-again-unhinged-ideas-1773934661861",
+      "name": "Fucked Again!",
+      "category": "Unhinged Ideas",
+      "emoji": "IMG",
+      "manifesto": "",
+      "duration": "24 Hours",
+      "startingPrice": 100,
+      "buyNowPrice": null,
+      "imageUrl": "https://v3b.fal.media/files/b/0a92cf3a/KTglgl2IyWq9zhWp59Pz1.jpg",
+      "isAnonymous": false,
+      "author": "robhammond11",
+      "listedBy": "5034ebea-f695-4aed-a62c-09b31779cb24",
+      "remixSourceSlug": null,
+      "remixSourceName": null,
+      "remixSourceAuthor": null,
+      "createdAt": 1773934661861
+    },
+    {
+      "id": "mint-fire-vercel-they-suck-balls-unhinged-ideas-1773932031500",
+      "slug": "fire-vercel-they-suck-balls-unhinged-ideas-1773932031500",
+      "name": "Fire Vercel - They Suck Balls",
+      "category": "Unhinged Ideas",
+      "emoji": "IMG",
+      "manifesto": "",
+      "duration": "24 Hours",
+      "startingPrice": 100,
+      "buyNowPrice": null,
+      "imageUrl": "https://v3b.fal.media/files/b/0a92ce34/s9XFlofX34PPiYK7O7qFi.jpg",
+      "isAnonymous": false,
+      "author": "robhammond11",
+      "listedBy": "5034ebea-f695-4aed-a62c-09b31779cb24",
+      "remixSourceSlug": null,
+      "remixSourceName": null,
+      "remixSourceAuthor": null,
+      "createdAt": 1773932031500
+    },
+    {
+      "id": "mint-paused-by-vercel-fuckers-unhinged-ideas-1773930047446",
+      "slug": "paused-by-vercel-fuckers-unhinged-ideas-1773930047446",
+      "name": "Paused By Vercel - Fuckers",
+      "category": "Unhinged Ideas",
+      "emoji": "IMG",
+      "manifesto": "",
+      "duration": "24 Hours",
+      "startingPrice": 100,
+      "buyNowPrice": null,
+      "imageUrl": "https://v3b.fal.media/files/b/0a92cd6d/6aJYcRZOvByqMlLQiiMn_.jpg",
+      "isAnonymous": false,
+      "author": "robhammond11",
+      "listedBy": "5034ebea-f695-4aed-a62c-09b31779cb24",
+      "remixSourceSlug": null,
+      "remixSourceName": null,
+      "remixSourceAuthor": null,
+      "createdAt": 1773930047446
+    },
+    {
       "id": "mint-photorealistic-castle-getting-swallowed-by-donald-trump-eating-a-burger-feelings-1773368432812",
       "slug": "photorealistic-castle-getting-swallowed-by-donald-trump-eating-a-burger-feelings-1773368432812",
       "name": "Photorealistic Castle Getting swallowed by donald trump eating a burger",
@@ -261,5 +318,7 @@
       "createdAt": 1773080288814
     }
   ],
+  "vibeReactions": [],
+  "vibeComments": [],
   "processedStripeSessions": {}
 }

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { buildGraduationSnapshot } from '../../../../lib/vibe-graduation.js';
 import { getGraduationBoard } from '../../../../lib/server/state-db.js';
+import { apiError } from '../../../../lib/api-error.js';
+import { apiError } from '../../../../lib/api-error.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +59,7 @@ export async function GET(request) {
       sb.from('vibes').select('id', { count: 'exact', head: true }),
       applyLiveFilter(sb.from('vibes').select('id', { count: 'exact', head: true }), nowIso),
       sb.from('vault_items').select('id', { count: 'exact', head: true }).like('id', 'vault-%'),
-      sb.from('vibes').select('category').limit(2000),
+      sb.from('vibes').select('category').not('category', 'is', null).limit(2000),
     ]);
 
     const summaryTotal   = totalCount   ?? 0;
@@ -83,7 +85,9 @@ export async function GET(request) {
     }
 
     if (search) {
-      q = q.ilike('name', `%${search}%`);
+      // Escape ilike special chars to prevent full-table wildcard scans
+      const escapedSearch = search.replace(/[%_\\]/g, '\\$&');
+      q = q.ilike('name', `%${escapedSearch}%`);
     }
 
     if (category && category !== 'all') {
@@ -262,21 +266,12 @@ export async function GET(request) {
     const totalFiltered = filteredCount ?? 0;
     const totalPages    = Math.max(1, Math.ceil(totalFiltered / pageSize));
 
-    return NextResponse.json(
+    const res = NextResponse.json(
       { auctions, summary, pagination: { page, pageSize, total: totalFiltered, totalPages }, categories },
-      { headers: { 'Cache-Control': 'no-store' } },
     );
-  } catch (error) {
-    return NextResponse.json(
-      {
-        auctions: [],
-        summary: { total: 0, live: 0, ended: 0, settled: 0 },
-        pagination: { page: 1, pageSize: PAGE_SIZE_DEFAULT, total: 0, totalPages: 0 },
-        categories: [],
-        error: 'Failed to load auction history',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500, headers: { 'Cache-Control': 'no-store' } },
-    );
+    res.headers.set('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+    return res;
+  } catch {
+    return apiError('Internal server error');
   }
 }

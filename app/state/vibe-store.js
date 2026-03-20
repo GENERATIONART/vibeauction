@@ -4,49 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { createDefaultState } from '../../lib/default-store.js';
 import { useAuth } from './auth-store.js';
 import { getSupabaseClient } from '../../lib/supabase-client.js';
+import { safeNumber } from '../../lib/utils.js';
 
 const VibeStoreContext = createContext(null);
 
-const safeNumber = (value, fallback = 0) => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(/,/g, '').trim());
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-  return fallback;
-};
-
-const getBidRowAmount = (row) => safeNumber(row?.amount, Number.NEGATIVE_INFINITY);
-
-const getBidRowTimestamp = (row) => new Date(row?.created_at || row?.updatedAt || '').getTime();
-
-const isHigherBidRow = (candidate, current) => {
-  if (!candidate) return false;
-  if (!current) return true;
-
-  const candidateAmount = getBidRowAmount(candidate);
-  const currentAmount = getBidRowAmount(current);
-  if (candidateAmount !== currentAmount) return candidateAmount > currentAmount;
-
-  return getBidRowTimestamp(candidate) > getBidRowTimestamp(current);
-};
-
-const normalizeKey = (value) =>
-  String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-const toTimestampMs = (value) => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const numeric = Number(value);
-    if (Number.isFinite(numeric)) return numeric;
-    const parsed = new Date(value).getTime();
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return 0;
-};
 
 const toExpiryMs = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -90,26 +51,34 @@ function sanitizeState(input) {
 async function apiRequest(url, options = {}) {
   const method = options.method || 'GET';
   const hasBody = options.body !== undefined;
-  const response = await fetch(url, {
-    method,
-    cache: method === 'GET' ? 'no-store' : undefined,
-    headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) },
-    body: hasBody ? JSON.stringify(options.body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  let payload = {};
   try {
-    payload = await response.json();
-  } catch {
-    payload = {};
-  }
+    const response = await fetch(url, {
+      method,
+      cache: method === 'GET' ? 'no-store' : undefined,
+      headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) },
+      body: hasBody ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const reason = payload?.error || `Request failed (${response.status})`;
-    throw new Error(reason);
-  }
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch {
+      payload = {};
+    }
 
-  return payload;
+    if (!response.ok) {
+      const reason = payload?.error || `Request failed (${response.status})`;
+      throw new Error(reason);
+    }
+
+    return payload;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 const mapVaultRow = (row) => ({
@@ -124,44 +93,6 @@ const mapVaultRow = (row) => ({
   originalAuthor: row.original_author ?? null,
 });
 
-const mapSupabaseVibeRow = (row) => ({
-  id: row.id,
-  slug: row.slug,
-  name: row.name,
-  category: row.category,
-  emoji: row.emoji,
-  manifesto: row.manifesto,
-  duration: row.duration,
-  startingPrice: row.starting_price,
-  buyNowPrice: row.buy_now_price ?? null,
-  imageUrl: row.image_url ?? null,
-  isAnonymous: row.is_anonymous,
-  author: row.author,
-  listedBy: row.listed_by ?? row.author,
-  remixSourceSlug: row.remix_source_slug ?? null,
-  remixSourceName: row.remix_source_name ?? null,
-  remixSourceAuthor: row.remix_source_author ?? null,
-  createdAt: row.created_at,
-  endTime: row.end_time ?? null,
-});
-
-const mergeMintedVibes = (baseList, supabaseList) => {
-  const mergedByKey = new Map();
-
-  for (const vibe of Array.isArray(supabaseList) ? supabaseList : []) {
-    const key = normalizeKey(vibe?.slug || vibe?.id || vibe?.name || '');
-    if (!key) continue;
-    mergedByKey.set(key, vibe);
-  }
-
-  for (const vibe of Array.isArray(baseList) ? baseList : []) {
-    const key = normalizeKey(vibe?.slug || vibe?.id || vibe?.name || '');
-    if (!key || mergedByKey.has(key)) continue;
-    mergedByKey.set(key, vibe);
-  }
-
-  return Array.from(mergedByKey.values()).sort((a, b) => toTimestampMs(b?.createdAt) - toTimestampMs(a?.createdAt));
-};
 
 const getMintFailureMessage = (reason) => {
   const normalized = String(reason || '').toLowerCase();
@@ -187,110 +118,21 @@ export function VibeStoreProvider({ children }) {
   const [isHydrating, setIsHydrating] = useState(true);
   const [error, setError] = useState('');
   const [supabaseVaultItems, setSupabaseVaultItems] = useState(null);
-  const mintedCacheRef = useRef({ fetchedAt: 0, vibes: null });
-  const bidsCacheRef = useRef({ fetchedAt: 0, bids: null });
 
   const applyState = useCallback((nextState) => {
     setStore(sanitizeState(nextState));
   }, []);
 
-  const fetchMintedVibesFromClientSupabase = useCallback(async ({ force = false } = {}) => {
-    const sb = getSupabaseClient();
-    if (!sb) return null;
+  const inflight = useRef(new Map());
 
-    const now = Date.now();
-    const cache = mintedCacheRef.current;
-    if (!force && Array.isArray(cache?.vibes) && now - safeNumber(cache?.fetchedAt, 0) < 15000) {
-      return cache.vibes;
+  const dedupedRequest = useCallback(async (key, fn) => {
+    if (inflight.current.has(key)) {
+      return inflight.current.get(key);
     }
-
-    const { data, error: fetchError } = await sb.from('vibes').select('*').order('created_at', { ascending: false }).limit(1000);
-    if (fetchError || !Array.isArray(data)) {
-      return Array.isArray(cache?.vibes) ? cache.vibes : null;
-    }
-
-    const mapped = data.map(mapSupabaseVibeRow);
-    mintedCacheRef.current = { fetchedAt: now, vibes: mapped };
-    return mapped;
+    const promise = fn().finally(() => inflight.current.delete(key));
+    inflight.current.set(key, promise);
+    return promise;
   }, []);
-
-  const fetchHighestBidsFromClientSupabase = useCallback(async ({ force = false } = {}) => {
-    const sb = getSupabaseClient();
-    if (!sb) return null;
-
-    const now = Date.now();
-    const cache = bidsCacheRef.current;
-    if (!force && Array.isArray(cache?.bids) && now - safeNumber(cache?.fetchedAt, 0) < 4000) {
-      return cache.bids;
-    }
-
-    const { data, error: fetchError } = await sb
-      .from('vibe_bids')
-      .select('vibe_id, vibe_name, amount, created_at')
-      .order('amount', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(4000);
-
-    if (fetchError || !Array.isArray(data)) {
-      return Array.isArray(cache?.bids) ? cache.bids : null;
-    }
-
-    const highestByVibe = new Map();
-    for (const row of data) {
-      const key = normalizeKey(row?.vibe_id || row?.vibe_name);
-      if (!key) continue;
-      const previous = highestByVibe.get(key);
-      if (!isHigherBidRow(row, previous)) continue;
-      highestByVibe.set(key, {
-        id: row.vibe_id,
-        name: row.vibe_name,
-        amount: row.amount,
-        status: 'HIGHEST',
-        updatedAt: row.created_at,
-      });
-    }
-
-    const mapped = Array.from(highestByVibe.values());
-    bidsCacheRef.current = { fetchedAt: now, bids: mapped };
-    return mapped;
-  }, []);
-
-  const hydrateStateWithClientVibes = useCallback(
-    async (nextState, { force = false } = {}) => {
-      const [supabaseMintedVibes, supabaseHighestBids] = await Promise.all([
-        fetchMintedVibesFromClientSupabase({ force }),
-        fetchHighestBidsFromClientSupabase({ force }),
-      ]);
-
-      const mergedMintedVibes =
-        Array.isArray(supabaseMintedVibes) && supabaseMintedVibes.length > 0
-          ? mergeMintedVibes(nextState?.mintedVibes, supabaseMintedVibes)
-          : nextState?.mintedVibes;
-
-      let mergedActiveBids = nextState?.activeBids;
-      if (Array.isArray(supabaseHighestBids) && supabaseHighestBids.length > 0) {
-        const byId = new Map();
-        for (const bid of supabaseHighestBids) {
-          const key = normalizeKey(bid?.id || bid?.name);
-          if (!key || byId.has(key)) continue;
-          byId.set(key, bid);
-        }
-        for (const bid of Array.isArray(nextState?.activeBids) ? nextState.activeBids : []) {
-          const key = normalizeKey(bid?.id || bid?.name);
-          if (!key || byId.has(key)) continue;
-          byId.set(key, bid);
-        }
-        mergedActiveBids = Array.from(byId.values());
-      }
-
-      return sanitizeState({
-        ...nextState,
-        mintedVibes: mergedMintedVibes,
-        activeBids: mergedActiveBids,
-      });
-    },
-    [fetchMintedVibesFromClientSupabase, fetchHighestBidsFromClientSupabase],
-  );
 
   const getAccessToken = useCallback(async ({ forceRefresh = false } = {}) => {
     const sb = getSupabaseClient();
@@ -333,20 +175,24 @@ export function VibeStoreProvider({ children }) {
     const sb = getSupabaseClient();
     if (!sb) return;
     sb.from('vault_items')
-      .select('*')
+      .select('id, name, emoji, category, rarity, price, won_date, image_url, original_author')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) setSupabaseVaultItems(data.map(mapVaultRow));
+      .then(({ data, error }) => {
+        if (!error && data) setSupabaseVaultItems(data.map(mapVaultRow));
+      })
+      .catch(() => {
+        // vault fetch failed silently — items will fall back to store.vaultItems
       });
   }, [user]);
 
   const refreshState = useCallback(async () => {
-    const data = await apiRequest('/api/state');
-    const merged = await hydrateStateWithClientVibes(data.state);
-    applyState(merged);
-    return merged;
-  }, [applyState, hydrateStateWithClientVibes]);
+    return dedupedRequest('state', async () => {
+      const data = await apiRequest('/api/state');
+      applyState(data.state);
+      return data.state;
+    });
+  }, [applyState, dedupedRequest]);
 
   useEffect(() => {
     let cancelled = false;
@@ -355,9 +201,8 @@ export function VibeStoreProvider({ children }) {
       try {
         setIsHydrating(true);
         const data = await apiRequest('/api/state');
-        const merged = await hydrateStateWithClientVibes(data.state);
         if (!cancelled) {
-          applyState(merged);
+          applyState(data.state);
           setError('');
         }
       } catch (loadError) {
@@ -377,7 +222,7 @@ export function VibeStoreProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [applyState, hydrateStateWithClientVibes]);
+  }, [applyState]);
 
   const placeBid = useCallback(
     async (bid) => {
@@ -388,8 +233,7 @@ export function VibeStoreProvider({ children }) {
           body: { bid },
           ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
-        const merged = await hydrateStateWithClientVibes(data.state, { force: true });
-        applyState(merged);
+        applyState(data.state);
         setError('');
         return {
           accepted: Boolean(data.accepted),
@@ -405,7 +249,7 @@ export function VibeStoreProvider({ children }) {
         };
       }
     },
-    [applyState, hydrateStateWithClientVibes, getAccessToken],
+    [applyState, getAccessToken],
   );
 
   const settleAuction = useCallback(
@@ -419,17 +263,19 @@ export function VibeStoreProvider({ children }) {
           ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         });
         if (data?.state) {
-          const merged = await hydrateStateWithClientVibes(data.state);
-          applyState(merged);
+          applyState(data.state);
         }
         // Refresh vault from Supabase after a successful settle.
         if (data?.settled && user && sb) {
           sb.from('vault_items')
-            .select('*')
+            .select('id, name, emoji, category, rarity, price, won_date, image_url, original_author')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
-            .then(({ data: rows }) => {
-              if (rows) setSupabaseVaultItems(rows.map(mapVaultRow));
+            .then(({ data: rows, error: vaultError }) => {
+              if (!vaultError && rows) setSupabaseVaultItems(rows.map(mapVaultRow));
+            })
+            .catch(() => {
+              // vault refresh failed silently
             });
         }
         setError('');
@@ -449,7 +295,7 @@ export function VibeStoreProvider({ children }) {
         };
       }
     },
-    [applyState, user, refreshProfile, hydrateStateWithClientVibes, getAccessToken],
+    [applyState, user, refreshProfile, getAccessToken],
   );
 
   const loadPrediction = useCallback(async (vibeId) => {
@@ -507,8 +353,7 @@ export function VibeStoreProvider({ children }) {
           method: 'POST',
           body: { payload },
         });
-        const merged = await hydrateStateWithClientVibes(data.state, { force: true });
-        applyState(merged);
+        applyState(data.state);
         setError('');
         return data.mintedConfession || null;
       } catch (mintError) {
@@ -516,7 +361,7 @@ export function VibeStoreProvider({ children }) {
         return null;
       }
     },
-    [applyState, hydrateStateWithClientVibes],
+    [applyState],
   );
 
   const mintVibe = useCallback(
@@ -558,8 +403,7 @@ export function VibeStoreProvider({ children }) {
           };
         }
         onStage?.('hydrate');
-        const merged = await hydrateStateWithClientVibes(data.state, { force: true });
-        applyState(merged);
+        applyState(data.state);
         setError('');
         onStage?.('done');
         return {
@@ -578,7 +422,7 @@ export function VibeStoreProvider({ children }) {
         };
       }
     },
-    [applyState, hydrateStateWithClientVibes, getAccessToken],
+    [applyState, getAccessToken],
   );
 
   const createStripeCheckoutSession = useCallback(async (packId) => {
@@ -601,8 +445,7 @@ export function VibeStoreProvider({ children }) {
       });
 
       if (data?.state) {
-        const merged = await hydrateStateWithClientVibes(data.state);
-        applyState(merged);
+        applyState(data.state);
       }
 
       // Profile balance is sourced from auth store when logged in.
@@ -612,12 +455,28 @@ export function VibeStoreProvider({ children }) {
 
       return data;
     },
-    [applyState, refreshProfile, hydrateStateWithClientVibes, getAccessToken],
+    [applyState, refreshProfile, getAccessToken],
   );
 
   const clearError = useCallback(() => {
     setError('');
   }, []);
+
+  const activeVibes = useMemo(
+    () => (store.mintedVibes || []).filter(v => {
+      const endMs = toExpiryMs(v.endTime);
+      return endMs === 0 || endMs > Date.now();
+    }),
+    [store.mintedVibes],
+  );
+
+  const endedVibes = useMemo(
+    () => (store.mintedVibes || []).filter(v => {
+      const endMs = toExpiryMs(v.endTime);
+      return endMs > 0 && endMs <= Date.now();
+    }),
+    [store.mintedVibes],
+  );
 
   const value = useMemo(
     () => ({
@@ -627,6 +486,8 @@ export function VibeStoreProvider({ children }) {
       walletLog: store.walletLog,
       confessions: store.confessions,
       mintedVibes: store.mintedVibes,
+      activeVibes,
+      endedVibes,
       isHydrating,
       error,
       refreshState,
@@ -644,6 +505,8 @@ export function VibeStoreProvider({ children }) {
       store,
       profile,
       supabaseVaultItems,
+      activeVibes,
+      endedVibes,
       isHydrating,
       error,
       refreshState,
