@@ -614,11 +614,63 @@ const App = () => {
       .va-scroll-row::-webkit-scrollbar { height: 6px; }
       .va-scroll-row::-webkit-scrollbar-track { background: transparent; }
       .va-scroll-row::-webkit-scrollbar-thumb { background: rgba(200, 255, 0, 0.5); border-radius: 99px; }
+      @keyframes va-hero-glow {
+        0%, 100% { opacity: 0.25; transform: scale(1); }
+        50% { opacity: 0.45; transform: scale(1.08); }
+      }
+      @keyframes va-hero-line {
+        0% { transform: scaleX(0); opacity: 0; }
+        50% { transform: scaleX(1); opacity: 1; }
+        100% { transform: scaleX(0); opacity: 0; }
+      }
+      @keyframes va-tagline-in {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes va-pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      @keyframes va-stat-count {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .va-hero-cta {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-weight: 900; text-transform: uppercase; font-size: 14px;
+        letter-spacing: 0.6px; padding: 14px 28px; text-decoration: none;
+        transition: all 0.2s ease; position: relative; overflow: hidden;
+      }
+      .va-hero-cta--primary {
+        background: #C8FF00; color: #000; border: 2px solid #000;
+      }
+      .va-hero-cta--primary:hover {
+        background: #DBFF55; transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(200, 255, 0, 0.3);
+      }
+      .va-hero-cta--secondary {
+        background: transparent; color: #C8FF00; border: 2px solid #C8FF00;
+      }
+      .va-hero-cta--secondary:hover {
+        background: rgba(200, 255, 0, 0.08); transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(200, 255, 0, 0.12);
+      }
+      .va-hero-cta--ghost {
+        background: transparent; color: #666; border: none; padding: 8px 4px;
+        font-size: 12px; text-decoration: underline; text-decoration-color: #333;
+        text-underline-offset: 3px; cursor: pointer;
+      }
+      .va-hero-cta--ghost:hover { color: #C8FF00; text-decoration-color: #C8FF00; }
+      .va-stat-pill {
+        display: flex; flex-direction: column; gap: 2px;
+        padding: 10px 16px; background: rgba(200, 255, 0, 0.04);
+        border: 1px solid #1F1F1F; animation: va-stat-count 0.5s ease both;
+      }
+      .va-stat-pill:hover { border-color: #C8FF00; background: rgba(200, 255, 0, 0.08); }
       @media (max-width: 768px) {
         .ticker-anim { gap: 20px; animation-duration: 28s; }
+        .va-hero-cta { padding: 12px 20px; font-size: 13px; }
       }
       @media (max-width: 420px) {
         .ticker-anim { gap: 14px; animation-duration: 34s; }
+        .va-hero-cta { padding: 11px 16px; font-size: 12px; }
       }
     `;
     document.head.appendChild(style);
@@ -1056,116 +1108,273 @@ const App = () => {
         </div>
       </div>
 
+      {/* ─── HERO ─── */}
       <section
         style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: isMobile ? `18px ${sidePadding}px 12px` : `22px ${sidePadding}px 14px`,
+          position: 'relative',
+          overflow: 'hidden',
+          maxWidth: '100%',
+          borderBottom: '1px solid #1A1A1A',
         }}
       >
+        {/* Background glow orb */}
         <div
           style={{
-            maxWidth: '860px',
-            padding: isMobile ? '2px 0 0' : '4px 0 0',
+            position: 'absolute',
+            top: isMobile ? '-60px' : '-80px',
+            right: isMobile ? '-100px' : '-40px',
+            width: isMobile ? '360px' : '600px',
+            height: isMobile ? '360px' : '600px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(200,255,0,0.12) 0%, rgba(200,255,0,0.03) 50%, transparent 70%)',
+            animation: 'va-hero-glow 6s ease-in-out infinite',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+        {/* Dot noise overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'radial-gradient(rgba(200,255,0,0.08) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            maxWidth: '1400px',
+            margin: '0 auto',
+            padding: isMobile
+              ? `32px ${sidePadding}px 28px`
+              : `56px ${sidePadding}px 40px`,
           }}
         >
-          <div style={{ fontSize: '11px', color: '#555555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
-            The internet's slop pile
-          </div>
-          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '40px' : '62px', lineHeight: 0.95, textTransform: 'uppercase', maxWidth: '740px' }}>
-            Collect Internet Slop
-          </div>
-          <p style={{ maxWidth: '600px', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.55, marginTop: '14px', color: '#B5B5B5', fontWeight: 600 }}>
-            Bid on listed vibes, discover strange market objects, and build a vault of rare, internet-native artifacts.
-          </p>
-          <div style={{ marginTop: '8px', fontSize: isMobile ? '14px' : '15px', color: '#555555', fontWeight: 700 }}>
-            Be your worst self. We're not judging.
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px', alignItems: 'center' }}>
-            <Link
-              href="/auctions"
+          {/* Eyebrow */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: isMobile ? '14px' : '18px',
+            }}
+          >
+            <span
               style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
                 background: '#C8FF00',
-                color: '#000000',
-                border: '2px solid #000000',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                fontSize: '13px',
-                letterSpacing: '0.5px',
-                padding: '11px 18px',
-                textDecoration: 'none',
+                display: 'inline-block',
+                animation: 'va-pulse-dot 2s ease-in-out infinite',
               }}
-            >
-              Browse Listings
-            </Link>
-            <Link
-              href="/swipe"
+            />
+            <span
               style={{
-                background: 'transparent',
-                color: '#C8FF00',
-                border: '1px solid #C8FF00',
-                fontWeight: 900,
+                fontSize: '11px',
+                fontWeight: 800,
                 textTransform: 'uppercase',
-                fontSize: '13px',
-                letterSpacing: '0.5px',
-                padding: '11px 18px',
-                textDecoration: 'none',
+                letterSpacing: '2px',
+                color: '#C8FF00',
               }}
             >
+              {marketStats.totalLive > 0
+                ? `${marketStats.totalLive} live listing${marketStats.totalLive !== 1 ? 's' : ''} right now`
+                : 'The market is warming up'}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h1
+            style={{
+              fontFamily: "'Anton', sans-serif",
+              fontSize: isMobile ? '48px' : isTablet ? '68px' : '96px',
+              lineHeight: 0.92,
+              textTransform: 'uppercase',
+              maxWidth: '900px',
+              margin: 0,
+              color: '#FFF',
+            }}
+          >
+            Collect{' '}
+            <span
+              style={{
+                color: '#C8FF00',
+                display: 'inline-block',
+                textShadow: '0 0 40px rgba(200,255,0,0.25)',
+              }}
+            >
+              Internet
+            </span>
+            <br />
+            Slop
+            <span
+              style={{
+                display: 'inline-block',
+                background: '#C8FF00',
+                color: '#000',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 800,
+                fontSize: isMobile ? '14px' : '18px',
+                padding: isMobile ? '4px 10px' : '6px 14px',
+                marginLeft: isMobile ? '8px' : '14px',
+                transform: 'rotate(-2deg) translateY(-8px)',
+                verticalAlign: 'middle',
+                boxShadow: '4px 4px 0px rgba(0,0,0,0.3)',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Since 2026
+            </span>
+          </h1>
+
+          {/* Animated accent line */}
+          <div
+            style={{
+              width: isMobile ? '80px' : '120px',
+              height: '3px',
+              background: '#C8FF00',
+              margin: isMobile ? '16px 0' : '20px 0',
+              transformOrigin: 'left',
+              animation: 'va-hero-line 4s ease-in-out infinite',
+            }}
+          />
+
+          {/* Subtitle */}
+          <p
+            style={{
+              maxWidth: '580px',
+              fontSize: isMobile ? '16px' : '18px',
+              lineHeight: 1.6,
+              color: '#B0B0B0',
+              fontWeight: 500,
+              margin: 0,
+            }}
+          >
+            Bid on listed vibes, discover strange market objects, and build a vault
+            of rare, internet-native artifacts.
+          </p>
+
+          {/* Rotating tagline */}
+          <div
+            style={{
+              marginTop: '10px',
+              height: '24px',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <span
+              key={taglineIndex}
+              style={{
+                display: 'inline-block',
+                fontSize: isMobile ? '13px' : '15px',
+                fontWeight: 700,
+                color: '#555',
+                fontStyle: 'italic',
+                animation: taglineFading
+                  ? 'none'
+                  : 'va-tagline-in 0.4s ease both',
+                opacity: taglineFading ? 0 : 1,
+                transition: 'opacity 0.35s ease',
+              }}
+            >
+              {ROTATING_TAGLINES[taglineIndex]}
+            </span>
+          </div>
+
+          {/* CTAs */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '12px',
+              marginTop: isMobile ? '22px' : '28px',
+              alignItems: 'center',
+            }}
+          >
+            <Link href="/auctions" className="va-hero-cta va-hero-cta--primary">
+              Browse Listings →
+            </Link>
+            <Link href="/swipe" className="va-hero-cta va-hero-cta--secondary">
               Vibe or Pass ♥
             </Link>
             <button
               type="button"
               onClick={handleSurpriseMe}
-              style={{
-                background: 'transparent',
-                color: '#444',
-                border: 'none',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                fontSize: '12px',
-                letterSpacing: '0.5px',
-                padding: '4px 0',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                textDecorationColor: '#333',
-              }}
+              className="va-hero-cta va-hero-cta--ghost"
             >
               Surprise me
             </button>
           </div>
-        </div>
-      </section>
 
-
-      <section
-        style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: isMobile ? `8px ${sidePadding}px 8px` : `10px ${sidePadding}px 10px`,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            flexWrap: 'wrap',
-          }}
-        >
+          {/* Market stats strip */}
           <div
             style={{
-              border: '1px solid #2D2D2D',
-              background: '#121212',
-              color: '#A9A9A9',
-              fontSize: isMobile ? '11px' : '12px',
+              display: 'grid',
+              gridTemplateColumns: isMobile
+                ? 'repeat(2, 1fr)'
+                : 'repeat(4, auto)',
+              gap: isMobile ? '8px' : '12px',
+              marginTop: isMobile ? '24px' : '36px',
+              maxWidth: '620px',
+            }}
+          >
+            {[
+              { label: 'Live Listings', value: marketStats.totalLive },
+              { label: 'Total Volume', value: `${marketStats.totalVolume.toLocaleString()} AURA` },
+              { label: 'Active Bids', value: marketStats.totalBids },
+              { label: 'Hot Category', value: marketStats.dominantCategory },
+            ].map((stat, i) => (
+              <div
+                key={stat.label}
+                className="va-stat-pill"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              >
+                <span
+                  style={{
+                    fontSize: '9px',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '1.2px',
+                    color: '#666',
+                  }}
+                >
+                  {stat.label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'Anton', sans-serif",
+                    fontSize: isMobile ? '16px' : '20px',
+                    color: '#FFF',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {stat.value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Sync status */}
+          <div
+            style={{
+              marginTop: '16px',
+              fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
-              padding: isMobile ? '8px 10px' : '8px 12px',
-              letterSpacing: '0.3px',
+              letterSpacing: '0.4px',
+              color: '#3A3A3A',
             }}
-            >
-            {secondsSinceSync === null ? 'Syncing market gallery...' : `Market gallery synced ${secondsSinceSync}s ago`}
+          >
+            {secondsSinceSync === null
+              ? 'Syncing market gallery…'
+              : `Gallery synced ${secondsSinceSync}s ago`}
           </div>
         </div>
       </section>

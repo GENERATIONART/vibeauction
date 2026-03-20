@@ -438,6 +438,7 @@ const customStyles = {
     borderRadius: '8px',
     padding: '24px',
     border: '1px solid #222222',
+    marginTop: '24px',
   },
   commentsPanel: {
     background: '#111111',
