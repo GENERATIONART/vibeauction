@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import { buildGraduationSnapshot } from '../../../../lib/vibe-graduation.js';
 import { getGraduationBoard } from '../../../../lib/server/state-db.js';
 import { apiError } from '../../../../lib/api-error.js';
-import { apiError } from '../../../../lib/api-error.js';
 
 export const dynamic = 'force-dynamic';
 
