@@ -192,7 +192,7 @@ export default function VibeOrPassHero() {
   if (loading) {
     return (
       <div style={{
-        height: '100%', minHeight: 400, background: '#111', border: '2px solid #1E1E1E', borderRadius: 12,
+        flex: 1, minHeight: 400, background: '#111', border: '2px solid #1E1E1E', borderRadius: 12,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center', color: '#333' }}>
@@ -207,7 +207,7 @@ export default function VibeOrPassHero() {
   if (!vibes.length) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
       {/* Label row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 13, textTransform: 'uppercase', letterSpacing: 2, color: '#555' }}>

@@ -1098,14 +1098,14 @@ const App = () => {
             padding: isMobile
               ? `32px ${sidePadding}px 28px`
               : `56px ${sidePadding}px 0`,
-            display: 'grid',
-            gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1fr) 420px',
-            gap: isMobile ? '24px' : '40px',
+            display: 'flex',
+            flexDirection: isMobile || isTablet ? 'column' : 'row',
             alignItems: 'stretch',
+            gap: isMobile ? '24px' : '0',
           }}
         >
           {/* ── Left column: text ── */}
-          <div style={{ paddingBottom: isMobile ? 0 : 40 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingBottom: isMobile ? 0 : 40, paddingRight: isMobile || isTablet ? 0 : 40 }}>
             {/* Eyebrow */}
             <div
               style={{
@@ -1306,7 +1306,9 @@ const App = () => {
 
           {/* ── Right column: Vibe or Pass widget ── */}
           {!isMobile && !isTablet && (
-            <VibeOrPassHero />
+            <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #1A1A1A' }}>
+              <VibeOrPassHero />
+            </div>
           )}
         </div>
       </section>
