@@ -1097,7 +1097,7 @@ const App = () => {
             margin: '0 auto',
             padding: isMobile
               ? `32px ${sidePadding}px 28px`
-              : `56px ${sidePadding}px 40px`,
+              : `56px ${sidePadding}px 0`,
             display: 'grid',
             gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1fr) 420px',
             gap: isMobile ? '24px' : '40px',
@@ -1105,7 +1105,7 @@ const App = () => {
           }}
         >
           {/* ── Left column: text ── */}
-          <div>
+          <div style={{ paddingBottom: isMobile ? 0 : 40 }}>
             {/* Eyebrow */}
             <div
               style={{
