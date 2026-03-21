@@ -1096,218 +1096,181 @@ const App = () => {
             maxWidth: '1400px',
             margin: '0 auto',
             padding: isMobile
-              ? `32px ${sidePadding}px 28px`
-              : `56px ${sidePadding}px 0`,
-            display: 'flex',
-            flexDirection: isMobile || isTablet ? 'column' : 'row',
-            alignItems: 'stretch',
-            gap: isMobile ? '24px' : '0',
+              ? `24px ${sidePadding}px 20px`
+              : isTablet
+                ? `28px ${sidePadding}px 24px`
+                : `28px ${sidePadding}px 24px`,
           }}
         >
-          {/* ── Left column: text ── */}
-          <div style={{ flex: 1, minWidth: 0, paddingBottom: isMobile ? 0 : 40, paddingRight: isMobile || isTablet ? 0 : 40 }}>
-            {/* Eyebrow */}
-            <div
+          {/* Eyebrow */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: isMobile ? '10px' : '12px',
+            }}
+          >
+            <span
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: isMobile ? '14px' : '18px',
-              }}
-            >
-              <span
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#C8FF00',
-                  display: 'inline-block',
-                  animation: 'va-pulse-dot 2s ease-in-out infinite',
-                }}
-              />
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '2px',
-                  color: '#C8FF00',
-                }}
-              >
-                {marketStats.totalLive > 0
-                  ? `${marketStats.totalLive} live listing${marketStats.totalLive !== 1 ? 's' : ''} right now`
-                  : 'The market is warming up'}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h1
-              style={{
-                fontFamily: "'Anton', sans-serif",
-                fontSize: isMobile ? '48px' : isTablet ? '68px' : '82px',
-                lineHeight: 0.92,
-                textTransform: 'uppercase',
-                maxWidth: '700px',
-                margin: 0,
-                color: '#FFF',
-              }}
-            >
-              Collect{' '}
-              <span
-                style={{
-                  color: '#C8FF00',
-                  display: 'inline',
-                  textShadow: '0 0 40px rgba(200,255,0,0.25)',
-                }}
-              >
-                Internet
-              </span>
-              <br />
-              Slop
-              <span
-                style={{
-                  display: 'inline-block',
-                  background: '#C8FF00',
-                  color: '#000',
-                  fontFamily: "'Inter', sans-serif",
-                  fontWeight: 800,
-                  fontSize: isMobile ? '14px' : '16px',
-                  padding: isMobile ? '4px 10px' : '5px 12px',
-                  marginLeft: isMobile ? '8px' : '12px',
-                  transform: 'rotate(-2deg) translateY(-6px)',
-                  verticalAlign: 'middle',
-                  boxShadow: '4px 4px 0px rgba(0,0,0,0.3)',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Since 2026
-              </span>
-            </h1>
-
-            {/* Animated accent line */}
-            <div
-              style={{
-                width: isMobile ? '80px' : '120px',
-                height: '3px',
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
                 background: '#C8FF00',
-                margin: isMobile ? '16px 0' : '20px 0',
-                transformOrigin: 'left',
-                animation: 'va-hero-line 4s ease-in-out infinite',
+                display: 'inline-block',
+                animation: 'va-pulse-dot 2s ease-in-out infinite',
               }}
             />
-
-            {/* Subtitle */}
-            <p
+            <span
               style={{
-                maxWidth: '520px',
-                fontSize: isMobile ? '16px' : '17px',
-                lineHeight: 1.6,
-                color: '#B0B0B0',
-                fontWeight: 500,
-                margin: 0,
+                fontSize: '10px',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                color: '#C8FF00',
               }}
             >
-              Bid on listed vibes, discover strange market objects, and build a vault
-              of rare, internet-native artifacts.
-            </p>
+              {marketStats.totalLive > 0
+                ? `${marketStats.totalLive} live listing${marketStats.totalLive !== 1 ? 's' : ''} right now`
+                : 'The market is warming up'}
+            </span>
+          </div>
 
-            {/* Rotating tagline */}
-            <div
-              style={{
-                marginTop: '10px',
-                height: '24px',
-                overflow: 'hidden',
-                position: 'relative',
-              }}
-            >
-              <span
-                key={taglineIndex}
+          {/* Title + stats row */}
+          <div style={{
+            display: isMobile ? 'block' : 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: '40px',
+          }}>
+            {/* Left: title */}
+            <div style={{ flex: '0 1 auto' }}>
+              <h1
                 style={{
-                  display: 'inline-block',
-                  fontSize: isMobile ? '13px' : '15px',
-                  fontWeight: 700,
-                  color: '#555',
-                  fontStyle: 'italic',
-                  animation: taglineFading
-                    ? 'none'
-                    : 'va-tagline-in 0.4s ease both',
-                  opacity: taglineFading ? 0 : 1,
-                  transition: 'opacity 0.35s ease',
+                  fontFamily: "'Anton', sans-serif",
+                  fontSize: isMobile ? '44px' : isTablet ? '56px' : '72px',
+                  lineHeight: 0.92,
+                  textTransform: 'uppercase',
+                  margin: 0,
+                  color: '#FFF',
+                  whiteSpace: isMobile ? 'normal' : 'nowrap',
                 }}
               >
-                {ROTATING_TAGLINES[taglineIndex]}
-              </span>
+                Collect{' '}
+                <span style={{ color: '#C8FF00', textShadow: '0 0 40px rgba(200,255,0,0.2)' }}>
+                  Internet
+                </span>{' '}
+                Slop
+                <span
+                  style={{
+                    display: 'inline-block',
+                    background: '#C8FF00',
+                    color: '#000',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 800,
+                    fontSize: isMobile ? '12px' : '14px',
+                    padding: '4px 10px',
+                    marginLeft: '12px',
+                    transform: 'rotate(-2deg) translateY(-4px)',
+                    verticalAlign: 'middle',
+                    boxShadow: '3px 3px 0px rgba(0,0,0,0.3)',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Since 2026
+                </span>
+              </h1>
+              <p
+                style={{
+                  maxWidth: '520px',
+                  fontSize: '13px',
+                  lineHeight: 1.5,
+                  color: '#777',
+                  fontWeight: 500,
+                  margin: isMobile ? '10px 0 0' : '8px 0 0',
+                }}
+              >
+                Bid on listed vibes, discover strange market objects, and build a vault
+                of rare, internet-native artifacts.
+              </p>
             </div>
 
-            {/* Market stats strip */}
+            {/* Right: stats */}
+            {!isMobile && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '10px',
+                  flexShrink: 0,
+                }}
+              >
+                {[
+                  { label: 'Live', value: marketStats.totalLive },
+                  { label: 'Volume', value: `${marketStats.totalVolume.toLocaleString()}` },
+                  { label: 'Bids', value: marketStats.totalBids },
+                  { label: 'Hot', value: marketStats.dominantCategory },
+                ].map((stat, i) => (
+                  <div
+                    key={stat.label}
+                    className="va-stat-pill"
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '8px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        color: '#555',
+                      }}
+                    >
+                      {stat.label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "'Anton', sans-serif",
+                        fontSize: '16px',
+                        color: '#FFF',
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      {stat.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile stats */}
+          {isMobile && (
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile
-                  ? 'repeat(2, 1fr)'
-                  : 'repeat(4, auto)',
-                gap: isMobile ? '8px' : '12px',
-                marginTop: isMobile ? '24px' : '32px',
-                maxWidth: '560px',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '8px',
+                marginTop: '14px',
               }}
             >
               {[
-                { label: 'Live Listings', value: marketStats.totalLive },
-                { label: 'Total Volume', value: `${marketStats.totalVolume.toLocaleString()} AURA` },
-                { label: 'Active Bids', value: marketStats.totalBids },
-                { label: 'Hot Category', value: marketStats.dominantCategory },
+                { label: 'Live', value: marketStats.totalLive },
+                { label: 'Volume', value: `${marketStats.totalVolume.toLocaleString()}` },
+                { label: 'Bids', value: marketStats.totalBids },
+                { label: 'Hot', value: marketStats.dominantCategory },
               ].map((stat, i) => (
                 <div
                   key={stat.label}
                   className="va-stat-pill"
                   style={{ animationDelay: `${i * 0.1}s` }}
                 >
-                  <span
-                    style={{
-                      fontSize: '9px',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '1.2px',
-                      color: '#666',
-                    }}
-                  >
+                  <span style={{ fontSize: '8px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#555' }}>
                     {stat.label}
                   </span>
-                  <span
-                    style={{
-                      fontFamily: "'Anton', sans-serif",
-                      fontSize: isMobile ? '16px' : '18px',
-                      color: '#FFF',
-                      lineHeight: 1.1,
-                    }}
-                  >
+                  <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#FFF', lineHeight: 1.1 }}>
                     {stat.value}
                   </span>
                 </div>
               ))}
-            </div>
-
-            {/* Sync status */}
-            <div
-              style={{
-                marginTop: '14px',
-                fontSize: '11px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.4px',
-                color: '#3A3A3A',
-              }}
-            >
-              {secondsSinceSync === null
-                ? 'Syncing market gallery…'
-                : `Gallery synced ${secondsSinceSync}s ago`}
-            </div>
-          </div>
-
-          {/* ── Right column: Vibe or Pass widget ── */}
-          {!isMobile && !isTablet && (
-            <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #1A1A1A' }}>
-              <VibeOrPassHero />
             </div>
           )}
         </div>
@@ -1319,7 +1282,7 @@ const App = () => {
           ...customStyles.layoutGrid,
           gridTemplateColumns: isTablet ? '1fr' : customStyles.layoutGrid.gridTemplateColumns,
           gap: isMobile ? '16px' : isTablet ? '22px' : customStyles.layoutGrid.gap,
-          marginTop: 0,
+          marginTop: isMobile ? 16 : 24,
           padding: isMobile ? `0 ${sidePadding}px 24px` : isTablet ? `0 ${sidePadding}px 28px` : customStyles.layoutGrid.padding,
         }}
       >
