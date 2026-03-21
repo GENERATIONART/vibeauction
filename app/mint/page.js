@@ -117,12 +117,9 @@ const customStyles = {
     fontSize: '13px',
   },
   mainContainer: {
-    maxWidth: '1200px',
+    maxWidth: '680px',
     margin: '0 auto',
     padding: '56px 24px 40px',
-    display: 'grid',
-    gridTemplateColumns: '1fr 340px',
-    gap: '60px',
   },
   formSectionH1: {
     fontFamily: "'Anton', sans-serif",
@@ -896,8 +893,6 @@ export default function MintPage() {
       <main
         style={{
           ...customStyles.mainContainer,
-          gridTemplateColumns: isTablet ? '1fr' : customStyles.mainContainer.gridTemplateColumns,
-          gap: isMobile ? '24px' : customStyles.mainContainer.gap,
           padding: isMobile ? '26px 16px 24px' : customStyles.mainContainer.padding,
         }}
       >
@@ -1321,60 +1316,6 @@ export default function MintPage() {
             </div>
           </form>
         </div>
-
-        <aside>
-          <div
-            style={{
-              ...customStyles.previewSticky,
-              position: isTablet ? 'relative' : customStyles.previewSticky.position,
-              top: isTablet ? 0 : customStyles.previewSticky.top,
-            }}
-          >
-            <div style={customStyles.previewLabel}>Live Preview</div>
-
-            <article style={customStyles.card}>
-              <div style={customStyles.liveBadge}>{isConfession ? 'Confessions' : 'AI Category'}</div>
-              <div style={customStyles.cardImageArea}>
-                <div style={customStyles.patternDots}></div>
-                {uploadPreviewUrl ? (
-                  <img src={uploadPreviewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }} />
-                ) : (
-                  <div style={customStyles.cardFallback}>
-                    {advancedOptions.imageStyle ? advancedOptions.imageStyle.split(' ').slice(0, 3).join(' ').toUpperCase() + '...' : 'AI IMAGE PREVIEW'}
-                  </div>
-                )}
-              </div>
-              <div style={customStyles.cardContent}>
-                <h2 style={{ ...customStyles.cardTitle, fontSize: isMobile ? '22px' : customStyles.cardTitle.fontSize }}>
-                  {previewTitle}
-                </h2>
-                <p style={{ fontSize: '13px', lineHeight: 1.45, color: '#444444', marginBottom: '10px' }}>
-                  {truncate(previewDetails, 120)}
-                </p>
-                <div style={customStyles.cardMeta}>
-                  <div>
-                    <div style={customStyles.bidLabel}>{isConfession ? 'Category' : 'Starting Bid'}</div>
-                    <div style={customStyles.bidAmount}>{isConfession ? 'Confessions' : previewBid}</div>
-                  </div>
-                  <span style={customStyles.timer}>{isConfession ? (formData.anonymous ? 'Anonymous' : 'Named') : previewTimer}</span>
-                </div>
-              </div>
-              <div style={{ padding: '16px' }}>
-                <button type="button" style={customStyles.placeBidBtn} disabled>
-                  {isConfession ? 'Ready To Create' : 'Ready For Collectors'}
-                </button>
-              </div>
-            </article>
-
-            <p style={{ fontSize: '12px', color: '#444444', textAlign: 'center', marginTop: '20px', lineHeight: 1.5 }}>
-              {isConfession
-                ? 'Anonymous confessions hide your handle in feed.'
-                : 'Listing a vibe turns it into a collectible market object. Listing costs 50 AURA, with a 2% platform fee on sale proceeds.'}
-              <br />
-              Total minted: {totalMinted} ({confessionCount} confessions)
-            </p>
-          </div>
-        </aside>
       </main>
 
       <svg style={customStyles.svgDrip} preserveAspectRatio="none" viewBox="0 0 1440 100">
