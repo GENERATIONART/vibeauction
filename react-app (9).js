@@ -1099,7 +1099,7 @@ const App = () => {
               ? `32px ${sidePadding}px 28px`
               : `56px ${sidePadding}px 40px`,
             display: 'grid',
-            gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1fr) 340px',
+            gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1fr) 420px',
             gap: isMobile ? '24px' : '40px',
             alignItems: 'start',
           }}

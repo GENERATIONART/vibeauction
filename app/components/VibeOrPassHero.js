@@ -192,7 +192,7 @@ export default function VibeOrPassHero() {
   if (loading) {
     return (
       <div style={{
-        height: 420, background: '#111', border: '2px solid #1E1E1E', borderRadius: 12,
+        height: 460, background: '#111', border: '2px solid #1E1E1E', borderRadius: 12,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center', color: '#333' }}>
@@ -223,7 +223,7 @@ export default function VibeOrPassHero() {
 
       {/* Card stack */}
       <div
-        style={{ position: 'relative', height: 400, touchAction: 'none' }}
+        style={{ position: 'relative', height: 440, touchAction: 'none' }}
         onMouseDown={onPointerDown}
         onMouseMove={onPointerMove}
         onMouseUp={onPointerUp}
