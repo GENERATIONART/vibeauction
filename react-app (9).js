@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useVibeStore } from './app/state/vibe-store';
 import NavBar from './app/components/NavBar';
+import VibeOrPassHero from './app/components/VibeOrPassHero';
 import { HOME_TICKER_ITEMS } from './lib/brand.js';
 
 const HOME_BATCH_SIZE = 12;
@@ -938,7 +939,6 @@ const App = () => {
 
   const visibleItems = useMemo(() => sortedItems.slice(0, visibleCount), [sortedItems, visibleCount]);
   const hasMoreItems = visibleCount < sortedItems.length;
-  const topVibe = sortedItems[0] || null;
   const marketStats = useMemo(() => {
     const totalVolume = liveVibes.reduce((sum, item) => sum + Number(item.bid || 0), 0);
     const categoryLeaders = categories.filter((entry) => entry.label !== 'All Vibes');
@@ -1304,110 +1304,9 @@ const App = () => {
             </div>
           </div>
 
-          {/* ── Right column: Top Vibe card ── */}
-          {topVibe && (
-            <Link
-              href={`/auction/${topVibe.slug}`}
-              style={{
-                display: 'block',
-                textDecoration: 'none',
-                color: 'inherit',
-                background: '#111',
-                border: '2px solid #1E1E1E',
-                overflow: 'hidden',
-                transition: 'border-color 0.25s, box-shadow 0.25s, transform 0.25s',
-                alignSelf: isMobile ? 'stretch' : 'center',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#C8FF00';
-                e.currentTarget.style.boxShadow = '0 8px 32px rgba(200,255,0,0.12)';
-                e.currentTarget.style.transform = 'translateY(-3px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#1E1E1E';
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.transform = 'none';
-              }}
-            >
-              {/* Image */}
-              <div
-                style={{
-                  position: 'relative',
-                  height: '220px',
-                  background: '#1A1A1A',
-                  borderBottom: '1px solid #252525',
-                }}
-              >
-                {topVibe.imageUrl ? (
-                  <img
-                    src={topVibe.imageUrl}
-                    alt={topVibe.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    loading="eager"
-                  />
-                ) : (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundImage: 'radial-gradient(#C8FF00 1px, transparent 1px)',
-                      backgroundSize: '12px 12px',
-                      opacity: 0.06,
-                    }}
-                  />
-                )}
-                {/* Badge */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '10px',
-                    left: '10px',
-                    background: '#C8FF00',
-                    color: '#000',
-                    fontWeight: 900,
-                    fontSize: '10px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    padding: '4px 10px',
-                  }}
-                >
-                  Top Vibe
-                </div>
-              </div>
-
-              {/* Card body */}
-              <div style={{ padding: '16px' }}>
-                <div
-                  style={{
-                    fontFamily: "'Anton', sans-serif",
-                    fontSize: '26px',
-                    lineHeight: 1.05,
-                    textTransform: 'uppercase',
-                    color: '#FFF',
-                    marginBottom: '12px',
-                    overflowWrap: 'anywhere',
-                  }}
-                >
-                  {topVibe.title}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <div style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#666', marginBottom: '2px' }}>
-                      Current Bid
-                    </div>
-                    <div style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', color: '#C8FF00' }}>
-                      {getBidDisplay(topVibe)} AURA
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#555', background: '#1A1A1A', border: '1px solid #2A2A2A', padding: '5px 10px' }}>
-                    {topVibe.category}
-                  </div>
-                </div>
-              </div>
-            </Link>
+          {/* ── Right column: Vibe or Pass widget ── */}
+          {!isMobile && !isTablet && (
+            <VibeOrPassHero />
           )}
         </div>
       </section>
