@@ -1101,7 +1101,7 @@ const App = () => {
             display: 'grid',
             gridTemplateColumns: isMobile || isTablet ? '1fr' : 'minmax(0, 1fr) 420px',
             gap: isMobile ? '24px' : '40px',
-            alignItems: 'start',
+            alignItems: 'stretch',
           }}
         >
           {/* ── Left column: text ── */}
