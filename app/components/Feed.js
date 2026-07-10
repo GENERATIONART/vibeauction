@@ -235,27 +235,38 @@ export default function Feed() {
     return () => observer.disconnect();
   }, [loadMore]);
 
-  const handleReact = async (vibe, reactionType) => {
-    const token = await getAccessToken();
-    if (!token) return;
-    const res = await fetch('/api/state/vibe-social', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ reaction: { vibeId: vibe.slug, vibeName: vibe.name, reactionType } }),
-    });
-    const data = await res.json();
-    if (!data?.accepted) return;
+  const toggleReactionLocally = (slug, reactionType) => {
     setVibes((prev) => prev.map((v) => {
-      if (v.slug !== vibe.slug) return v;
+      if (v.slug !== slug) return v;
       const hasIt = v.viewerReactions.includes(reactionType);
       return {
         ...v,
-        reactionCount: v.reactionCount + (hasIt ? -1 : 1),
+        reactionCount: Math.max(0, v.reactionCount + (hasIt ? -1 : 1)),
         viewerReactions: hasIt
           ? v.viewerReactions.filter((r) => r !== reactionType)
           : [...v.viewerReactions, reactionType],
       };
     }));
+  };
+
+  const handleReact = async (vibe, reactionType) => {
+    const token = await getAccessToken();
+    if (!token) return;
+
+    // Flip it locally first so the click feels instant, then reconcile with the server.
+    toggleReactionLocally(vibe.slug, reactionType);
+
+    try {
+      const res = await fetch('/api/state/vibe-social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reaction: { vibeId: vibe.slug, vibeName: vibe.name, reactionType } }),
+      });
+      const data = await res.json();
+      if (!data?.accepted) toggleReactionLocally(vibe.slug, reactionType); // roll back
+    } catch {
+      toggleReactionLocally(vibe.slug, reactionType); // roll back
+    }
   };
 
   const handleFollow = async (listedBy) => {

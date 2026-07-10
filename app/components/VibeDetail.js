@@ -145,7 +145,7 @@ const S = {
 };
 
 export default function VibeDetail({ vibe }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [social, setSocial] = useState({ reactionCounts: {}, viewerReactions: [], totalReactions: 0 });
   const [comments, setComments] = useState([]);
   const [commentBody, setCommentBody] = useState('');
@@ -195,23 +195,56 @@ export default function VibeDetail({ vibe }) {
   const handleReact = async (reactionType) => {
     const token = await getAccessToken();
     if (!token) return;
-    await fetch('/api/state/vibe-social', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ reaction: { vibeId: vibe.slug, vibeName: vibe.name, reactionType } }),
-    });
-    loadSocial();
+
+    // Optimistic update — flip the reaction locally before the network call resolves.
+    const wasActive = social.viewerReactions?.includes(reactionType);
+    const previousSocial = social;
+    setSocial((prev) => ({
+      ...prev,
+      viewerReactions: wasActive
+        ? prev.viewerReactions.filter((r) => r !== reactionType)
+        : [...(prev.viewerReactions || []), reactionType],
+      reactionCounts: {
+        ...prev.reactionCounts,
+        [reactionType]: Math.max(0, (prev.reactionCounts?.[reactionType] || 0) + (wasActive ? -1 : 1)),
+      },
+      totalReactions: Math.max(0, (prev.totalReactions || 0) + (wasActive ? -1 : 1)),
+    }));
+
+    try {
+      const res = await fetch('/api/state/vibe-social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reaction: { vibeId: vibe.slug, vibeName: vibe.name, reactionType } }),
+      });
+      const data = await res.json();
+      if (data?.social) setSocial(data.social);
+      else if (!data?.accepted) setSocial(previousSocial);
+    } catch {
+      setSocial(previousSocial);
+    }
   };
 
   const handleFollow = async () => {
     const token = await getAccessToken();
     if (!token || !vibe.listedBy) return;
-    await fetch('/api/state/follow', {
-      method: followStats.isFollowing ? 'DELETE' : 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ userId: vibe.listedBy }),
-    });
-    loadFollowStats();
+
+    const wasFollowing = followStats.isFollowing;
+    setFollowStats((prev) => ({
+      ...prev,
+      isFollowing: !wasFollowing,
+      followerCount: Math.max(0, prev.followerCount + (wasFollowing ? -1 : 1)),
+    }));
+
+    try {
+      await fetch('/api/state/follow', {
+        method: wasFollowing ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: vibe.listedBy }),
+      });
+    } catch {
+      setFollowStats((prev) => ({ ...prev, isFollowing: wasFollowing, followerCount: Math.max(0, prev.followerCount + (wasFollowing ? 1 : -1)) }));
+    }
   };
 
   const handleComment = async (e) => {
@@ -220,15 +253,33 @@ export default function VibeDetail({ vibe }) {
     if (!body) return;
     const token = await getAccessToken();
     if (!token) return;
+
+    // Show the comment immediately instead of waiting on the round trip.
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticComment = {
+      id: optimisticId,
+      user: profile?.username ? `@${profile.username}` : 'You',
+      body,
+      createdAt: new Date().toISOString(),
+      time: 'Just now',
+    };
+    setComments((prev) => [optimisticComment, ...prev]);
+    setCommentBody('');
     setPosting(true);
     try {
-      await fetch('/api/state/vibe-comments', {
+      const res = await fetch('/api/state/vibe-comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ comment: { vibeId: vibe.slug, vibeName: vibe.name, body } }),
       });
-      setCommentBody('');
-      loadComments();
+      const data = await res.json();
+      if (data?.accepted && Array.isArray(data.comments)) {
+        setComments(data.comments);
+      } else {
+        setComments((prev) => prev.filter((c) => c.id !== optimisticId));
+      }
+    } catch {
+      setComments((prev) => prev.filter((c) => c.id !== optimisticId));
     } finally {
       setPosting(false);
     }
