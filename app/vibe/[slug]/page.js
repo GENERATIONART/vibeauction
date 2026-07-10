@@ -5,6 +5,7 @@ import { getMintedVibeBySlug } from '../../../lib/server/state-db.js';
 import { toAbsoluteUrl, SOCIAL_IMAGE_VERSION } from '../../../lib/site-url.js';
 import { BRAND_NAME } from '../../../lib/brand.js';
 
+export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
 
 export function generateStaticParams() {
