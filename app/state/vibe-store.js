@@ -100,6 +100,7 @@ const getMintFailureMessage = (reason) => {
   if (normalized === 'auth_required') return 'Could not verify your sign-in. Refresh and try again.';
   if (normalized === 'auth_invalid_token') return 'Could not verify your sign-in. Refresh and try again. If it keeps failing, sign in again.';
   if (normalized === 'auth_lookup_failed') return 'Sign-in check is temporarily unavailable. Please retry in a moment.';
+  if (normalized === 'agent_not_verified') return 'This agent has not been claimed by a human owner yet.';
   if (normalized === 'supabase_unavailable') return 'Minting backend is unavailable. Please try again shortly.';
   if (normalized.includes('jwt') || normalized.includes('token')) {
     return 'Could not verify your sign-in. Refresh and retry. If needed, sign in again.';
@@ -166,25 +167,6 @@ export function VibeStoreProvider({ children }) {
 
     return canReuseCurrentToken ? fallbackToken : null;
   }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setSupabaseVaultItems(null);
-      return;
-    }
-    const sb = getSupabaseClient();
-    if (!sb) return;
-    sb.from('vault_items')
-      .select('id, name, emoji, category, rarity, price, won_date, image_url, original_author')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (!error && data) setSupabaseVaultItems(data.map(mapVaultRow));
-      })
-      .catch(() => {
-        // vault fetch failed silently — items will fall back to store.vaultItems
-      });
-  }, [user]);
 
   const refreshState = useCallback(async () => {
     return dedupedRequest('state', async () => {

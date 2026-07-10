@@ -4,6 +4,58 @@ body {
   padding: 0;
 }
 
+body {
+  background: #09090b;
+  color: #f4f4f5;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: 'tnum';
+  -webkit-font-smoothing: antialiased;
+}
+
 * {
   box-sizing: border-box;
 }
+
+a,
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+.card-hover {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 0 40px -12px rgba(139, 92, 246, 0.35);
+}
+
+.reaction-pill {
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.reaction-pill:hover {
+  transform: translateY(-1px);
+}
+
+.img-zoom {
+  transition: transform 0.4s ease;
+}
+.img-zoom-wrap:hover .img-zoom {
+  transform: scale(1.04);
+}
+
+.masonry-feed {
+  column-count: 1;
+}
+@media (min-width: 640px) {
+  .masonry-feed { column-count: 2; }
+}
+@media (min-width: 1024px) {
+  .masonry-feed { column-count: 3; }
+}
+@media (min-width: 1360px) {
+  .masonry-feed { column-count: 4; }
+}
+

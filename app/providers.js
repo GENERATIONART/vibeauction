@@ -18,12 +18,12 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '40px', textAlign: 'center', background: '#0D0D0D', color: '#fff', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
-          <h2 style={{ color: '#C8FF00' }}>Something went wrong</h2>
-          <p style={{ color: '#888', marginTop: 12 }}>Refresh the page to try again.</p>
+        <div style={{ padding: '40px', textAlign: 'center', background: '#09090b', color: '#f4f4f5', minHeight: '100vh', fontFamily: "'Space Grotesk', sans-serif" }}>
+          <h2 style={{ color: '#8b5cf6' }}>Something went wrong</h2>
+          <p style={{ color: '#a3a3a3', marginTop: 12 }}>Refresh the page to try again.</p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            style={{ marginTop: 20, padding: '10px 24px', background: '#C8FF00', color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}
+            style={{ marginTop: 20, padding: '10px 24px', background: '#8b5cf6', color: '#000', border: 'none', borderRadius: 999, cursor: 'pointer', fontWeight: 600 }}
           >
             Try again
           </button>

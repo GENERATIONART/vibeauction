@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../state/auth-store';
 import { BRAND_NAME } from '../../lib/brand.js';
+import { COLORS, RADIUS } from '../../lib/design-tokens.js';
 
 const styles = {
   page: {
-    background: '#0D0D0D',
-    color: '#FFFFFF',
+    background: COLORS.bg,
+    color: COLORS.fg,
     minHeight: '100dvh',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Space Grotesk', sans-serif",
     WebkitFontSmoothing: 'antialiased',
     display: 'flex',
     flexDirection: 'column',
@@ -20,66 +21,62 @@ const styles = {
     padding: '24px 16px',
   },
   logo: {
-    fontFamily: "'Anton', sans-serif",
-    color: '#C8FF00',
-    textTransform: 'uppercase',
+    fontWeight: 300,
+    letterSpacing: '0.02em',
+    color: COLORS.accent,
     textDecoration: 'none',
-    fontSize: '28px',
-    letterSpacing: '0.5px',
+    fontSize: '24px',
     marginBottom: '32px',
   },
   card: {
     width: '100%',
     maxWidth: '420px',
-    border: '2px solid #C8FF00',
-    background: '#111111',
+    border: `1px solid ${COLORS.border}`,
+    background: COLORS.cardFill,
+    borderRadius: RADIUS.card,
     padding: '32px 28px',
-    boxShadow: '8px 8px 0px rgba(200,255,0,0.15)',
   },
   heading: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '42px',
-    lineHeight: 0.95,
-    textTransform: 'uppercase',
-    color: '#FFFFFF',
+    fontSize: '28px',
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+    color: COLORS.fg,
     marginBottom: '6px',
   },
   subheading: {
-    color: '#888888',
+    color: COLORS.textFaint,
     fontSize: '14px',
     marginBottom: '28px',
   },
   label: {
     display: 'block',
-    fontSize: '11px',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    color: '#AAAAAA',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: COLORS.textMuted,
     marginBottom: '6px',
   },
   input: {
     width: '100%',
-    background: '#1A1A1A',
-    border: '1px solid #333333',
-    color: '#FFFFFF',
+    background: COLORS.bgElevated,
+    border: `1px solid ${COLORS.border}`,
+    color: COLORS.fg,
     padding: '12px 14px',
     fontSize: '15px',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Space Grotesk', sans-serif",
+    borderRadius: '10px',
     outline: 'none',
     marginBottom: '18px',
     boxSizing: 'border-box',
   },
   btn: {
     width: '100%',
-    background: '#C8FF00',
+    background: COLORS.accent,
     color: '#000000',
     border: 'none',
-    padding: '14px',
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '20px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
+    padding: '13px',
+    borderRadius: RADIUS.pill,
+    fontSize: '15px',
+    fontWeight: 600,
     cursor: 'pointer',
     marginTop: '4px',
   },
@@ -92,25 +89,27 @@ const styles = {
     border: '1px solid rgba(255,82,82,0.4)',
     color: '#FFBCBC',
     padding: '10px 12px',
+    borderRadius: '10px',
     fontSize: '13px',
-    fontWeight: 700,
+    fontWeight: 600,
     marginBottom: '16px',
   },
   footer: {
     marginTop: '20px',
     fontSize: '13px',
-    color: '#666666',
+    color: COLORS.textDim,
     textAlign: 'center',
   },
   link: {
-    color: '#C8FF00',
+    color: COLORS.accent,
     textDecoration: 'none',
-    fontWeight: 700,
+    fontWeight: 600,
   },
 };
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -123,7 +122,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-      router.push('/');
+      const next = searchParams.get('next');
+      router.push(next && next.startsWith('/') ? next : '/feed');
     } catch (err) {
       setError(err?.message ?? 'Sign in failed. Check your credentials.');
     } finally {

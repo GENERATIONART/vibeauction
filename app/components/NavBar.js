@@ -3,39 +3,31 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
 import { BRAND_NAME } from '../../lib/brand.js';
+import { COLORS, RADIUS } from '../../lib/design-tokens.js';
 
-// primary = shown on desktop, secondary = hidden in a "More" group on tighter viewports
 const NAV_ITEMS = [
-  { label: 'Gallery',      href: '/' },
-  { label: 'Market',       href: '/auctions' },
+  { label: 'Feed',         href: '/feed' },
   { label: 'Vibe or Pass', href: '/swipe' },
-  { label: 'Breakouts',    href: '/breakouts' },
   { label: 'Create',       href: '/mint' },
-  { label: 'Leaderboard',  href: '/leaderboard' },
-  { label: 'Top Up',       href: '/top-up' },
   { label: 'About',        href: '/about' },
 ];
 
 export default function NavBar() {
-  const { balance } = useVibeStore();
   const { user, profile, signOut } = useAuth();
   const pathname = usePathname();
-  const [navHover, setNavHover] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(1200);
 
   const isMobile = viewportWidth <= 768;
   const isSmallMobile = viewportWidth <= 420;
   const isTablet = viewportWidth <= 1024;
-  const sidePadding = isSmallMobile ? 12 : isMobile ? 16 : isTablet ? 20 : 24;
-  const headerHeight = isMobile ? 64 : 60;
-  const balanceDisplay = Number.isFinite(balance) ? balance.toLocaleString() : '0';
+  const sidePadding = isSmallMobile ? 16 : isMobile ? 20 : isTablet ? 24 : 32;
   const userHandle = profile?.username || user?.email?.split('@')[0] || null;
-  const profilePath = userHandle ? `/profile/${encodeURIComponent(userHandle)}` : '/vault';
+  const profilePath = userHandle ? `/profile/${encodeURIComponent(userHandle)}` : '/agents';
   const profileLabel = userHandle ? `@${userHandle}` : '@you';
+  const avatarInitial = (userHandle || 'V').charAt(0).toUpperCase();
 
   useEffect(() => {
     const update = () => setViewportWidth(window.innerWidth);
@@ -48,34 +40,49 @@ export default function NavBar() {
     if (!isMobile && mobileMenuOpen) setMobileMenuOpen(false);
   }, [isMobile, mobileMenuOpen]);
 
-  const navItemStyle = {
-    fontWeight: 700,
+  const navPill = (active) => ({
+    borderRadius: RADIUS.pill,
+    padding: '7px 16px',
     fontSize: '14px',
-    color: '#FFFFFF',
+    fontWeight: 500,
     textDecoration: 'none',
-    textTransform: 'uppercase',
-    cursor: 'pointer',
-  };
+    whiteSpace: 'nowrap',
+    background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
+    color: active ? '#FFFFFF' : COLORS.textMuted,
+    transition: 'background 0.15s ease, color 0.15s ease',
+  });
 
   const mobileNavLinkBase = {
     textAlign: 'left',
     width: '100%',
-    padding: '10px 12px',
-    borderRadius: '6px',
-    fontWeight: 700,
-    fontSize: isSmallMobile ? '12px' : '13px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.3px',
+    padding: '11px 14px',
+    borderRadius: '10px',
+    fontWeight: 500,
+    fontSize: '14px',
     textDecoration: 'none',
     display: 'block',
+  };
+
+  const ctaPill = {
+    borderRadius: RADIUS.pill,
+    border: `1px solid ${COLORS.borderStrong}`,
+    color: '#e5e5e5',
+    fontSize: '13px',
+    fontWeight: 600,
+    padding: '7px 16px',
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
   };
 
   return (
     <>
       <header
         style={{
-          background: '#000000',
-          height: headerHeight,
+          background: 'rgba(9,9,11,0.85)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${COLORS.border}`,
+          height: '64px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -83,19 +90,17 @@ export default function NavBar() {
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          borderBottom: '2px solid #C8FF00',
         }}
       >
         <Link
-          href="/"
+          href="/feed"
           style={{
-            fontFamily: "'Anton', sans-serif",
-            fontSize: isSmallMobile ? '17px' : isMobile ? '20px' : '24px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            color: '#C8FF00',
+            fontSize: isSmallMobile ? '17px' : '20px',
+            fontWeight: 300,
+            letterSpacing: '0.02em',
+            color: COLORS.accent,
             textDecoration: 'none',
-            maxWidth: isMobile ? '45%' : 'none',
+            maxWidth: isMobile ? '40%' : 'none',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -105,54 +110,48 @@ export default function NavBar() {
         </Link>
 
         {!isMobile && (
-          <nav style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '20px' }}>
-            {NAV_ITEMS.map((item, i) => {
-              const isActive = pathname === item.href;
-              // On tablet hide the least important items to avoid crowding
-              if (isTablet && (item.href === '/top-up' || item.href === '/leaderboard')) return null;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  style={{
-                    ...navItemStyle,
-                    fontSize: isTablet ? '12px' : '13px',
-                    color: isActive || navHover === item.label ? '#C8FF00' : '#AAAAAA',
-                    // highlight the fun one
-                    ...(item.href === '/swipe' && !isActive ? { color: '#C8FF00', opacity: 0.75 } : {}),
-                    ...(isActive ? { color: '#C8FF00' } : {}),
-                  }}
-                  onMouseEnter={() => setNavHover(item.label)}
-                  onMouseLeave={() => setNavHover('')}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.label} href={item.href} style={navPill(pathname === item.href)}>
+                {item.label}
+              </Link>
+            ))}
           </nav>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: isSmallMobile ? '6px' : '8px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isSmallMobile ? '8px' : '10px', minWidth: 0 }}>
+          {!isMobile && (
+            <Link href="/#agent-onboarding" style={ctaPill}>
+              Put Your Agent Online
+            </Link>
+          )}
           {!isMobile && user && (
             <>
-              <Link
-                href={profilePath}
-                style={{ ...navItemStyle, color: '#C8FF00', fontSize: '13px', whiteSpace: 'nowrap' }}
-              >
-                {profileLabel}
+              <Link href="/agents" style={navPill(pathname === '/agents')}>
+                My Agents
+              </Link>
+              <Link href={profilePath} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  width: '30px', height: '30px', borderRadius: '999px',
+                  background: COLORS.accent, color: '#000000',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '12px', fontWeight: 700,
+                }}>
+                  {avatarInitial}
+                </span>
+                <span style={{ fontSize: '13px', color: COLORS.fg, fontWeight: 500, whiteSpace: 'nowrap' }}>{profileLabel}</span>
               </Link>
               <button
                 type="button"
                 onClick={() => signOut()}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #444',
-                  color: '#AAAAAA',
+                  border: `1px solid ${COLORS.border}`,
+                  color: COLORS.textMuted,
                   fontSize: '12px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  padding: '4px 10px',
-                  borderRadius: '4px',
+                  fontWeight: 600,
+                  padding: '6px 12px',
+                  borderRadius: RADIUS.pill,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                 }}
@@ -163,48 +162,26 @@ export default function NavBar() {
           )}
           {!isMobile && !user && (
             <>
-              <Link
-                href="/login"
-                style={{ ...navItemStyle, color: pathname === '/login' ? '#C8FF00' : '#FFFFFF', fontSize: '13px' }}
-              >
-                Login
+              <Link href="/login" style={{ fontSize: '14px', color: pathname === '/login' ? '#FFFFFF' : COLORS.textMuted, textDecoration: 'none', fontWeight: 500 }}>
+                Log in
               </Link>
               <Link
                 href="/signup"
                 style={{
-                  background: '#C8FF00',
+                  background: COLORS.accent,
                   color: '#000000',
-                  padding: '5px 12px',
-                  borderRadius: '4px',
-                  fontWeight: 700,
+                  padding: '7px 18px',
+                  borderRadius: RADIUS.pill,
+                  fontWeight: 600,
                   fontSize: '13px',
-                  textTransform: 'uppercase',
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                 }}
               >
-                Sign Up
+                Sign up free
               </Link>
             </>
           )}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: '#C8FF00',
-              color: '#000000',
-              padding: isSmallMobile ? '4px 8px' : isMobile ? '4px 10px' : '4px 12px',
-              borderRadius: '99px',
-              fontWeight: 700,
-              fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '13px',
-              minWidth: 0,
-              whiteSpace: 'nowrap',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            <span>{balanceDisplay} AURA</span>
-          </div>
           {isMobile && (
             <button
               type="button"
@@ -212,10 +189,10 @@ export default function NavBar() {
               style={{
                 width: isSmallMobile ? '34px' : '38px',
                 height: isSmallMobile ? '34px' : '38px',
-                borderRadius: '6px',
-                border: '2px solid #C8FF00',
-                background: '#0D0D0D',
-                color: '#C8FF00',
+                borderRadius: '10px',
+                border: `1px solid ${COLORS.borderStrong}`,
+                background: 'rgba(255,255,255,0.05)',
+                color: COLORS.accent,
                 fontSize: isSmallMobile ? '18px' : '20px',
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -232,14 +209,15 @@ export default function NavBar() {
       {isMobile && mobileMenuOpen && (
         <nav
           style={{
-            background: '#000000',
-            borderBottom: '2px solid #C8FF00',
-            padding: `10px ${sidePadding}px 14px`,
+            background: 'rgba(9,9,11,0.97)',
+            backdropFilter: 'blur(20px)',
+            borderBottom: `1px solid ${COLORS.border}`,
+            padding: `10px ${sidePadding}px 16px`,
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '6px',
             position: 'sticky',
-            top: headerHeight,
+            top: '64px',
             zIndex: 99,
           }}
         >
@@ -251,9 +229,8 @@ export default function NavBar() {
                 href={item.href}
                 style={{
                   ...mobileNavLinkBase,
-                  border: isActive ? '2px solid #C8FF00' : '1px solid #2A2A2A',
-                  background: isActive ? '#1A1A1A' : '#121212',
-                  color: isActive ? '#C8FF00' : '#FFFFFF',
+                  background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  color: isActive ? '#FFFFFF' : COLORS.textMuted,
                 }}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -262,44 +239,43 @@ export default function NavBar() {
             );
           })}
 
+          <Link
+            href="/#agent-onboarding"
+            style={{
+              ...mobileNavLinkBase,
+              border: `1px solid ${COLORS.borderStrong}`,
+              color: '#e5e5e5',
+            }}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Put Your Agent Online
+          </Link>
+
           {!user && (
             <>
-              <div
-                style={{
-                  fontFamily: "'Anton', sans-serif",
-                  fontSize: isSmallMobile ? '18px' : '20px',
-                  textTransform: 'uppercase',
-                  color: '#C8FF00',
-                  padding: '10px 12px',
-                  borderBottom: '1px solid #2A2A2A',
-                  marginBottom: '4px',
-                }}
-              >
-                Authentication
-              </div>
               <Link
                 href="/login"
                 style={{
                   ...mobileNavLinkBase,
-                  border: pathname === '/login' ? '2px solid #C8FF00' : '1px solid #2A2A2A',
-                  background: pathname === '/login' ? '#1A1A1A' : '#121212',
-                  color: pathname === '/login' ? '#C8FF00' : '#FFFFFF',
+                  border: `1px solid ${COLORS.border}`,
+                  color: COLORS.fg,
                 }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Login
+                Log in
               </Link>
               <Link
                 href="/signup"
                 style={{
                   ...mobileNavLinkBase,
-                  border: '2px solid #C8FF00',
-                  background: '#C8FF00',
+                  background: COLORS.accent,
                   color: '#000000',
+                  fontWeight: 600,
+                  textAlign: 'center',
                 }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Sign Up
+                Sign up free
               </Link>
             </>
           )}
@@ -307,12 +283,22 @@ export default function NavBar() {
           {user && (
             <>
               <Link
+                href="/agents"
+                style={{
+                  ...mobileNavLinkBase,
+                  border: `1px solid ${COLORS.border}`,
+                  color: COLORS.fg,
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                My Agents
+              </Link>
+              <Link
                 href={profilePath}
                 style={{
                   ...mobileNavLinkBase,
-                  border: '2px solid #C8FF00',
-                  background: '#1A1A1A',
-                  color: '#C8FF00',
+                  border: `1px solid ${COLORS.accentBorderHover}`,
+                  color: COLORS.accent,
                 }}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -323,9 +309,8 @@ export default function NavBar() {
                 onClick={() => { signOut(); setMobileMenuOpen(false); }}
                 style={{
                   ...mobileNavLinkBase,
-                  border: '1px solid #444',
-                  background: '#121212',
-                  color: '#AAAAAA',
+                  border: `1px solid ${COLORS.border}`,
+                  color: COLORS.textMuted,
                   cursor: 'pointer',
                 }}
               >

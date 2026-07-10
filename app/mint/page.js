@@ -6,13 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useVibeStore } from '../state/vibe-store';
 import { useAuth } from '../state/auth-store';
 import NavBar from '../components/NavBar';
+import { COLORS, RADIUS } from '../../lib/design-tokens.js';
 
 const categoryOptions = [
   { value: 'Auto', label: 'Vibe (AI Picks Category)' },
   { value: 'Confessions', label: 'Confession' },
 ];
-
-const durationOptions = ['12 Hours', '24 Hours', '3 Days', '7 Days'];
 
 const defaultTitleByCategory = {
   Auto: 'The Exact Moment You Realize You Should Not Have Sent That Text',
@@ -24,13 +23,6 @@ const defaultTitleByCategory = {
   Confessions: 'Fridge Crime Scene',
 };
 
-const durationMap = {
-  '12 Hours': '11h 59m',
-  '24 Hours': '23h 59m',
-  '3 Days': '2d 23h',
-  '7 Days': '6d 23h',
-};
-
 const MINT_STAGE_ORDER = ['uploading', 'vibing', 'construction', 'generating', 'finalizing'];
 
 const MINT_STAGE_LABELS = {
@@ -38,7 +30,7 @@ const MINT_STAGE_LABELS = {
   vibing: 'Vibing',
   construction: 'Construction Humor',
   generating: 'Generating Image',
-  finalizing: 'Packaging Auction Card',
+  finalizing: 'Packaging Vibe Card',
 };
 
 const IMAGE_STYLE_OPTIONS = [
@@ -66,15 +58,15 @@ const IMAGE_HUMOR_OPTIONS = [
 
 const customStyles = {
   root: {
-    background: '#0D0D0D',
-    color: '#FFFFFF',
+    background: COLORS.bg,
+    color: COLORS.fg,
     minHeight: '100dvh',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Space Grotesk', sans-serif",
     WebkitFontSmoothing: 'antialiased',
     overflowX: 'hidden',
   },
   header: {
-    background: '#000000',
+    background: COLORS.bg,
     height: '60px',
     display: 'flex',
     alignItems: 'center',
@@ -83,14 +75,13 @@ const customStyles = {
     position: 'sticky',
     top: 0,
     zIndex: 100,
-    borderBottom: '2px solid #C8FF00',
+    borderBottom: `1px solid ${COLORS.border}`,
   },
   logo: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '24px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    color: '#C8FF00',
+    fontWeight: 300,
+    letterSpacing: '0.02em',
+    fontSize: '20px',
+    color: COLORS.accent,
     textDecoration: 'none',
   },
   navLinks: {
@@ -98,22 +89,21 @@ const customStyles = {
     gap: '24px',
   },
   navItem: {
-    fontWeight: 700,
+    fontWeight: 500,
     fontSize: '14px',
-    color: '#FFFFFF',
+    color: COLORS.fg,
     textDecoration: 'none',
-    textTransform: 'uppercase',
     cursor: 'pointer',
   },
   userBalance: {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    background: '#C8FF00',
+    background: COLORS.accent,
     color: '#000000',
     padding: '4px 12px',
-    borderRadius: '99px',
-    fontWeight: 700,
+    borderRadius: RADIUS.pill,
+    fontWeight: 600,
     fontSize: '13px',
   },
   mainContainer: {
@@ -122,21 +112,20 @@ const customStyles = {
     padding: '56px 24px 40px',
   },
   formSectionH1: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '64px',
-    lineHeight: 0.9,
-    textTransform: 'uppercase',
+    fontSize: '44px',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    lineHeight: 1.05,
     marginBottom: '40px',
   },
   highlightTag: {
     display: 'inline-block',
-    background: '#C8FF00',
+    background: COLORS.accent,
     color: '#000000',
     padding: '4px 12px',
-    fontFamily: "'Inter', sans-serif",
-    fontWeight: 800,
-    fontSize: '20px',
-    transform: 'rotate(-2deg)',
+    borderRadius: RADIUS.chip,
+    fontWeight: 700,
+    fontSize: '18px',
     marginLeft: '10px',
     verticalAlign: 'middle',
   },
@@ -157,41 +146,39 @@ const customStyles = {
     gridColumn: 'span 2',
   },
   label: {
-    fontFamily: "'Anton', sans-serif",
-    textTransform: 'uppercase',
-    fontSize: '18px',
-    letterSpacing: '0.5px',
-    color: '#C8FF00',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: COLORS.accent,
   },
   inputField: {
-    background: '#111111',
-    border: '2px solid #333333',
-    padding: '14px',
-    color: '#FFFFFF',
-    fontFamily: "'Inter', sans-serif",
+    background: COLORS.bgElevated,
+    border: `1px solid ${COLORS.border}`,
+    padding: '13px 16px',
+    color: COLORS.fg,
+    fontFamily: "'Space Grotesk', sans-serif",
     fontSize: '16px',
     outline: 'none',
-    borderRadius: '0',
+    borderRadius: '12px',
   },
   inputFieldFocus: {
-    background: '#111111',
-    border: '2px solid #C8FF00',
-    padding: '14px',
-    color: '#FFFFFF',
-    fontFamily: "'Inter', sans-serif",
+    background: COLORS.bgElevated,
+    border: `1px solid ${COLORS.accent}`,
+    padding: '13px 16px',
+    color: COLORS.fg,
+    fontFamily: "'Space Grotesk', sans-serif",
     fontSize: '16px',
     outline: 'none',
-    borderRadius: '0',
+    borderRadius: '12px',
   },
   selectField: {
-    background: '#111111',
-    border: '2px solid #333333',
-    padding: '14px',
-    color: '#FFFFFF',
-    fontFamily: "'Inter', sans-serif",
+    background: COLORS.bgElevated,
+    border: `1px solid ${COLORS.border}`,
+    padding: '13px 16px',
+    color: COLORS.fg,
+    fontFamily: "'Space Grotesk', sans-serif",
     fontSize: '16px',
     outline: 'none',
-    borderRadius: '0',
+    borderRadius: '12px',
   },
   previewSticky: {
     position: 'sticky',
@@ -201,35 +188,34 @@ const customStyles = {
     gap: '16px',
   },
   previewLabel: {
-    fontFamily: "'Anton', sans-serif",
-    textTransform: 'uppercase',
-    fontSize: '14px',
-    color: '#666666',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: COLORS.textFaint,
     textAlign: 'center',
   },
   card: {
-    background: '#FFFFFF',
-    borderRadius: '8px',
+    background: COLORS.cardFill,
+    borderRadius: RADIUS.card,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    border: '2px solid #C8FF00',
-    boxShadow: '10px 10px 0px rgba(200, 255, 0, 0.2)',
-    color: '#000000',
+    border: `1px solid ${COLORS.accentBorderHover}`,
+    boxShadow: '0 0 40px -12px rgba(139,92,246,0.35)',
+    color: COLORS.fg,
     position: 'relative',
   },
   cardImageArea: {
     height: '180px',
-    background: '#F0F0F0',
+    background: COLORS.bgElevated,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    borderBottom: '2px solid #000000',
+    borderBottom: `1px solid ${COLORS.border}`,
     overflow: 'hidden',
   },
   patternDots: {
-    backgroundImage: 'radial-gradient(#000000 1px, transparent 1px)',
+    backgroundImage: 'radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)',
     backgroundSize: '10px 10px',
     opacity: 0.1,
     width: '100%',
@@ -238,79 +224,81 @@ const customStyles = {
   },
   cardFallback: {
     fontSize: '13px',
-    fontWeight: 800,
-    textTransform: 'uppercase',
-    letterSpacing: '0.8px',
-    border: '2px solid #222222',
-    padding: '8px 12px',
-    background: 'rgba(255,255,255,0.6)',
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.pill,
+    padding: '8px 14px',
+    background: 'rgba(255,255,255,0.06)',
     zIndex: 1,
   },
   liveBadge: {
     position: 'absolute',
-    top: '8px',
-    right: '8px',
-    background: '#000000',
-    color: '#C8FF00',
-    fontWeight: 800,
+    top: '10px',
+    right: '10px',
+    background: COLORS.accent,
+    color: '#000000',
+    fontWeight: 700,
     fontSize: '10px',
     textTransform: 'uppercase',
-    padding: '4px 8px',
-    border: '1px solid #C8FF00',
-    transform: 'rotate(2deg)',
+    letterSpacing: '0.06em',
+    padding: '3px 9px',
+    borderRadius: RADIUS.chip,
     zIndex: 2,
   },
   cardContent: {
-    padding: '16px',
+    padding: '18px',
     flexGrow: 1,
   },
   cardTitle: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '24px',
-    lineHeight: 1.1,
+    fontSize: '20px',
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+    lineHeight: 1.15,
     marginBottom: '8px',
-    textTransform: 'uppercase',
   },
   cardMeta: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     marginTop: 'auto',
-    borderTop: '1px solid #DDDDDD',
-    paddingTop: '8px',
+    borderTop: `1px solid ${COLORS.border}`,
+    paddingTop: '10px',
     gap: '8px',
   },
   bidLabel: {
-    fontSize: '10px',
+    fontSize: '11px',
     textTransform: 'uppercase',
-    fontWeight: 700,
-    color: '#888888',
+    letterSpacing: '0.06em',
+    fontWeight: 600,
+    color: COLORS.textFaint,
   },
   bidAmount: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '22px',
+    fontSize: '18px',
+    fontWeight: 700,
+    color: COLORS.accent,
   },
   timer: {
-    fontWeight: 700,
+    fontWeight: 600,
     fontSize: '14px',
-    color: '#666666',
+    color: COLORS.textMuted,
   },
   btnSubmit: {
     marginTop: '34px',
     width: '100%',
-    background: '#C8FF00',
+    background: COLORS.accent,
     color: '#000000',
     border: 'none',
-    padding: '20px',
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '24px',
-    textTransform: 'uppercase',
-    letterSpacing: '2px',
+    padding: '16px',
+    borderRadius: RADIUS.pill,
+    fontSize: '17px',
+    fontWeight: 600,
     cursor: 'pointer',
   },
   uploadZone: {
-    border: '2px dashed #444444',
-    background: '#111111',
+    border: `1px dashed ${COLORS.borderStrong}`,
+    background: COLORS.bgElevated,
+    borderRadius: RADIUS.card,
     padding: '32px 20px',
     display: 'flex',
     flexDirection: 'column',
@@ -322,8 +310,9 @@ const customStyles = {
     overflow: 'hidden',
   },
   uploadZoneHover: {
-    border: '2px dashed #C8FF00',
-    background: '#151515',
+    border: `1px dashed ${COLORS.accent}`,
+    background: COLORS.bgElevated,
+    borderRadius: RADIUS.card,
     padding: '32px 20px',
     display: 'flex',
     flexDirection: 'column',
@@ -335,8 +324,9 @@ const customStyles = {
     overflow: 'hidden',
   },
   uploadZoneHasImage: {
-    border: '2px solid #C8FF00',
-    background: '#111111',
+    border: `1px solid ${COLORS.accent}`,
+    background: COLORS.bgElevated,
+    borderRadius: RADIUS.card,
     padding: 0,
     display: 'flex',
     flexDirection: 'column',
@@ -352,30 +342,29 @@ const customStyles = {
     lineHeight: 1,
   },
   uploadText: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '16px',
-    textTransform: 'uppercase',
-    color: '#666666',
+    fontSize: '15px',
+    fontWeight: 600,
+    color: COLORS.textMuted,
   },
   uploadSubtext: {
     fontSize: '12px',
-    color: '#444444',
-    textTransform: 'uppercase',
-    fontWeight: 700,
+    color: COLORS.textDim,
+    fontWeight: 600,
   },
   uploadRemove: {
     position: 'absolute',
-    top: '8px',
-    right: '8px',
-    background: '#000000',
-    color: '#C8FF00',
-    border: '1px solid #C8FF00',
+    top: '10px',
+    right: '10px',
+    background: 'rgba(0,0,0,0.6)',
+    color: '#FFFFFF',
+    border: `1px solid ${COLORS.borderStrong}`,
     fontSize: '11px',
-    fontWeight: 800,
-    textTransform: 'uppercase',
-    padding: '3px 8px',
+    fontWeight: 600,
+    padding: '4px 10px',
+    borderRadius: RADIUS.pill,
     cursor: 'pointer',
     zIndex: 3,
+    backdropFilter: 'blur(6px)',
   },
   svgDrip: {
     position: 'fixed',
@@ -390,42 +379,45 @@ const customStyles = {
   placeBidBtn: {
     width: '100%',
     height: '44px',
-    background: '#000000',
+    background: COLORS.bgElevated,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Anton', sans-serif",
-    color: '#C8FF00',
-    textTransform: 'uppercase',
-    border: 'none',
-    fontSize: '16px',
+    color: COLORS.accent,
+    fontWeight: 600,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.pill,
+    fontSize: '15px',
   },
   helperText: {
     fontSize: '12px',
-    color: '#666666',
-    fontWeight: 700,
+    color: COLORS.textDim,
+    fontWeight: 500,
   },
   statusSuccess: {
     marginTop: '18px',
-    background: 'rgba(200,255,0,0.14)',
-    border: '1px solid rgba(200,255,0,0.45)',
+    background: 'rgba(139,92,246,0.1)',
+    border: `1px solid ${COLORS.accentBorderHover}`,
+    borderRadius: '10px',
     padding: '10px 12px',
-    color: '#E9FF9A',
+    color: '#e0d4ff',
     fontSize: '13px',
-    fontWeight: 700,
+    fontWeight: 600,
   },
   statusError: {
     marginTop: '18px',
     background: 'rgba(255,70,70,0.12)',
     border: '1px solid rgba(255,70,70,0.45)',
+    borderRadius: '10px',
     padding: '10px 12px',
     color: '#FF9797',
     fontSize: '13px',
-    fontWeight: 700,
+    fontWeight: 600,
   },
   anonToggle: {
-    border: '2px solid #333333',
-    background: '#111111',
+    border: `1px solid ${COLORS.border}`,
+    background: COLORS.bgElevated,
+    borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -433,8 +425,9 @@ const customStyles = {
     minHeight: '54px',
   },
   anonToggleOn: {
-    border: '2px solid #C8FF00',
-    background: '#121812',
+    border: `1px solid ${COLORS.accent}`,
+    background: 'rgba(139,92,246,0.08)',
+    borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -443,16 +436,16 @@ const customStyles = {
   },
   loadingPanel: {
     marginTop: '12px',
-    border: '1px solid rgba(200,255,0,0.35)',
-    background: 'linear-gradient(180deg, rgba(200,255,0,0.08), rgba(20,20,20,0.9))',
-    padding: '12px',
+    border: `1px solid ${COLORS.accentBorderHover}`,
+    borderRadius: '12px',
+    background: 'linear-gradient(180deg, rgba(139,92,246,0.08), rgba(17,17,17,0.9))',
+    padding: '14px',
   },
   loadingTitle: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '14px',
-    letterSpacing: '0.8px',
-    textTransform: 'uppercase',
-    color: '#C8FF00',
+    fontSize: '13px',
+    letterSpacing: '0.04em',
+    fontWeight: 600,
+    color: COLORS.accent,
     marginBottom: '8px',
   },
   loadingRow: {
@@ -460,13 +453,12 @@ const customStyles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     fontSize: '12px',
-    color: '#8D8D8D',
+    color: COLORS.textMuted,
     marginBottom: '5px',
-    textTransform: 'uppercase',
-    fontWeight: 700,
+    fontWeight: 500,
   },
   loadingRowActive: {
-    color: '#E9FF9A',
+    color: '#e0d4ff',
   },
   loadingDot: {
     width: '8px',
@@ -478,19 +470,20 @@ const customStyles = {
     marginRight: '8px',
   },
   loadingDotActive: {
-    background: '#C8FF00',
-    border: '1px solid #C8FF00',
-    boxShadow: '0 0 10px rgba(200,255,0,0.55)',
+    background: COLORS.accent,
+    border: `1px solid ${COLORS.accent}`,
+    boxShadow: '0 0 10px rgba(139,92,246,0.55)',
   },
   loadingTrack: {
     marginTop: '8px',
     height: '4px',
+    borderRadius: '999px',
     background: '#252525',
     overflow: 'hidden',
   },
   loadingBar: {
     height: '100%',
-    background: '#C8FF00',
+    background: COLORS.accent,
     transition: 'width 0.35s ease',
   },
 };
@@ -510,9 +503,6 @@ export default function MintPage() {
   const [formData, setFormData] = useState({
     itemName: '',
     category: 'Auto',
-    startingPrice: '100',
-    buyItNow: '',
-    duration: '24 Hours',
     details: '',
     anonymous: true,
     alias: '',
@@ -557,10 +547,9 @@ export default function MintPage() {
 
     const style = document.createElement('style');
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;800&display=swap');
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background-color: #0D0D0D; overflow-x: hidden; }
-      select option { background: #0D0D0D; }
+      body { background-color: #09090b; overflow-x: hidden; }
+      select option { background: #09090b; }
     `;
     document.head.appendChild(style);
 
@@ -616,8 +605,6 @@ export default function MintPage() {
       details:
         previous.details ||
         `Remix of "${sourceTitle}" by ${sourceAuthor}.\n\n${sourceManifesto ? `Source vibe:\n${sourceManifesto}\n\n` : ''}Remix angle: `,
-      startingPrice: previous.startingPrice === '100' ? String(Math.max(25, Number(remixSource.startingPrice || 100))) : previous.startingPrice,
-      duration: previous.duration || '24 Hours',
     }));
     setAdvancedOptions((previous) => ({
       ...previous,
@@ -642,14 +629,6 @@ export default function MintPage() {
       return {
         ...previous,
         category: nextCategory,
-        startingPrice:
-          nextCategory === 'Confessions'
-            ? previous.startingPrice === '' || previous.startingPrice === '0'
-              ? '0'
-              : previous.startingPrice
-            : previous.startingPrice === '0'
-              ? '100'
-              : previous.startingPrice,
       };
     });
 
@@ -749,8 +728,6 @@ export default function MintPage() {
         const mirroredConfessionVibeResult = await mintVibe({
           name: cleanedName || mintedConfession.title,
           category: 'Confessions',
-          startingPrice: 0,
-          duration: 'N/A',
           manifesto: cleanedDetails,
           isAnonymous: formData.anonymous,
           alias: cleanedAlias,
@@ -781,13 +758,6 @@ export default function MintPage() {
         return;
       }
 
-      const numericPrice = Number(String(formData.startingPrice || '').replace(/,/g, '').trim());
-      if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-        setError('Starting price must be greater than 0.');
-        return;
-      }
-
-      const buyNowNumeric = Number(String(formData.buyItNow || '').replace(/,/g, '').trim());
       const updateMintStageFromEvent = (eventName) => {
         if (eventName === 'auth' || eventName === 'auth_retry') {
           setMintStage('vibing');
@@ -825,9 +795,6 @@ export default function MintPage() {
       const mintResult = await mintVibe({
         name: cleanedName,
         category: isConfession ? 'Confessions' : 'Auto',
-        startingPrice: numericPrice,
-        buyNowPrice: Number.isFinite(buyNowNumeric) && buyNowNumeric > 0 ? buyNowNumeric : null,
-        duration: formData.duration,
         manifesto: cleanedDetails,
         author: profile?.username ?? null,
         listedBy: user?.id ?? null,
@@ -857,7 +824,7 @@ export default function MintPage() {
       setSuccess(`Vibe listed in ${minted.category || 'AI category'}.`);
 
       if (minted.slug) {
-        setTimeout(() => router.push(`/auction/${minted.slug}`), 1200);
+        setTimeout(() => router.push(`/vibe/${minted.slug}`), 1200);
         return;
       }
 
@@ -867,9 +834,6 @@ export default function MintPage() {
         ...previous,
         itemName: '',
         details: '',
-        startingPrice: '100',
-        buyItNow: '',
-        duration: '24 Hours',
       }));
     } finally {
       if (generationEscalationTimeout) clearTimeout(generationEscalationTimeout);
@@ -882,9 +846,7 @@ export default function MintPage() {
     formData.details ||
     (isConfession
       ? 'Your confession preview appears here before you mint anonymously or publicly.'
-      : 'Briefly describe why this vibe is worth bidding on.');
-  const previewBid = formData.startingPrice || (isConfession ? '0' : '100');
-  const previewTimer = durationMap[formData.duration] || '23h 59m';
+      : 'Briefly describe your vibe.');
 
   return (
     <div style={customStyles.root}>
@@ -901,23 +863,24 @@ export default function MintPage() {
             <div
               style={{
                 marginBottom: isMobile ? '20px' : '24px',
-                border: '1px solid rgba(200,255,0,0.35)',
-                background: 'linear-gradient(135deg, rgba(200,255,0,0.1), rgba(17,17,17,0.95))',
+                border: '1px solid rgba(139,92,246,0.35)',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(17,17,17,0.95))',
                 padding: '14px 16px',
               }}
             >
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: isMobile ? '18px' : '22px', textTransform: 'uppercase', color: '#C8FF00' }}>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: isMobile ? '18px' : '22px', color: '#8b5cf6' }}>
                 Remixing {remixSource.name || 'this vibe'}
               </div>
               <div style={{ marginTop: '6px', fontSize: '13px', color: '#B8B8B8', lineHeight: 1.5 }}>
-                Start from the original listing, then twist the concept into your own collectible variant.
+                Start from the original post, then twist the concept into your own vibe.
                 {remixSource.author ? ` Original vibe by @${String(remixSource.author).replace(/^@/, '')}.` : ''}
               </div>
               <Link
-                href={`/auction/${remixSource.slug}`}
+                href={`/vibe/${remixSource.slug}`}
                 style={{ display: 'inline-block', marginTop: '10px', color: '#FFFFFF', fontWeight: 800, textTransform: 'uppercase', fontSize: '12px', textDecoration: 'none' }}
               >
-                Back to source auction
+                Back to source vibe
               </Link>
             </div>
           )}
@@ -980,58 +943,6 @@ export default function MintPage() {
               )}
             </div>
 
-            {!isConfession && (
-              <>
-                <div style={customStyles.inputGroup}>
-                  <label style={customStyles.label}>Starting Price (Aura)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    style={getInputStyle('startingPrice')}
-                    placeholder="100"
-                    value={formData.startingPrice}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, startingPrice: event.target.value }))}
-                    onFocus={() => setFocusedField('startingPrice')}
-                    onBlur={() => setFocusedField('')}
-                  />
-                </div>
-
-                <div style={customStyles.inputGroup}>
-                  <label style={customStyles.label}>
-                    Buy Now Price{' '}
-                    <span style={{ fontSize: '12px', color: '#555555', fontFamily: "'Inter', sans-serif", fontWeight: 700, textTransform: 'none' }}>
-                      — optional
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    style={getInputStyle('buyItNow')}
-                    placeholder="e.g. 500"
-                    value={formData.buyItNow}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, buyItNow: event.target.value }))}
-                    onFocus={() => setFocusedField('buyItNow')}
-                    onBlur={() => setFocusedField('')}
-                  />
-                </div>
-
-                <div style={customStyles.inputGroup}>
-                  <label style={customStyles.label}>Drop Duration</label>
-                  <select
-                    style={customStyles.selectField}
-                    value={formData.duration}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, duration: event.target.value }))}
-                  >
-                    {durationOptions.map((duration) => (
-                      <option key={duration} value={duration}>
-                        {duration}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-
             {isConfession && (
               <>
                 <div style={customStyles.inputGroup}>
@@ -1041,7 +952,7 @@ export default function MintPage() {
                     style={formData.anonymous ? customStyles.anonToggleOn : customStyles.anonToggle}
                     onClick={() => setFormData((previous) => ({ ...previous, anonymous: !previous.anonymous }))}
                   >
-                    <span style={{ fontWeight: 800, textTransform: 'uppercase', color: formData.anonymous ? '#C8FF00' : '#FFFFFF', fontSize: '13px' }}>
+                    <span style={{ fontWeight: 800, textTransform: 'uppercase', color: formData.anonymous ? '#8b5cf6' : '#FFFFFF', fontSize: '13px' }}>
                       {formData.anonymous ? 'Anonymous' : 'Named'}
                     </span>
                     <span style={{ fontSize: '12px', color: '#888888' }}>Tap to toggle</span>
@@ -1100,7 +1011,7 @@ export default function MintPage() {
                         Remove
                       </button>
                       {uploadedImageUrl && (
-                        <div style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(0,0,0,0.8)', color: '#C8FF00', fontSize: '10px', fontWeight: 800, padding: '2px 6px', textTransform: 'uppercase' }}>
+                        <div style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(0,0,0,0.8)', color: '#8b5cf6', fontSize: '10px', fontWeight: 800, padding: '2px 6px', textTransform: 'uppercase' }}>
                           Uploaded ✓
                         </div>
                       )}
@@ -1129,14 +1040,14 @@ export default function MintPage() {
                 <button
                   type="button"
                   style={{
-                    background: showAdvanced ? '#1A1A1A' : 'transparent',
-                    border: `2px solid ${showAdvanced ? '#C8FF00' : '#333333'}`,
-                    color: showAdvanced ? '#C8FF00' : '#555555',
-                    padding: '10px 16px',
-                    fontFamily: "'Anton', sans-serif",
+                    background: showAdvanced ? 'rgba(139,92,246,0.08)' : 'transparent',
+                    border: `1px solid ${showAdvanced ? '#8b5cf6' : '#333333'}`,
+                    borderRadius: '12px',
+                    color: showAdvanced ? '#8b5cf6' : '#888888',
+                    padding: '13px 16px',
+                    fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: '14px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
+                    fontWeight: 600,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -1147,18 +1058,20 @@ export default function MintPage() {
                   onClick={() => setShowAdvanced((v) => !v)}
                 >
                   <span>Advanced Image Options</span>
-                  <span style={{ fontSize: '18px', lineHeight: 1 }}>{showAdvanced ? '▲' : '▼'}</span>
+                  <span style={{ fontSize: '14px', lineHeight: 1 }}>{showAdvanced ? '▲' : '▼'}</span>
                 </button>
 
                 {showAdvanced && (
                   <div style={{
                     border: '1px solid #2A2A2A',
-                    background: '#0A0A0A',
+                    borderTop: 'none',
+                    borderRadius: '0 0 12px 12px',
+                    background: '#09090b',
                     padding: '20px',
                     display: 'grid',
                     gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
                     gap: '16px',
-                    marginTop: '0px',
+                    marginTop: '-1px',
                   }}>
                     <div style={{ ...customStyles.inputGroupFullWidth, gridColumn: isMobile ? 'auto' : 'span 2' }}>
                       <label style={{ ...customStyles.label, fontSize: '13px' }}>Image Prompt / Direction</label>
@@ -1219,7 +1132,7 @@ export default function MintPage() {
               <label style={customStyles.label}>{isConfession ? 'Confession' : 'Vibe Story (Optional)'}</label>
               <textarea
                 style={{ ...getInputStyle('details'), height: '130px', resize: 'none' }}
-                placeholder={isConfession ? 'Say the thing you normally keep to yourself...' : 'Give collectors the origin story, context, or lore behind this vibe...'}
+                placeholder={isConfession ? 'Say the thing you normally keep to yourself...' : 'Give people the origin story, context, or lore behind this vibe...'}
                 value={formData.details}
                 onChange={(event) => setFormData((previous) => ({ ...previous, details: event.target.value }))}
                 onFocus={() => setFocusedField('details')}
@@ -1234,11 +1147,11 @@ export default function MintPage() {
                 type="submit"
                 style={{
                   ...customStyles.btnSubmit,
-                  background: submitted ? '#A8D800' : '#C8FF00',
+                  background: '#8b5cf6',
                   transform: submitted ? 'scale(0.99)' : 'scale(1)',
                   transition: 'all 0.1s',
-                  fontSize: isMobile ? '20px' : customStyles.btnSubmit.fontSize,
-                  padding: isMobile ? '16px' : customStyles.btnSubmit.padding,
+                  fontSize: isMobile ? '17px' : customStyles.btnSubmit.fontSize,
+                  padding: isMobile ? '15px' : customStyles.btnSubmit.padding,
                   opacity: submitting ? 0.7 : 1,
                   cursor: submitting || !isAuthed ? 'not-allowed' : customStyles.btnSubmit.cursor,
                 }}
@@ -1251,10 +1164,10 @@ export default function MintPage() {
                   : submitted
                   ? isConfession
                     ? 'Confession Created ✓'
-                    : 'Vibe Listed ✓'
+                    : 'Vibe Posted ✓'
                   : isConfession
                     ? 'Create Confession'
-                    : 'List Vibe in Market'}
+                    : 'Post Vibe'}
               </button>
 
               {submitting && !isConfession && (
@@ -1302,9 +1215,10 @@ export default function MintPage() {
                     marginTop: '10px',
                     background: 'rgba(255,210,120,0.12)',
                     border: '1px solid rgba(255,210,120,0.45)',
+                    borderRadius: '10px',
                     color: '#FFE5B3',
                     padding: '10px 12px',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     fontSize: '13px',
                   }}
                 >
@@ -1320,7 +1234,7 @@ export default function MintPage() {
 
       <svg style={customStyles.svgDrip} preserveAspectRatio="none" viewBox="0 0 1440 100">
         <path
-          fill="#C8FF00"
+          fill="#8b5cf6"
           d="M0,0 L1440,0 L1440,20 C1400,20 1380,80 1320,80 C1260,80 1240,30 1180,30 C1120,30 1100,90 1020,90 C940,90 920,40 840,40 C760,40 740,100 660,100 C580,100 560,50 480,50 C400,50 380,95 300,95 C220,95 200,45 120,45 C40,45 20,20 0,20 Z"
         />
       </svg>

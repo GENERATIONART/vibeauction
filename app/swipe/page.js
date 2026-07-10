@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import NavBar from '../components/NavBar';
+import { getSupabaseClient } from '../../lib/supabase-client';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
             background: 'repeating-linear-gradient(45deg, #1A1A1A 0, #1A1A1A 10px, #141414 10px, #141414 20px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 48, opacity: 0.15, textTransform: 'uppercase', color: '#fff' }}>VIBE</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 48, opacity: 0.15, textTransform: 'uppercase', color: '#fff' }}>VIBE</span>
           </div>
         )}
 
@@ -102,7 +102,7 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
         <div style={{
           position: 'absolute', top: 24, left: 20,
           border: '4px solid #FF3B3B', borderRadius: 6,
-          color: '#FF3B3B', fontFamily: "'Anton', sans-serif",
+          color: '#FF3B3B', fontFamily: "'Space Grotesk', sans-serif",
           fontSize: 38, padding: '2px 12px', textTransform: 'uppercase',
           transform: 'rotate(-12deg)', opacity: passOpacity,
           transition: 'opacity 0.05s', pointerEvents: 'none',
@@ -111,17 +111,17 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
           PASS
         </div>
 
-        {/* BID stamp */}
+        {/* VIBE stamp */}
         <div style={{
           position: 'absolute', top: 24, right: 20,
-          border: '4px solid #C8FF00', borderRadius: 6,
-          color: '#C8FF00', fontFamily: "'Anton', sans-serif",
+          border: '4px solid #8b5cf6', borderRadius: 6,
+          color: '#8b5cf6', fontFamily: "'Space Grotesk', sans-serif",
           fontSize: 38, padding: '2px 12px', textTransform: 'uppercase',
           transform: 'rotate(12deg)', opacity: bidOpacity,
           transition: 'opacity 0.05s', pointerEvents: 'none',
           letterSpacing: 2,
         }}>
-          BID
+          VIBE
         </div>
 
         {/* Category */}
@@ -153,7 +153,7 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
       {/* Info */}
       <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{
-          fontFamily: "'Anton', sans-serif",
+          fontFamily: "'Space Grotesk', sans-serif",
           fontSize: 'clamp(22px, 5vw, 32px)',
           lineHeight: 1, textTransform: 'uppercase', color: '#FFF',
         }}>
@@ -168,16 +168,13 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
           <div>
-            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 22, color: '#C8FF00' }}>
-              {fmt(vibe.startingPrice)} AURA
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, color: '#8b5cf6' }}>
+              🔥 {fmt(vibe.reactionCount)}
             </span>
-            <span style={{ color: '#444', fontSize: 12, fontWeight: 700, marginLeft: 6 }}>starting</span>
           </div>
-          {vibe.endTime && (
-            <span style={{ color: '#555', fontSize: 12, fontWeight: 700 }}>
-              ⏱ {formatTimeLeft(vibe.endTime)}
-            </span>
-          )}
+          <span style={{ color: '#555', fontSize: 12, fontWeight: 700 }}>
+            💬 {fmt(vibe.commentCount)}
+          </span>
         </div>
 
         {vibe.author && (
@@ -197,7 +194,7 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
           style={{
             flex: 1, padding: '14px 0',
             background: 'rgba(255,59,59,0.08)', border: 'none',
-            color: '#FF3B3B', fontFamily: "'Anton', sans-serif",
+            color: '#FF3B3B', fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 16, textTransform: 'uppercase', letterSpacing: 1,
             cursor: 'pointer', transition: 'background 0.15s',
             borderRight: '1px solid #1A1A1A',
@@ -212,15 +209,15 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
           onClick={onBid}
           style={{
             flex: 1, padding: '14px 0',
-            background: 'rgba(200,255,0,0.08)', border: 'none',
-            color: '#C8FF00', fontFamily: "'Anton', sans-serif",
+            background: 'rgba(139,92,246,0.1)', border: 'none',
+            color: '#8b5cf6', fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 16, textTransform: 'uppercase', letterSpacing: 1,
             cursor: 'pointer', transition: 'background 0.15s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(200,255,0,0.2)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(200,255,0,0.08)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.22)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}
         >
-          ♥ Bid
+          ♥ Vibe
         </button>
       </div>
     </div>
@@ -232,7 +229,7 @@ function SwipeCard({ vibe, onPass, onBid, isTop, dragOffset, isDragging }) {
 function EndScreen({ stats, onRestart }) {
   const ratio = stats.total > 0 ? Math.round((stats.bids / stats.total) * 100) : 0;
   const verdict =
-    ratio >= 70 ? { label: 'DEGENERATE BIDDER', color: '#C8FF00', sub: 'You have zero impulse control. We respect it.' } :
+    ratio >= 70 ? { label: 'CHAOS ENJOYER', color: '#8b5cf6', sub: 'You have zero impulse control. We respect it.' } :
     ratio >= 40 ? { label: 'SELECTIVE TASTE', color: '#AAE7FF', sub: 'Discerning. Questionable. Perfect.' } :
     ratio >= 15 ? { label: 'HARD TO PLEASE', color: '#FFCF8A', sub: 'Nothing is good enough for you.' } :
                   { label: 'CERTIFIED HATER', color: '#FF3B3B', sub: 'You passed on everything. Respect.' };
@@ -243,7 +240,7 @@ function EndScreen({ stats, onRestart }) {
       justifyContent: 'center', gap: 24, padding: '40px 24px',
       textAlign: 'center', minHeight: '60vh',
     }}>
-      <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(36px, 8vw, 64px)', lineHeight: 1, textTransform: 'uppercase', color: verdict.color }}>
+      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px, 8vw, 64px)', lineHeight: 1, textTransform: 'uppercase', color: verdict.color }}>
         {verdict.label}
       </div>
       <div style={{ color: '#888', fontSize: 16, maxWidth: 340 }}>{verdict.sub}</div>
@@ -251,11 +248,11 @@ function EndScreen({ stats, onRestart }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, width: '100%', maxWidth: 400 }}>
         {[
           { label: 'Swiped', value: stats.total },
-          { label: 'Bids', value: stats.bids },
+          { label: 'Vibed', value: stats.bids },
           { label: 'Passed', value: stats.passes },
         ].map((s) => (
           <div key={s.label} style={{ background: '#111', border: '1px solid #222', padding: '16px 8px', borderRadius: 8 }}>
-            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 32, color: '#FFF' }}>{s.value}</div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 32, color: '#FFF' }}>{s.value}</div>
             <div style={{ color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
@@ -266,18 +263,18 @@ function EndScreen({ stats, onRestart }) {
           type="button"
           onClick={onRestart}
           style={{
-            background: '#C8FF00', color: '#000', border: 'none',
-            fontFamily: "'Anton', sans-serif", fontSize: 16, textTransform: 'uppercase',
+            background: '#8b5cf6', color: '#000', border: 'none',
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, textTransform: 'uppercase',
             letterSpacing: 1, padding: '14px 28px', cursor: 'pointer', borderRadius: 6,
           }}
         >
           Go Again
         </button>
         <Link
-          href="/auctions"
+          href="/feed"
           style={{
             background: '#111', color: '#FFF', border: '1px solid #333',
-            fontFamily: "'Anton', sans-serif", fontSize: 16, textTransform: 'uppercase',
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, textTransform: 'uppercase',
             letterSpacing: 1, padding: '14px 28px', textDecoration: 'none', borderRadius: 6,
             display: 'inline-block',
           }}
@@ -296,7 +293,7 @@ function Toast({ message, color }) {
     <div style={{
       position: 'fixed', bottom: 120, left: '50%', transform: 'translateX(-50%)',
       background: '#111', border: `1px solid ${color}`, color,
-      fontFamily: "'Anton', sans-serif", fontSize: 18, textTransform: 'uppercase',
+      fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, textTransform: 'uppercase',
       letterSpacing: 1, padding: '10px 24px', borderRadius: 6,
       pointerEvents: 'none', zIndex: 999,
       animation: 'swipe-toast 1.4s ease forwards',
@@ -309,7 +306,6 @@ function Toast({ message, color }) {
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function SwipePage() {
-  const router = useRouter();
   const [vibes, setVibes]       = useState([]);
   const [index, setIndex]       = useState(0);
   const [loading, setLoading]   = useState(true);
@@ -328,9 +324,9 @@ export default function SwipePage() {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/auctions/history?status=live&sort=newest&page=1&pageSize=100', { cache: 'no-store' });
+        const res = await fetch('/api/state/feed?limit=100', { cache: 'no-store' });
         const data = await res.json();
-        const list = Array.isArray(data?.auctions) ? data.auctions : [];
+        const list = Array.isArray(data?.vibes) ? data.vibes : [];
         // Shuffle for freshness
         const shuffled = [...list].sort(() => Math.random() - 0.5);
         setVibes(shuffled);
@@ -371,14 +367,24 @@ export default function SwipePage() {
     advance('pass');
   }, [advance, showToast]);
 
-  const handleBid = useCallback(() => {
+  const handleBid = useCallback(async () => {
     const vibe = vibes[index];
     if (!vibe) return;
-    showToast(randomQuip(BID_QUIPS), '#C8FF00');
+    showToast(randomQuip(BID_QUIPS), '#8b5cf6');
     advance('bid');
-    // Navigate to the auction after a short delay so they see the toast
-    setTimeout(() => router.push(`/auction/${vibe.slug}`), 600);
-  }, [advance, showToast, vibes, index, router]);
+    try {
+      const sb = getSupabaseClient();
+      if (!sb) return;
+      const { data } = await sb.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) return;
+      await fetch('/api/state/vibe-social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reaction: { vibeId: vibe.slug, vibeName: vibe.name, reactionType: 'fire' } }),
+      });
+    } catch { /* best-effort, silent */ }
+  }, [advance, showToast, vibes, index]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -430,7 +436,7 @@ export default function SwipePage() {
   const next     = vibes[index + 1];
 
   return (
-    <div style={{ background: '#0D0D0D', minHeight: '100dvh', color: '#FFF' }}>
+    <div style={{ background: '#09090b', minHeight: '100dvh', color: '#FFF' }}>
       <style>{`
         @keyframes swipe-pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
         @keyframes swipe-toast { 0% { opacity:0; transform:translateX(-50%) translateY(10px); } 15%,75% { opacity:1; transform:translateX(-50%) translateY(0); } 100% { opacity:0; transform:translateX(-50%) translateY(-8px); } }
@@ -442,11 +448,11 @@ export default function SwipePage() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(32px, 8vw, 48px)', lineHeight: 1, textTransform: 'uppercase' }}>
-            Vibe <span style={{ color: '#C8FF00' }}>or</span> Pass
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(32px, 8vw, 48px)', lineHeight: 1, textTransform: 'uppercase' }}>
+            Vibe <span style={{ color: '#8b5cf6' }}>or</span> Pass
           </div>
           <div style={{ color: '#444', fontSize: 13, fontWeight: 700, marginTop: 6 }}>
-            ← pass &nbsp;·&nbsp; drag or tap &nbsp;·&nbsp; bid →
+            ← pass &nbsp;·&nbsp; drag or tap &nbsp;·&nbsp; vibe →
           </div>
           {!loading && vibes.length > 0 && !done && (
             <div style={{ color: '#333', fontSize: 12, fontWeight: 700, marginTop: 4 }}>
@@ -459,8 +465,8 @@ export default function SwipePage() {
         {loading ? (
           <div style={{ height: 'min(520px, calc(100dvh - 220px))', background: '#111', border: '2px solid #1A1A1A', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ textAlign: 'center', color: '#333' }}>
-              <div style={{ width: 36, height: 36, border: '3px solid #222', borderTop: '3px solid #C8FF00', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, textTransform: 'uppercase', letterSpacing: 1 }}>Loading vibes...</div>
+              <div style={{ width: 36, height: 36, border: '3px solid #222', borderTop: '3px solid #8b5cf6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, textTransform: 'uppercase', letterSpacing: 1 }}>Loading vibes...</div>
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           </div>
@@ -474,7 +480,7 @@ export default function SwipePage() {
           <>
             {/* Progress bar */}
             <div style={{ height: 3, background: '#1A1A1A', borderRadius: 2, marginBottom: 16, overflow: 'hidden' }}>
-              <div style={{ height: '100%', background: '#C8FF00', borderRadius: 2, width: `${((index) / vibes.length) * 100}%`, transition: 'width 0.3s' }} />
+              <div style={{ height: '100%', background: '#8b5cf6', borderRadius: 2, width: `${((index) / vibes.length) * 100}%`, transition: 'width 0.3s' }} />
             </div>
 
             <div

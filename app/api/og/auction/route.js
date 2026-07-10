@@ -9,14 +9,12 @@ export async function GET(request) {
   const slug = searchParams.get('slug') || '';
 
   let title = BRAND_NAME;
-  let bid = 0;
   let imageUrl = null;
 
   try {
     const vibe = await getMintedVibeBySlug(slug);
     if (vibe) {
       title = vibe.name || vibe.title || title;
-      bid = vibe.startingPrice || 0;
       imageUrl = vibe.imageUrl ?? null;
     }
   } catch {
@@ -93,24 +91,15 @@ export async function GET(request) {
             gap: '12px',
           }}>
             <div style={{
-              background: '#C8FF00',
+              background: '#8b5cf6',
               color: '#000',
-              padding: '6px 16px',
+              padding: '8px 20px',
+              borderRadius: '999px',
               fontSize: '18px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '2px',
-              display: 'flex',
-            }}>
-              PLACE BID
-            </div>
-            <div style={{
-              fontSize: '24px',
               fontWeight: 700,
-              color: '#C8FF00',
               display: 'flex',
             }}>
-              {Number(bid || 0).toLocaleString()} AURA
+              View Vibe
             </div>
           </div>
         </div>
@@ -120,16 +109,15 @@ export async function GET(request) {
           position: 'absolute',
           top: '28px',
           left: '40px',
-          background: '#C8FF00',
-          color: '#000',
-          padding: '6px 14px',
+          background: 'rgba(0,0,0,0.5)',
+          color: '#8b5cf6',
+          padding: '6px 16px',
+          borderRadius: '999px',
           fontSize: '16px',
-          fontWeight: 900,
-          textTransform: 'uppercase',
-          letterSpacing: '2px',
+          fontWeight: 700,
           display: 'flex',
         }}>
-          VIBE AUCTION
+          {BRAND_NAME}
         </div>
       </div>
     ),
